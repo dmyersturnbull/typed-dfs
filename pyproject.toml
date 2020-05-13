@@ -142,7 +142,8 @@ dev     = [
         "mypy",
         "flake8", "flake8-docstrings",
         "black", "isort",
-        "flake8-bandit", "flake8-bugbear"
+        "flake8-bandit", "flake8-bugbear",
+        "tyrannosaurus"
 ]
 
 

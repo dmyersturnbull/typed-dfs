@@ -11,8 +11,8 @@ from typeddfs.typed_dfs import BaseFrame, SimpleFrame, FinalFrame, ConvertibleFr
 
 metadata = __load(Path(__file__).parent.name)
 __status__ = "Development"
-__copyright__ = "Copyright 2020"
-__date__ = "2020-05-11"
+__copyright__ = "Copyright 2015–2020"
+__date__ = "2020-05-12"
 __uri__ = metadata["home-page"]
 __title__ = metadata["name"]
 __summary__ = metadata["summary"]
