@@ -37,10 +37,12 @@ class KeyValue(OrganizingFrame):
         return ['note']
 
 # will self-organizing and use 'key' as the index
-df = KeyValue.read_csv('abc.csv')
-print(df.index.names)  # ['key']
+df = KeyValue.read_csv('example.csv')
+print(df.index.names, list(df.columns))  # ['key'], ['value', 'note']
 ```
 
 [New issues](https://github.com/kokellab/typed-dfs/issues) and pull requests are welcome.
 Please refer to the [contributing guide](https://github.com/kokellab/typed-dfs/blob/master/CONTRIBUTING.md).
+Generated with [Tyrannosaurus](https://github.com/dmyersturnbull/tyrannosaurus): `tyrannosaurus new typed-dfs`.
+
 

@@ -1129,7 +1129,7 @@ dev = []
 docs = []
 
 [metadata]
-content-hash = "0f0e922c2870c4c6799b96e3d55aa82166c75ddefda904c6fcfe43a41f00bdfb"
+content-hash = "3534b47b66afd10682318b28d4085e8b1269fa4cbb386626b3947c7d5527708d"
 python-versions = ">=3.7, <4"
 
 [metadata.files]
