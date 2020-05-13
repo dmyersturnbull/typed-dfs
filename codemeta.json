@@ -1,0 +1,40 @@
+{
+    "@context":"https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type":"SoftwareSourceCode",
+    "identifier":"typed-dfs",
+    "name":"Typed-dfs",
+    "description":"Pandas DataFrame subclasses that enforce structure and can self-organize.",
+    "codeRepository":"https://github.com/kokellab/typed-dfs",
+    "issueTracker":"https://github.com/kokellab/typed-dfs/issues",
+    "license":"https://www.apache.org/licenses/LICENSE-2.0",
+    "version":"2.0",
+    "author":[
+        {
+            "@type":"Person",
+            "givenName":"Douglas",
+            "familyName":"Myers-Turnbull",
+            "@id":"https://orcid.org/0000-0003-3610-4808"
+        }
+    ],
+    "contributor":[
+
+    ],
+    "maintainer":{
+        "@type":"Person",
+        "givenName":"Douglas",
+        "familyName":"Myers-Turnbull",
+        "@id":"https://orcid.org/0000-0003-3610-4808"
+    },
+    "contIntegration":"https://github.com/kokellab/typed-dfs/actions",
+    "developmentStatus":"active",
+    "downloadUrl":"https://pypi.org/project/typed-dfs/",
+    "keywords":[
+        "pandas",
+        "typing",
+        "columns",
+        "structured"
+    ],
+    "dateCreated":"2020-05-12",
+    "datePublished":"2020-05-12",
+    "programmingLanguage":"Python"
+}
