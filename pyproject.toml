@@ -60,7 +60,7 @@ align    = true
 # ${today} is the date you run it at, and ${now} is the datetime
 status             = "'Development'"
 date               = "'${today}'"
-copyright          = "'Copyright 2015–${today.year}'"
+copyright          = "'Copyright 2016–${today.year}'"
 version            = "tool.poetry.version"
 release            = "tool.poetry.version"
 pyversions         = "tool.poetry.dependencies"
