@@ -1,9 +1,9 @@
 # Typed DataFrames
 
-[![Build status](https://img.shields.io/pypi/status/typed-dfs)](https://pypi.org/project/typed-dfs/)
-[![Latest version on PyPi](https://badge.fury.io/py/typed-dfs.svg)](https://pypi.org/project/typed-dfs/)
-[![Supported Python versions](https://img.shields.io/pypi/pyversions/typed-dfs.svg)](https://pypi.org/project/typed-dfs/)
-[![Documentation status](https://readthedocs.org/projects/typed-dfs/badge/?version=latest&style=flat-square)](https://readthedocs.org/projects/typed-dfs)
+[![Build status](https://img.shields.io/pypi/status/typeddfs)](https://pypi.org/project/typeddfs/)
+[![Latest version on PyPi](https://badge.fury.io/py/typeddfs.svg)](https://pypi.org/project/typeddfs/)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/typeddfs.svg)](https://pypi.org/project/typeddfs/)
+[![Documentation status](https://readthedocs.org/projects/typeddfs/badge/?version=latest&style=flat-square)](https://readthedocs.org/projects/typed-dfs)
 [![Build & test](https://github.com/kokellab/typed-dfs/workflows/Build%20&%20test/badge.svg)](https://github.com/kokellab/typed-dfs/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
