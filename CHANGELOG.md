@@ -8,9 +8,10 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ### Added:
 - Builder and static factory for new classes
+- Symmetry and custom conditions
 
 ### Changed:
-- Renamed abstract class
+- Renamed most classes
 
 
 ## [0.1.0] - 2020-05-12

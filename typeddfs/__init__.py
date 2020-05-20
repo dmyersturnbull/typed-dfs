@@ -4,7 +4,7 @@ Metadata for TypedDfs.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Type, Sequence
+from typing import Optional, Type, Sequence, Callable
 
 # importlib.metadata is compat with Python 3.8 only
 from importlib_metadata import metadata as __load
@@ -12,12 +12,14 @@ from importlib_metadata import metadata as __load
 import pandas as pd
 
 from typeddfs.typed_dfs import (
-    SimpleFrame,
-    FinalFrame,
-    TypedFrame,
-    OrganizingFrame,
-    MissingColumnError,
-    UnexpectedColumnError,
+    UntypedDf,
+    BaseDf,
+    TypedDf,
+    InvalidDfError as _InvalidDfError,
+    MissingColumnError as _MissingColumnError,
+    UnexpectedColumnError as _UnexpectedColumnError,
+    AsymmetricDfError as _AsymmetricDfError,
+    ExtraConditionError as _ExtraConditionError,
 )
 
 metadata = __load(Path(__file__).parent.name)
@@ -45,6 +47,8 @@ class TypedDfBuilder:
         self._drop = []
         self._strict_meta = False
         self._strict_cols = False
+        self._symmetric = False
+        self._extra_reqs = []
 
     def require(self, *names: str, index: bool = False) -> TypedDfBuilder:
         if index:
@@ -68,10 +72,18 @@ class TypedDfBuilder:
         self._strict_cols = cols
         return self
 
-    def build(self) -> Type[OrganizingFrame]:
-        class New(OrganizingFrame):
+    def symmetric(self) -> TypedDfBuilder:
+        self._symmetric = True
+        return self
+
+    def condition(self, *conditions: Callable[[pd.DataFrame], Optional[str]]) -> TypedDfBuilder:
+        self._extra_reqs.extend(conditions)
+        return self
+
+    def build(self) -> Type[TypedDf]:
+        class New(TypedDf):
             @classmethod
-            def more_index_names_allowed(cls) -> bool:
+            def more_indices_allowed(cls) -> bool:
                 return not self._strict_meta
 
             @classmethod
@@ -95,8 +107,16 @@ class TypedDfBuilder:
                 return self._req_meta
 
             @classmethod
+            def must_be_symmetric(cls) -> bool:
+                return self._symmetric
+
+            @classmethod
             def columns_to_drop(cls) -> Sequence[str]:
                 return self._drop
+
+            @classmethod
+            def extra_conditions(cls) -> Sequence[Callable[[pd.DataFrame], Optional[str]]]:
+                return self._extra_reqs
 
         New.__name__ = self._name
         New.__doc__ = self._doc
@@ -104,53 +124,36 @@ class TypedDfBuilder:
 
 
 class TypedDfs:
+
+    InvalidDfError = (_InvalidDfError,)
+    MissingColumnError = (_MissingColumnError,)
+    UnexpectedColumnError = (_UnexpectedColumnError,)
+    AsymmetricDfError = (_AsymmetricDfError,)
+    ExtraConditionError = _ExtraConditionError
+
     @classmethod
-    def fancy(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
+    def example(cls):
+        KeyValue = (
+            TypedDfs.typed("KeyValue")  # typed means enforced requirements
+            .require("key", index=True)  # automagically make this an index
+            .require("value")  # required
+            .reserve("note")  # permitted but not required
+            .strict()  # don't allow other columns
+        ).build()
+        return KeyValue
+
+    @classmethod
+    def typed(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
         return TypedDfBuilder(name, doc)
 
     @classmethod
-    def simple(cls, name: str, doc: Optional[str] = None) -> Type[SimpleFrame]:
-        class New(SimpleFrame):
+    def untyped(cls, name: str, doc: Optional[str] = None) -> Type[UntypedDf]:
+        class New(UntypedDf):
             pass
 
         New.__name__ = name
         New.__doc__ = doc
         return New
 
-    @classmethod
-    def wrap(cls, df: pd.DataFrame, class_name: Optional[str] = None) -> TypedFrame:
-        """
-        Wrap `df` in a typed DataFrame (ConvertibleFrame).
-        The returned Pandas DataFrame will have additional methods and better display in Jupyter.
-        - If `df` is already a `ConvertibleFrame`, will just return it.
-        - Otherwise:
-            * Creates a new class with name `class_name` if `class_name` is non-null.
-            * Otherwise wraps in a `FinalFrame`.
-        :param df: Any Pandas DataFrame.
-        :param class_name: Only applies if `df` isn't already a `ConvertableFrame`
-        :return: A copy of `df` of the new class
-        """
-        if isinstance(df, TypedFrame):
-            return df
-        elif isinstance(df, pd.DataFrame):
-            if class_name is None:
-                return FinalFrame(df)
-            else:
 
-                class X(SimpleFrame):
-                    pass
-
-                X.__name__ = class_name
-                return X(df)
-        else:
-            raise TypeError("Invalid DataFrame type {}".format(df))
-
-
-__all__ = [
-    "TypedFrame",
-    "SimpleFrame",
-    "OrganizingFrame",
-    "TypedDfs",
-    "MissingColumnError",
-    "UnexpectedColumnError",
-]
+__all__ = ["BaseDf", "UntypedDf", "TypedDf", "TypedDfs"]

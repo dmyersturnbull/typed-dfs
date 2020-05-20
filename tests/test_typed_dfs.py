@@ -1,23 +1,23 @@
 import pytest
 import pandas as pd
 from typing import Sequence
-from typeddfs.typed_dfs import PrettyFrame, OrganizingFrame, SimpleFrame
+from typeddfs.typed_dfs import TypedDf, UntypedDf, AbsDf
 from . import tmpfile, sample_data
 
 raises = pytest.raises
 
 
-class SimpleOrg(OrganizingFrame):
+class SimpleOrg(TypedDf):
     pass
 
 
-class SingleIndexOrg(OrganizingFrame):
+class SingleIndexOrg(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["abc"]
 
 
-class MultiIndexOrg(OrganizingFrame):
+class MultiIndexOrg(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["abc", "xyz"]
@@ -26,10 +26,29 @@ class MultiIndexOrg(OrganizingFrame):
 class TestCore:
     def test_pretty(self):
         assert (
-            PrettyFrame()
-            ._repr_html_()
-            .startswith("<strong>PrettyFrame: 0 rows × 0 columns</strong>")
+            UntypedDf()._repr_html_().startswith("<strong>UntypedDf: 0 rows × 0 columns</strong>")
         )
+
+    def test_vanilla(self):
+        df = SimpleOrg.convert(pd.DataFrame(sample_data()))
+        df2 = df.vanilla()
+        assert isinstance(df, SimpleOrg)
+        assert isinstance(df2, pd.DataFrame)
+        assert not isinstance(df2, AbsDf)
+
+    def test_dtype(self):
+        df = SimpleOrg.convert(pd.DataFrame(sample_data()))
+        df2 = df.untyped()
+        assert isinstance(df, SimpleOrg)
+        assert isinstance(df2, UntypedDf)
+
+    def test_untyped_convert(self):
+        df = SimpleOrg.convert(pd.DataFrame(sample_data()))
+        assert df.__class__.__name__ == "SimpleOrg"
+        df2 = SimpleOrg(pd.DataFrame(sample_data()))
+        assert df2.__class__.__name__ == "SimpleOrg"
+        df3 = SimpleOrg(sample_data())
+        assert df3.__class__.__name__ == "SimpleOrg"
 
     def test_cfirst(self):
         df = SimpleOrg(sample_data())
@@ -61,6 +80,8 @@ class TestCore:
         df2 = MultiIndexOrg(df)
         df3 = MultiIndexOrg.convert(df)
         assert df.__class__.__name__ == "DataFrame"
+        assert df2.__class__.__name__ == "MultiIndexOrg"
+        assert df3.__class__.__name__ == "MultiIndexOrg"
 
     def test_index_names(self):
         df = MultiIndexOrg.convert(pd.DataFrame(sample_data()))
@@ -80,11 +101,11 @@ class TestCsv:
     def test_simpleframe_read_write_csv(self):
         path = tmpfile()
         for indices in [None, "abc", ["abc", "xyz"]]:
-            df = SimpleFrame(sample_data())
+            df = UntypedDf(sample_data())
             if indices is not None:
                 df = df.set_index(indices)
             df.to_csv(path)
-            df2 = SimpleFrame.read_csv(path)
+            df2 = UntypedDf.read_csv(path)
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
         if path.exists():

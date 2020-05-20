@@ -1,21 +1,30 @@
-from typing import Sequence
-from typeddfs import SimpleFrame, OrganizingFrame
+"""
+Near-replica of example from the readme.
+"""
+
+from pathlib import Path
+
+from typeddfs import TypedDfs
 
 
-class KeyValue(OrganizingFrame):
-    @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["key"]
+def run():
 
-    @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["value"]
+    # Build me a Key-Value-Note class!
+    KeyValue = TypedDfs.example()
 
-    @classmethod
-    def reserved_columns(cls) -> Sequence[str]:
-        return ["note"]
+    # This will self-organize and use 'key' as the index:
+    df = KeyValue.read_csv(Path(__file__).parent / "example.csv")
+    print(df.index_names(), df.column_names())  # ['key'], ['value', 'note']
+
+    # And now, we can type a function to require a KeyValue,
+    # and let it raise an `InvalidDfError` (here, a `MissingColumnError`):
+    def my_special_function(df: KeyValue) -> float:
+        return KeyValue(df)["value"].sum()
+
+    print(my_special_function(df))
 
 
-# will self-organizing and use 'key' as the index
-df = KeyValue.read_csv("example.csv")
-print(df.index.names, list(df.columns))  # ['key'], ['value', 'note']
+__all__ = ["example", "run"]
+
+if __name__ == "__main__":
+    run()

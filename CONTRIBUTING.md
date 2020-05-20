@@ -1,6 +1,6 @@
 # Contributing
 
-[New issues](https://github.com/kokellab/typed-dfs/issues) and pull requests are welcome.
+[New issues](https://github.com/dmyersturnbull/typed-dfs/issues) and pull requests are welcome.
 Typed-Dfs is licensed under the [Apache License, version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 ##### For pull requests:

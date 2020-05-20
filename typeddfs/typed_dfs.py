@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path, PurePath
 import abc
 from warnings import warn
-from typing import Sequence, List, Any, Union, Iterable, Optional
+from typing import Sequence, List, Any, Union, Iterable, Optional, Callable, Tuple as Tup
 import pandas as pd
 from natsort import ns, natsorted
 from pandas.core.frame import DataFrame as _InternalDataFrame
@@ -10,11 +10,23 @@ from pandas.core.frame import DataFrame as _InternalDataFrame
 PathLike = Union[str, PurePath]
 
 
-class MissingColumnError(Exception):
+class InvalidDfError(Exception):
     pass
 
 
-class UnexpectedColumnError(Exception):
+class ExtraConditionError(InvalidDfError):
+    pass
+
+
+class MissingColumnError(InvalidDfError):
+    pass
+
+
+class AsymmetricDfError(InvalidDfError):
+    pass
+
+
+class UnexpectedColumnError(InvalidDfError):
     pass
 
 
@@ -25,7 +37,7 @@ class Sentinel:
 _sentinel = Sentinel()
 
 
-class PrettyFrame(_InternalDataFrame, metaclass=abc.ABCMeta):
+class PrettyDf(_InternalDataFrame, metaclass=abc.ABCMeta):
     """
     A DataFrame with an overridden _repr_html_ that shows the dimensions at the top.
     """
@@ -39,7 +51,8 @@ class PrettyFrame(_InternalDataFrame, metaclass=abc.ABCMeta):
         """
         Renders HTML for display() in Jupyter notebooks.
         Jupyter automatically uses this function.
-        :return: Just a string, which will be wrapped in HTML
+        Returns:
+            Just a string, which will be wrapped in HTML
         """
         return "<strong>{}: {}</strong>\n{}".format(
             self.__class__.__name__, self._dims(), super()._repr_html_(), len(self)
@@ -47,7 +60,8 @@ class PrettyFrame(_InternalDataFrame, metaclass=abc.ABCMeta):
 
     def _dims(self) -> str:
         """
-        :return: A text description of the dimensions of this DataFrame
+        Returns:
+            A text description of the dimensions of this DataFrame
         """
         # we could handle multi-level columns, but they're quite rare, and the number of rows is probably obvious when looking at it
         if len(self.index.names) > 1:
@@ -58,13 +72,14 @@ class PrettyFrame(_InternalDataFrame, metaclass=abc.ABCMeta):
             return "{} rows × {} columns".format(len(self), len(self.columns))
 
 
-class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
+class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     """
     An abstract Pandas DataFrame subclass with additional methods.
     """
 
     def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False):
         super().__init__(data=data, index=index, columns=columns, dtype=dtype, copy=copy)
+        self._check_and_change(self)
 
     def column_names(self) -> List[str]:
         return list(self.columns)
@@ -77,7 +92,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
             return lst
 
     def is_multindex(self) -> bool:
-        return isinstance(self.index, pd.core.index.MultiIndex)
+        return isinstance(self.index, pd.MultiIndex)
 
     def n_rows(self) -> int:
         return len(self)
@@ -158,8 +173,9 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
     def read_csv(cls, *args, **kwargs):
         return cls._check_and_change(pd.read_csv(*args, **kwargs))
 
-    def to_csv(self, path: PathLike, *args, **kwargs) -> Optional[str]:
-        return self.to_vanilla().to_csv(path, *args, **kwargs)
+    # noinspection PyMethodOverriding
+    def to_csv(self, path_or_buf, *args, **kwargs) -> Optional[str]:
+        return self.to_vanilla().to_csv(path_or_buf, *args, **kwargs)
 
     @classmethod
     def read_hdf(cls, *args, key: str = "df", **kwargs):
@@ -178,26 +194,45 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
         x = self.to_vanilla()
         x.to_hdf(path, key, **kwargs)
 
-    @classmethod
-    def vanilla(cls, df: BaseFrame) -> pd.DataFrame:
+    def untyped(self) -> UntypedDf:
         """
-        Converts a vanilla Pandas DataFrame to cls.
-        Returns a copy (see note below though).
-        :param df: The ConvertibleFrame or member of cls; will have its __class_ change but will otherwise not be affected
-        :return: A true, shallow copy with its __class__ set to pd.DataFrame
+        Makes a copy that's an UntypedDf.
+        It won't have enforced requirements but will still have the convenience functions.
+        Returns:
+            A shallow copy with its __class__ set to an UntypedDf
+        See:
+            ``vanilla``
         """
-        df = df.copy()
+        df = self.copy()
+        df.__class__ = Df
+        return df
+
+    def vanilla(self) -> pd.DataFrame:
+        """
+        Makes a copy that's a normal Pandas DataFrame.
+        You might want ``untyped`` instead.
+        Returns:
+            A shallow copy with its __class__ set to pd.DataFrame
+        See:
+            ``untyped``
+        """
+        df = self.copy()
         df.__class__ = pd.DataFrame
         return df
 
-    def to_vanilla(self) -> pd.DataFrame:
+    @classmethod
+    def _make_vanilla(cls, df: AbsDf) -> pd.DataFrame:
         """
-        Instance alias of BaseFrame.vanilla.
-        Returns a copy (see note below though).
-        :param df: The ConvertibleFrame or member of cls; will have its __class_ change but will otherwise not be affected
-        :return: A true, shallow copy with its __class__ set to pd.DataFrame
+        Make vanilla in-place.
+        DEPRECATED. Use ``vanilla`` instead.
+        Args:
+            df: The ConvertibleFrame or member of cls; will have its __class_ change but will otherwise not be affected
+        Returns:
+            A shallow copy with its __class__ set to pd.DataFrame
         """
-        return self.__class__.vanilla(self)
+        df = df
+        df.__class__ = pd.DataFrame
+        return df
 
     def drop_duplicates(self, **kwargs):
         return self._check_and_change(super().drop_duplicates(**kwargs))
@@ -351,7 +386,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
         return df
 
 
-class TypedFrame(BaseFrame, metaclass=abc.ABCMeta):
+class BaseDf(AbsDf, metaclass=abc.ABCMeta):
     """
     An extended DataFrame with convert() and vanilla() methods.
     """
@@ -369,7 +404,7 @@ class TypedFrame(BaseFrame, metaclass=abc.ABCMeta):
         return df
 
 
-class SimpleFrame(TypedFrame):
+class UntypedDf(BaseDf):
     """
     A concrete BaseFrame that does not require special columns.
     Overrides a number of DataFrame methods to convert before returning.
@@ -411,20 +446,19 @@ class SimpleFrame(TypedFrame):
             return df.to_csv(path, *args, index=False, **kwargs)
 
 
-# @abcd.final
-class FinalFrame(SimpleFrame):
+class Df(UntypedDf):
     """
-    A ready-to-go SimpleFrame that should not be overridden.
+    An UntypedDf that shouldn't be overridden.
     """
 
 
-class OrganizingFrame(TypedFrame):
+class TypedDf(BaseDf):
     """
     A concrete BaseFrame that has required columns and index names.
     """
 
     @classmethod
-    def convert(cls, df: pd.DataFrame, require_full: bool = _sentinel) -> OrganizingFrame:
+    def convert(cls, df: pd.DataFrame, require_full: bool = _sentinel) -> TypedDf:
         """
         Converts a vanilla Pandas DataFrame to cls.
         Sets the index appropriately, permitting the required columns and index names to be either columns or index names.
@@ -495,7 +529,7 @@ class OrganizingFrame(TypedFrame):
         return True
 
     @classmethod
-    def more_index_names_allowed(cls) -> bool:
+    def more_indices_allowed(cls) -> bool:
         return True
 
     @classmethod
@@ -515,7 +549,21 @@ class OrganizingFrame(TypedFrame):
         return []
 
     @classmethod
+    def must_be_symmetric(cls) -> bool:
+        return False
+
+    @classmethod
     def columns_to_drop(cls) -> Sequence[str]:
+        return []
+
+    @classmethod
+    def extra_conditions(cls) -> Sequence[Callable[[pd.DataFrame], Optional[str]]]:
+        """
+        Additional requirements for the DataFrame to be conformant.
+
+        Returns:
+            A sequence of conditions that map the DF to None if the condition passes, or the string of an error message if it fails
+        """
         return []
 
     @classmethod
@@ -531,7 +579,7 @@ class OrganizingFrame(TypedFrame):
             for c in df.columns:
                 if c not in cls.required_columns() and c not in cls.reserved_columns():
                     raise UnexpectedColumnError("Unexpected column {}".format(c))
-        if not cls.more_index_names_allowed() and list(df.index.names) != ["None"]:
+        if not cls.more_indices_allowed() and list(df.index.names) != ["None"]:
             for c in df.index.names:
                 if (
                     c is None
@@ -539,13 +587,34 @@ class OrganizingFrame(TypedFrame):
                     and c not in cls.reserved_index_names()
                 ):
                     raise UnexpectedColumnError("Unexpected column {}".format(c))
+        if cls.must_be_symmetric():
+            if isinstance(df.index, pd.MultiIndex):
+                raise AsymmetricDfError(
+                    "The {} cannot be symmetric because it's multi-index".format(cls.__name__)
+                )
+            if list(df.index) == [None]:
+                raise AsymmetricDfError(
+                    "The {} cannot be symmetric because it lacks a named index".format(cls.__name__)
+                )
+            if list(df.index) != list(df.columns):
+                raise AsymmetricDfError(
+                    "The indices are {} but the rows are {}".format(
+                        list(df.index), list(df.columns)
+                    )
+                )
+        for req in cls.extra_conditions():
+            value = req(df)
+            if value is not None:
+                raise InvalidDfError(value)
 
 
 __all__ = [
-    "TypedFrame",
-    "SimpleFrame",
-    "FinalFrame",
-    "OrganizingFrame",
+    "BaseDf",
+    "UntypedDf",
+    "TypedDf",
+    "InvalidDfError",
     "MissingColumnError",
     "UnexpectedColumnError",
+    "AsymmetricDfError",
+    "ExtraConditionError",
 ]
