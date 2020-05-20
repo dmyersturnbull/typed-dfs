@@ -4,7 +4,7 @@ import pandas as pd
 # noinspection PyProtectedMember
 from typeddfs.base_dfs import AbsDf
 from typeddfs.untyped_dfs import UntypedDf
-from . import sample_data, SimpleOrg, MultiIndexOrg
+from . import sample_data, sample_data_str, SimpleOrg, SingleIndexOrg, MultiIndexOrg
 
 raises = pytest.raises
 
@@ -22,11 +22,54 @@ class TestBase:
         assert isinstance(df2, pd.DataFrame)
         assert not isinstance(df2, AbsDf)
 
-    def test_dtype(self):
+    def test_detype(self):
         df = SimpleOrg.convert(pd.DataFrame(sample_data()))
         df2 = df.untyped()
         assert isinstance(df, SimpleOrg)
         assert isinstance(df2, UntypedDf)
+
+    def test_is_multindex(self):
+        assert not SimpleOrg.convert(pd.DataFrame(sample_data())).is_multindex()
+        assert not SingleIndexOrg.convert(pd.DataFrame(sample_data())).is_multindex()
+        assert MultiIndexOrg.convert(pd.DataFrame(sample_data())).is_multindex()
+
+    def test_only(self):
+        df = SingleIndexOrg.convert(pd.DataFrame(sample_data()))
+        with raises(ValueError):
+            df.only("123")
+        with raises(KeyError):
+            df.only("abc")
+
+    def test_lengths(self):
+        df = SingleIndexOrg.convert(pd.DataFrame(sample_data()))
+        assert df.n_columns() == 2
+        assert df.n_indices() == 1
+        assert df.n_rows() == 2
+
+    def test_sort_col(self):
+        df = SimpleOrg.convert(pd.DataFrame(sample_data_str()))
+        df2 = df.sort_natural("abc")
+        assert df2.index_names() == []
+        assert df2.index.tolist() == [1, 0]  # reversed
+
+    def test_sort_no_index(self):
+        df = SimpleOrg.convert(pd.DataFrame(sample_data_str()))
+        df2 = df.sort_natural_index()
+        assert df2.index_names() == []
+
+    def test_sort_single_index(self):
+        df = SingleIndexOrg.convert(pd.DataFrame(sample_data_str()))
+        df2 = df.sort_natural_index()
+        assert df2.column_names() == ["123", "xyz"]
+        assert df2.index_names() == ["abc"]
+        assert df2.index.tolist() == ["bbb", "zzz"]
+
+    def test_sort_multiindex(self):
+        df = MultiIndexOrg.convert(pd.DataFrame(sample_data_str()))
+        df2 = df.sort_natural_index()
+        assert df2.column_names() == ["123"]
+        assert df2.index_names() == ["abc", "xyz"]
+        assert df2.index.tolist() == [("bbb", 6), ("zzz", 3)]
 
     def test_untyped_convert(self):
         df = SimpleOrg.convert(pd.DataFrame(sample_data()))
@@ -55,11 +98,29 @@ class TestBase:
         df = SimpleOrg(sample_data())
         assert isinstance(df, SimpleOrg)
         assert isinstance(df.reset_index(), SimpleOrg)
+        assert isinstance(df.reindex(), SimpleOrg)
         assert isinstance(df.sort_natural("abc"), SimpleOrg)
         assert isinstance(df.sort_values("abc"), SimpleOrg)
         assert isinstance(df.copy(), SimpleOrg)
+        assert isinstance(df.abs(), SimpleOrg)
+        assert isinstance(df.drop_duplicates(), SimpleOrg)
+        assert isinstance(df.bfill(0), SimpleOrg)
+        assert isinstance(df.ffill(0), SimpleOrg)
+        assert isinstance(df.replace(123, 1), SimpleOrg)
+        assert isinstance(df.applymap(lambda s: s), SimpleOrg)
         assert isinstance(df.drop(1), SimpleOrg)
+        assert isinstance(df.astype(str), SimpleOrg)
         assert isinstance(df.drop("abc", axis=1), SimpleOrg)
+        assert isinstance(df.dropna(), SimpleOrg)
+        assert isinstance(df.fillna(0), SimpleOrg)
+        assert isinstance(df.append(df), SimpleOrg)
+
+    def test_change(self):
+        # should be in place
+        df = pd.DataFrame(sample_data())
+        assert df.__class__.__name__ == "DataFrame"
+        SimpleOrg._change(df)
+        assert df.__class__.__name__ == "SimpleOrg"
 
     def test_not_inplace(self):
         df = pd.DataFrame(sample_data())
@@ -81,6 +142,11 @@ class TestBase:
         # df.columns == [...] would fail because it would resolve to array==array, which is ambiguous
         assert isinstance(df.column_names(), list)
         assert df.column_names() == ["abc", "123", "xyz"]
+
+    def test_isvalid(self):
+        df = pd.DataFrame(sample_data())
+        assert MultiIndexOrg.is_valid(df)
+        assert not MultiIndexOrg.is_valid(df.drop("abc", axis=1))
 
 
 if __name__ == "__main__":

@@ -21,6 +21,13 @@ def sample_data():
     ]
 
 
+def sample_data_str():
+    return [
+        pd.Series({"abc": "zzz", "123": 2, "xyz": 3}),
+        pd.Series({"abc": "bbb", "123": 5, "xyz": 6}),
+    ]
+
+
 class SimpleOrg(TypedDf):
     pass
 

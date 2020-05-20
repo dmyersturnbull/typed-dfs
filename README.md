@@ -7,7 +7,7 @@
 [![Build & test](https://github.com/dmyersturnbull/typed-dfs/workflows/Build%20&%20test/badge.svg)](https://github.com/dmyersturnbull/typed-dfs/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
-[![Coverage](https://coveralls.io/repos/github/dmyersturnbull/type-dfs/badge.svg?branch=master)](https://coveralls.io/github/dmyersturnbull/littlesnippets?branch=master)
+[![Coverage](https://coveralls.io/repos/github/dmyersturnbull/type-dfs/badge.svg?branch=master)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=master)
 
 
 Pandas DataFrame subclasses that enforce structure and can self-organize.

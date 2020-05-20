@@ -5,7 +5,7 @@ from . import tmpfile, sample_data, SimpleOrg, SingleIndexOrg, MultiIndexOrg
 raises = pytest.raises
 
 
-class TestCsv:
+class TestReadWrite:
     def test_simpleframe_read_write_csv(self):
         path = tmpfile()
         for indices in [None, "abc", ["abc", "xyz"]]:
@@ -33,11 +33,11 @@ class TestCsv:
         path = tmpfile()
         df = SingleIndexOrg.convert(SingleIndexOrg(sample_data()))
         df.to_csv(path)
-        assert list(df.index.names) == ["abc"]
-        assert set(df.columns) == {"123", "xyz"}
+        assert df.index_names() == ["abc"]
+        assert df.column_names() == ["123", "xyz"]
         df2 = SingleIndexOrg.read_csv(path)
-        assert list(df2.index.names) == ["abc"]
-        assert set(df2.columns) == {"123", "xyz"}
+        assert df2.index_names() == ["abc"]
+        assert df2.column_names() == ["123", "xyz"]
         if path.exists():
             path.unlink()
 
@@ -45,13 +45,21 @@ class TestCsv:
         path = tmpfile()
         df = MultiIndexOrg.convert(MultiIndexOrg(sample_data()))
         df.to_csv(path)
-        assert list(df.index.names) == ["abc", "xyz"]
-        assert set(df.columns) == {"123"}
+        assert df.index_names() == ["abc", "xyz"]
+        assert df.column_names() == ["123"]
         df2 = MultiIndexOrg.read_csv(path)
-        assert list(df2.index.names) == ["abc", "xyz"]
-        assert set(df2.columns) == {"123"}
+        assert df2.index_names() == ["abc", "xyz"]
+        assert df2.column_names() == ["123"]
         if path.exists():
             path.unlink()
+
+    def test_hdf(self):
+        path = tmpfile()
+        df = MultiIndexOrg.convert(MultiIndexOrg(sample_data()))
+        df.to_hdf(path)
+        df2 = MultiIndexOrg.read_hdf(path)
+        assert df2.index_names() == ["abc", "xyz"]
+        assert df2.column_names() == ["123"]
 
 
 if __name__ == "__main__":

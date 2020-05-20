@@ -105,6 +105,8 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         x = self[column].unique()
         if len(x) > 0:
             raise ValueError("Multiple values for {}".format(column))
+        if len(x) == 0:
+            raise ValueError("No values for {}".format(column))
         return x[0]
 
     def cfirst(self, cols: Union[str, int, Sequence[str]]):
@@ -123,7 +125,9 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     def sort_natural(self, column: str, alg: int = ns.INT):
         """
         Calls natsorted on a single column.
-        :param alg Input as the ``alg`` argument to ``natsorted``.
+        Args:
+            column: The name of the (single) column to sort by
+            alg: Input as the ``alg`` argument to ``natsorted``.
         """
         df = self.copy().reset_index()
         zzz = natsorted([s for s in df[column]], alg=alg)
@@ -140,7 +144,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         (Works for multi-index too.)
         :param alg Input as the ``alg`` argument to ``natsorted``.
         """
-        df = self.copy().reset_index()
+        df = self.copy()
         zzz = natsorted([s for s in df.index], alg=alg)
         df["__sort"] = df.index.map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
@@ -193,20 +197,6 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             A shallow copy with its __class__ set to pd.DataFrame
         """
         df = self.copy()
-        df.__class__ = pd.DataFrame
-        return df
-
-    @classmethod
-    def _make_vanilla(cls, df: AbsDf) -> pd.DataFrame:
-        """
-        Make vanilla in-place.
-        DEPRECATED. Use ``vanilla`` instead.
-        Args:
-            df: The ConvertibleFrame or member of cls; will have its __class_ change but will otherwise not be affected
-        Returns:
-            A shallow copy with its __class__ set to pd.DataFrame
-        """
-        df = df
         df.__class__ = pd.DataFrame
         return df
 

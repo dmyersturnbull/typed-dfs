@@ -109,6 +109,7 @@ typer                    = "^0.2"
 natsort                  = "^7.0"
 numpy                    = "^1.18"
 pandas                   = "^1.0"
+tables                   = "^3.6"
 
 [tool.poetry.dev-dependencies]
 tyrannosaurus            = "^0.5"
