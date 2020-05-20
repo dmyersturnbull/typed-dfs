@@ -1,14 +1,13 @@
 # Typed DataFrames
 
-[![Build status](https://img.shields.io/pypi/status/typeddfs)](https://pypi.org/project/typeddfs/)
 [![Latest version on PyPi](https://badge.fury.io/py/typeddfs.svg)](https://pypi.org/project/typeddfs/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/typeddfs.svg)](https://pypi.org/project/typeddfs/)
-[![Documentation status](https://readthedocs.org/projects/typeddfs/badge/?version=latest&style=flat-square)](https://readthedocs.org/projects/typed-dfs)
+[![Documentation status](https://readthedocs.org/projects/typed-dfs/badge/?version=latest&style=flat-square)](https://readthedocs.org/projects/typed-dfs)
 [![Build & test](https://github.com/dmyersturnbull/typed-dfs/workflows/Build%20&%20test/badge.svg)](https://github.com/dmyersturnbull/typed-dfs/actions)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)  
+[![Build status](https://img.shields.io/pypi/status/typeddfs)](https://pypi.org/project/typeddfs/)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
-[![Coverage](https://coveralls.io/repos/github/dmyersturnbull/type-dfs/badge.svg?branch=master)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=master)
-
+[![Coverage Status](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=master)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=master)
 
 Pandas DataFrame subclasses that enforce structure and can self-organize.
 Because your functions can’t exactly accept _any_  DataFrame.
