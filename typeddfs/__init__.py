@@ -11,16 +11,16 @@ from importlib_metadata import metadata as __load
 
 import pandas as pd
 
-from typeddfs.typed_dfs import (
-    UntypedDf,
+from typeddfs.base_dfs import (
     BaseDf,
-    TypedDf,
     InvalidDfError as _InvalidDfError,
     MissingColumnError as _MissingColumnError,
     UnexpectedColumnError as _UnexpectedColumnError,
     AsymmetricDfError as _AsymmetricDfError,
     ExtraConditionError as _ExtraConditionError,
 )
+from typeddfs.typed_dfs import TypedDf
+from typeddfs.untyped_dfs import UntypedDf
 
 metadata = __load(Path(__file__).parent.name)
 __status__ = "Development"

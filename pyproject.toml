@@ -42,10 +42,9 @@ include = [
 ]
 
 [tool.poetry.urls]
-ci = "https://github.com/kokellab/typeddfs/actions"
-issues = "https://github.com/kokellab/typeddfs/issues"
-source = "https://github.com/kokellab/typeddfs"
-download = "https://pypi.org/project/typeddfs/"
+CI = "https://github.com/kokellab/typeddfs/actions"
+Issues = "https://github.com/kokellab/typeddfs/issues"
+Download = "https://pypi.org/project/typeddfs/"
 
 
 #########################################################################################

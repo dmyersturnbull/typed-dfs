@@ -12,6 +12,8 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ### Changed:
 - Renamed most classes
+- Renamed `to_vanilla` to `vanilla`, dropping the latter
+- Split code into several files
 
 
 ## [0.1.0] - 2020-05-12
