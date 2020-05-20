@@ -2,19 +2,25 @@ from __future__ import annotations
 from pathlib import Path, PurePath
 import abc
 from warnings import warn
-from typing import Sequence, Set, Any, Union, Iterable, Optional
+from typing import Sequence, List, Any, Union, Iterable, Optional
 import pandas as pd
 from natsort import ns, natsorted
 from pandas.core.frame import DataFrame as _InternalDataFrame
 
 PathLike = Union[str, PurePath]
 
-class MissingColumnError(Exception): pass
 
-class UnexpectedColumnError(Exception): pass
+class MissingColumnError(Exception):
+    pass
+
+
+class UnexpectedColumnError(Exception):
+    pass
+
 
 class Sentinel:
     pass
+
 
 _sentinel = Sentinel()
 
@@ -58,9 +64,17 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False):
-        super().__init__(
-            data=data, index=index, columns=columns, dtype=dtype, copy=copy
-        )
+        super().__init__(data=data, index=index, columns=columns, dtype=dtype, copy=copy)
+
+    def column_names(self) -> List[str]:
+        return list(self.columns)
+
+    def index_names(self) -> List[str]:
+        lst = list(self.index.names)
+        if lst == [None]:
+            return []
+        else:
+            return lst
 
     def is_multindex(self) -> bool:
         return isinstance(self.index, pd.core.index.MultiIndex)
@@ -71,7 +85,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
     def n_columns(self) -> int:
         return len(self.columns)
 
-    def n_index_columns(self) -> int:
+    def n_indices(self) -> int:
         return len(self.index.names)
 
     def only(self, column: str) -> Any:
@@ -97,9 +111,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
         if len(self) == 0:  # will break otherwise
             return self
         else:
-            return self._check_and_change(
-                self[cols + [c for c in self.columns if c not in cols]]
-            )
+            return self._check_and_change(self[cols + [c for c in self.columns if c not in cols]])
 
     def sort_natural(self, column: str, alg: int = ns.INT):
         """
@@ -130,7 +142,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
         )  # .drop_cols(['__sort', 'level_0', 'index'])
         return self._check_and_change(df)
 
-    def drop_cols(self, cols: Iterable[str]):
+    def drop_cols(self, cols: Union[str, Iterable[str]]):
         """
         Drops columns, ignoring those that are not present.
         """
@@ -215,22 +227,14 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
             )
         )
 
-    def reset_index(
-        self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
-    ):
+    def reset_index(self, level=None, drop=False, inplace=False, col_level=0, col_fill=""):
         return self._check_and_change(
             super().reset_index(
-                level=level,
-                drop=drop,
-                inplace=inplace,
-                col_level=col_level,
-                col_fill=col_fill,
+                level=level, drop=drop, inplace=inplace, col_level=col_level, col_fill=col_fill,
             )
         )
 
-    def set_index(
-        self, keys, drop=True, append=False, inplace=False, verify_integrity=False
-    ):
+    def set_index(self, keys, drop=True, append=False, inplace=False, verify_integrity=False):
         return self._check_and_change(
             super().set_index(
                 keys=keys,
@@ -243,9 +247,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
 
     def dropna(self, axis=0, how="any", thresh=None, subset=None, inplace=False):
         return self._check_and_change(
-            super().dropna(
-                axis=axis, how=how, thresh=thresh, subset=subset, inplace=inplace
-            )
+            super().dropna(axis=axis, how=how, thresh=thresh, subset=subset, inplace=inplace)
         )
 
     def fillna(
@@ -270,6 +272,16 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
             )
         )
 
+    def copy(self, deep: bool = False):
+        return self._check_and_change(super().copy(deep=deep))
+
+    def append(self, other, ignore_index=False, verify_integrity=False, sort=False):
+        return self._check_and_change(
+            super().append(
+                other, ignore_index=ignore_index, verify_integrity=verify_integrity, sort=sort
+            )
+        )
+
     def ffill(self, axis=None, inplace=False, limit=None, downcast=None):
         return self._check_and_change(
             super().ffill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
@@ -287,13 +299,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
         return self._check_and_change(super().rename(*args, **kwargs))
 
     def replace(
-        self,
-        to_replace=None,
-        value=None,
-        inplace=False,
-        limit=None,
-        regex=False,
-        method="pad",
+        self, to_replace=None, value=None, inplace=False, limit=None, regex=False, method="pad",
     ):
         return self._check_and_change(
             super().replace(
@@ -310,9 +316,7 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
         return self._check_and_change(super().applymap(func))
 
     def astype(self, dtype, copy=True, errors="raise"):
-        return self._check_and_change(
-            super().astype(dtype=dtype, copy=copy, errors=errors)
-        )
+        return self._check_and_change(super().astype(dtype=dtype, copy=copy, errors=errors))
 
     def drop(
         self,
@@ -347,27 +351,25 @@ class BaseFrame(PrettyFrame, metaclass=abc.ABCMeta):
         return df
 
 
-class ConvertibleFrame(BaseFrame, metaclass=abc.ABCMeta):
+class TypedFrame(BaseFrame, metaclass=abc.ABCMeta):
     """
     An extended DataFrame with convert() and vanilla() methods.
     """
-
-    pass
 
     @classmethod
     def convert(cls, df: pd.DataFrame):
         """
         Converts a vanilla Pandas DataFrame to cls.
         Sets the index appropriately, permitting the required columns and index names to be either columns or index names.
-        Explicitly sets df.__class__ to cls; this is done IN PLACE. This will generally not affect the passed df functinally, but could.
         :param df: The Pandas DataFrame or member of cls; will have its __class_ change but will otherwise not be affected
         :return: A non-copy
         """
+        df = df.copy()
         df.__class__ = cls
         return df
 
 
-class SimpleFrame(ConvertibleFrame):
+class SimpleFrame(TypedFrame):
     """
     A concrete BaseFrame that does not require special columns.
     Overrides a number of DataFrame methods to convert before returning.
@@ -416,13 +418,13 @@ class FinalFrame(SimpleFrame):
     """
 
 
-class OrganizingFrame(ConvertibleFrame):
+class OrganizingFrame(TypedFrame):
     """
     A concrete BaseFrame that has required columns and index names.
     """
 
     @classmethod
-    def convert(cls, df: pd.DataFrame, require_full: bool = _sentinel):
+    def convert(cls, df: pd.DataFrame, require_full: bool = _sentinel) -> OrganizingFrame:
         """
         Converts a vanilla Pandas DataFrame to cls.
         Sets the index appropriately, permitting the required columns and index names to be either columns or index names.
@@ -469,27 +471,22 @@ class OrganizingFrame(ConvertibleFrame):
     @classmethod
     def read_csv(cls, path: PathLike, *args, **kwargs):
         if "index_col" in kwargs:
-            warn(
-                "index_col={} in OrganizingFrame.read_csv is ignored".format(
-                    kwargs["index_col"]
-                )
-            )
+            warn("index_col={} in OrganizingFrame.read_csv is ignored".format(kwargs["index_col"]))
             kwargs = {k: v for k, v in kwargs if k != "index_col"}
         df = pd.read_csv(Path(path), index_col=False, **kwargs)
         return cls.convert(df)
 
     def to_csv(self, path: PathLike, *args, **kwargs) -> Optional[str]:
         if "index" in kwargs:
-            warn(
-                "index={} in OrganizingFrame.to_csv is ignored".format(kwargs["index"])
-            )
+            warn("index={} in OrganizingFrame.to_csv is ignored".format(kwargs["index"]))
         df = self.to_vanilla().reset_index()
         return df.to_csv(path, index=False)
 
     @classmethod
-    def is_valid(cls, df: pd.DataFrame, require_full: bool = True):
+    def is_valid(cls, df: pd.DataFrame, require_full: bool = True) -> bool:
         try:
             cls.convert(df, require_full=require_full)
+            return True
         except (MissingColumnError, UnexpectedColumnError):
             return False
 
@@ -545,10 +542,10 @@ class OrganizingFrame(ConvertibleFrame):
 
 
 __all__ = [
-    "PrettyFrame",
-    "BaseFrame",
+    "TypedFrame",
     "SimpleFrame",
     "FinalFrame",
     "OrganizingFrame",
-    "ConvertibleFrame",
+    "MissingColumnError",
+    "UnexpectedColumnError",
 ]

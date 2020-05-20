@@ -1,23 +1,10 @@
 import pytest
 import pandas as pd
-from pathlib import Path
 from typing import Sequence
-import inspect
-from typeddfs.typed_dfs import *
+from typeddfs.typed_dfs import PrettyFrame, OrganizingFrame, SimpleFrame
+from . import tmpfile, sample_data
 
 raises = pytest.raises
-
-
-def tmpfile() -> Path:
-    caller = inspect.stack()[1][3]
-    path = (
-        Path(__file__).parent.parent.parent
-        / "resources"
-        / "tmp"
-        / (str(caller) + ".csv")
-    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path
 
 
 class SimpleOrg(OrganizingFrame):
@@ -44,15 +31,56 @@ class TestCore:
             .startswith("<strong>PrettyFrame: 0 rows × 0 columns</strong>")
         )
 
+    def test_cfirst(self):
+        df = SimpleOrg(sample_data())
+        assert df.column_names() == ["abc", "123", "xyz"]
+        df2 = df.cfirst(["xyz", "123", "abc"])
+        assert df2.column_names() == ["xyz", "123", "abc"]
+        assert df.column_names() == ["abc", "123", "xyz"]
+
+    def test_drop_cols(self):
+        df = SimpleOrg(sample_data())
+        df2 = df.drop_cols(["abc", "123"])
+        assert list(df.columns) == ["abc", "123", "xyz"]
+        assert list(df2.columns) == ["xyz"]
+        df3 = df.drop_cols("777")
+        assert list(df3.columns) == ["abc", "123", "xyz"]
+
+    def test_no_detype(self):
+        df = SimpleOrg(sample_data())
+        assert isinstance(df, SimpleOrg)
+        assert isinstance(df.reset_index(), SimpleOrg)
+        assert isinstance(df.sort_natural("abc"), SimpleOrg)
+        assert isinstance(df.sort_values("abc"), SimpleOrg)
+        assert isinstance(df.copy(), SimpleOrg)
+        assert isinstance(df.drop(1), SimpleOrg)
+        assert isinstance(df.drop("abc", axis=1), SimpleOrg)
+
+    def test_not_inplace(self):
+        df = pd.DataFrame(sample_data())
+        df2 = MultiIndexOrg(df)
+        df3 = MultiIndexOrg.convert(df)
+        assert df.__class__.__name__ == "DataFrame"
+
+    def test_index_names(self):
+        df = MultiIndexOrg.convert(pd.DataFrame(sample_data()))
+        assert df.index_names() == ["abc", "xyz"]
+        df = SimpleOrg.convert(pd.DataFrame(sample_data()))
+        assert isinstance(df.index_names(), list)
+        assert df.index_names() == []
+
+    def test_column_names(self):
+        df = SimpleOrg(sample_data())
+        # df.columns == [...] would fail because it would resolve to array==array, which is ambiguous
+        assert isinstance(df.column_names(), list)
+        assert df.column_names() == ["abc", "123", "xyz"]
+
+
+class TestCsv:
     def test_simpleframe_read_write_csv(self):
         path = tmpfile()
         for indices in [None, "abc", ["abc", "xyz"]]:
-            df = SimpleFrame(
-                [
-                    pd.Series({"abc": 1, "123": 2, "xyz": 3}),
-                    pd.Series({"abc": 4, "123": 5, "xyz": 6}),
-                ]
-            )
+            df = SimpleFrame(sample_data())
             if indices is not None:
                 df = df.set_index(indices)
             df.to_csv(path)
@@ -64,12 +92,7 @@ class TestCore:
 
     def test_organizingframe_read_write_csv_noindex(self):
         path = tmpfile()
-        df = SimpleOrg(
-            [
-                pd.Series({"abc": 1, "123": 2, "xyz": 3}),
-                pd.Series({"abc": 4, "123": 5, "xyz": 6}),
-            ]
-        )
+        df = SimpleOrg(sample_data())
         df.to_csv(path)
         df2 = SimpleOrg.read_csv(path)
         assert list(df2.index.names) == [None]
@@ -79,14 +102,7 @@ class TestCore:
 
     def test_organizingframe_read_write_csv_singleindex(self):
         path = tmpfile()
-        df = SingleIndexOrg.convert(
-            SingleIndexOrg(
-                [
-                    pd.Series({"abc": 1, "123": 2, "xyz": 3}),
-                    pd.Series({"abc": 4, "123": 5, "xyz": 6}),
-                ]
-            )
-        )
+        df = SingleIndexOrg.convert(SingleIndexOrg(sample_data()))
         df.to_csv(path)
         assert list(df.index.names) == ["abc"]
         assert set(df.columns) == {"123", "xyz"}
@@ -98,14 +114,7 @@ class TestCore:
 
     def test_organizingframe_read_write_csv_multiindex(self):
         path = tmpfile()
-        df = MultiIndexOrg.convert(
-            MultiIndexOrg(
-                [
-                    pd.Series({"abc": 1, "123": 2, "xyz": 3}),
-                    pd.Series({"abc": 4, "123": 5, "xyz": 6}),
-                ]
-            )
-        )
+        df = MultiIndexOrg.convert(MultiIndexOrg(sample_data()))
         df.to_csv(path)
         assert list(df.index.names) == ["abc", "xyz"]
         assert set(df.columns) == {"123"}

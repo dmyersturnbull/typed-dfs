@@ -17,6 +17,21 @@ Simple example for a CSV like this:
 | ----- | ------ | ---- |
 | abc   | 123    | ?    |
 
+```python
+from typeddfs import TypedDfs
+KeyValue = (
+    TypedDfs.fancy('KeyValue')
+    .require('key', index=True)
+    .require('value1')
+    .reserve('note')
+    .strict()           # don't allow other columns
+).build()
+# will self-organize and use 'key' as the index
+df = KeyValue.read_csv('example.csv')
+print(df.index.names, list(df.columns))  # ['key'], ['value', 'note']
+```
+
+FYI, the above example is equivalent to the following:
 
 ```python
 from typing import Sequence
@@ -44,5 +59,3 @@ print(df.index.names, list(df.columns))  # ['key'], ['value', 'note']
 [New issues](https://github.com/kokellab/typed-dfs/issues) and pull requests are welcome.
 Please refer to the [contributing guide](https://github.com/kokellab/typed-dfs/blob/master/CONTRIBUTING.md).
 Generated with [Tyrannosaurus](https://github.com/dmyersturnbull/tyrannosaurus): `tyrannosaurus new typed-dfs`.
-
-
