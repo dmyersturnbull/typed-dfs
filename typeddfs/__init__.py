@@ -2,14 +2,37 @@
 Metadata for TypedDfs.
 """
 from __future__ import annotations
-
+import logging
 from pathlib import Path
 from typing import Optional, Type, Sequence, Callable
 
 # importlib.metadata is compat with Python 3.8 only
-from importlib_metadata import metadata as __load
+from importlib_metadata import PackageNotFoundError, metadata as __load
 
 import pandas as pd
+
+logger = logging.getLogger(Path(__file__).parent.name)
+
+metadata = None
+try:
+    metadata = __load(Path(__file__).parent.name)
+    __status__ = "Development"
+    __copyright__ = "Copyright 2015–2020"
+    __date__ = "2020-08-08"
+    __uri__ = metadata["home-page"]
+    __title__ = metadata["name"]
+    __summary__ = metadata["summary"]
+    __license__ = metadata["license"]
+    __version__ = metadata["version"]
+    __author__ = metadata["author"]
+    __maintainer__ = metadata["maintainer"]
+    __contact__ = metadata["maintainer"]
+except PackageNotFoundError:
+    logger.error(
+        "Could not load package metadata for {}. Is it installed?".format(
+            Path(__file__).absolute().parent.name
+        )
+    )
 
 from typeddfs.base_dfs import (
     BaseDf,
@@ -21,19 +44,6 @@ from typeddfs.base_dfs import (
 )
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
-
-metadata = __load(Path(__file__).parent.name)
-__status__ = "Development"
-__copyright__ = "Copyright 2015–2020"
-__date__ = "2020-05-19"
-__uri__ = metadata["home-page"]
-__title__ = metadata["name"]
-__summary__ = metadata["summary"]
-__license__ = metadata["license"]
-__version__ = metadata["version"]
-__author__ = metadata["author"]
-__maintainer__ = metadata["maintainer"]
-__contact__ = metadata["maintainer"]
 
 
 class TypedDfBuilder:
