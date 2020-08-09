@@ -1,5 +1,5 @@
 """
-Sphinx config file for Typed-Dfs.
+Sphinx config file.
 
 Uses several extensions to get API docs and sourcecode.
 https://www.sphinx-doc.org/en/master/usage/configuration.html
@@ -29,6 +29,10 @@ extensions = ["autoapi.extension", "sphinx.ext.napoleon", "sphinx_rtd_theme"]
 autoapi_type = "python"
 autoapi_dirs = [str(root / project)]
 master_doc = "index"
+napoleon_include_special_with_doc = True
+autoapi_keep_files = True
+autoapi_python_class_content = "both"
+autoapi_options = ["private-members=false"]
 
 
 exclude_patterns = ["_build", "Thumbs.db", ".*", "~*", "*~", "*#"]

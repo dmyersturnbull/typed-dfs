@@ -4,7 +4,7 @@
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/typeddfs.svg)](https://pypi.org/project/typeddfs/)
 [![Documentation status](https://readthedocs.org/projects/typed-dfs/badge/?version=latest&style=flat-square)](https://readthedocs.org/projects/typed-dfs)
 [![Build & test](https://github.com/dmyersturnbull/typed-dfs/workflows/Build%20&%20test/badge.svg)](https://github.com/dmyersturnbull/typed-dfs/actions)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)  
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build status](https://img.shields.io/pypi/status/typeddfs)](https://pypi.org/project/typeddfs/)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
 [![Coverage Status](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=master)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=master)
@@ -60,4 +60,4 @@ Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn't enforce req
 
 [New issues](https://github.com/dmyersturnbull/typed-dfs/issues) and pull requests are welcome.
 Please refer to the [contributing guide](https://github.com/dmyersturnbull/typed-dfs/blob/master/CONTRIBUTING.md).
-Generated with [Tyrannosaurus](https://github.com/dmyersturnbull/tyrannosaurus): `tyrannosaurus new typed-dfs`.
+Generated with [Tyrannosaurus](https://github.com/dmyersturnbull/tyrannosaurus).
