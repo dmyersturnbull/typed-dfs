@@ -112,7 +112,6 @@ pandas                   = ">=1.0, <2.0"
 tables                   = ">=3.6, <4.0"
 
 [tool.poetry.dev-dependencies]
-tyrannosaurus            = "^0.7"
 pre-commit               = "^2.6"
 pytest                   = "^6.0"
 coverage                 = {extras = ["toml"], version = "^5.2"}
@@ -143,8 +142,7 @@ dev     = [
         "mypy",
         "flake8", "flake8-docstrings",
         "black", "isort",
-        "flake8-bandit", "flake8-bugbear",
-        "tyrannosaurus"
+        "flake8-bandit", "flake8-bugbear"
 ]
 
 
