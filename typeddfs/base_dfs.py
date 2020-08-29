@@ -1,9 +1,11 @@
 from __future__ import annotations
-from pathlib import Path, PurePath
+
 import abc
-from typing import Sequence, List, Any, Union, Iterable, Optional
+from pathlib import Path, PurePath
+from typing import Any, Iterable, List, Optional, Sequence, Union
+
 import pandas as pd
-from natsort import ns, natsorted
+from natsort import natsorted, ns
 from pandas.core.frame import DataFrame as _InternalDataFrame
 
 PathLike = Union[str, PurePath]
@@ -95,15 +97,22 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     def n_indices(self) -> int:
         return len(self.index.names)
 
-    def only(self, column: str) -> Any:
+    def only(self, column: str, exclude_na: bool = False) -> Any:
         """
         Returns the single unique value in a column.
         Raises an error if zero or more than one value is in the column.
-        :param column: The name of the column
-        :return: The value
+
+        Args:
+            column: The name of the column
+            exclude_na: Exclude null values
+
+        Returns:
+            The value
         """
         x = self[column].unique()
-        if len(x) > 0:
+        if exclude_na:
+            x = {k for k in x if not pd.isna(k)}
+        if len(x) > 1:
             raise ValueError("Multiple values for {}".format(column))
         if len(x) == 0:
             raise ValueError("No values for {}".format(column))
@@ -231,7 +240,11 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     def reset_index(self, level=None, drop=False, inplace=False, col_level=0, col_fill=""):
         return self._check_and_change(
             super().reset_index(
-                level=level, drop=drop, inplace=inplace, col_level=col_level, col_fill=col_fill,
+                level=level,
+                drop=drop,
+                inplace=inplace,
+                col_level=col_level,
+                col_fill=col_fill,
             )
         )
 
@@ -300,7 +313,13 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         return self._check_and_change(super().rename(*args, **kwargs))
 
     def replace(
-        self, to_replace=None, value=None, inplace=False, limit=None, regex=False, method="pad",
+        self,
+        to_replace=None,
+        value=None,
+        inplace=False,
+        limit=None,
+        regex=False,
+        method="pad",
     ):
         return self._check_and_change(
             super().replace(

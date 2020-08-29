@@ -1,9 +1,9 @@
-from pathlib import Path
 import inspect
+from pathlib import Path
+from typing import Sequence
 
 import pandas as pd
 
-from typing import Sequence
 from typeddfs.typed_dfs import TypedDf
 
 
@@ -25,6 +25,13 @@ def sample_data_str():
     return [
         pd.Series({"abc": "zzz", "123": 2, "xyz": 3}),
         pd.Series({"abc": "bbb", "123": 5, "xyz": 6}),
+    ]
+
+
+def sample_data_2():
+    return [
+        pd.Series({"only": 1, "multi": 2, "none": None}),
+        pd.Series({"only": 1, "multi": 5, "none": None}),
     ]
 
 

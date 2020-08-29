@@ -12,7 +12,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.2.2"
+version = "0.2.3"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -120,7 +120,6 @@ black                    = "=19.10b0"
 isort                    = "^5"
 hypothesis               = "^5"
 flake8-bugbear           = "^20"
-coveralls                = "^2"
 tomlkit                  = ">=0.5, <1.0"
 
 
@@ -128,7 +127,6 @@ tomlkit                  = ">=0.5, <1.0"
 dev       = [
             "pre-commit", "pytest", "coverage", "pytest-cov", "hypothesis",
             "sphinx", "sphinx-autoapi",
-            "mypy",
             "flake8", "flake8-docstrings",
             "black", "isort",
             "flake8-bugbear"

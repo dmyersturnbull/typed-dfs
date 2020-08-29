@@ -1,6 +1,8 @@
-import pytest
 import pandas as pd
-from typeddfs import TypedDfs, UntypedDf, TypedDf
+import pytest
+
+from typeddfs import TypedDf, TypedDfs, UntypedDf
+
 from . import sample_data
 
 raises = pytest.raises

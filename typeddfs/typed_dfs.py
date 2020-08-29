@@ -1,15 +1,17 @@
 from __future__ import annotations
+
 from pathlib import Path, PurePath
+from typing import Callable, Optional, Sequence, Union
 from warnings import warn
-from typing import Sequence, Union, Optional, Callable
+
 import pandas as pd
 
 from typeddfs.base_dfs import (
+    AsymmetricDfError,
     BaseDf,
+    ExtraConditionError,
     MissingColumnError,
     UnexpectedColumnError,
-    ExtraConditionError,
-    AsymmetricDfError,
 )
 from typeddfs.untyped_dfs import UntypedDf
 

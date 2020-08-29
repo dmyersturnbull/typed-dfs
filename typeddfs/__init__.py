@@ -2,14 +2,16 @@
 Metadata for TypedDfs.
 """
 from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Optional, Type, Sequence, Callable
-
-# importlib.metadata is compat with Python 3.8 only
-from importlib_metadata import PackageNotFoundError, metadata as __load
+from typing import Callable, Optional, Sequence, Type
 
 import pandas as pd
+
+# importlib.metadata is compat with Python 3.8 only
+from importlib_metadata import PackageNotFoundError
+from importlib_metadata import metadata as __load
 
 logger = logging.getLogger(Path(__file__).parent.name)
 
@@ -17,8 +19,8 @@ metadata = None
 try:
     metadata = __load(Path(__file__).parent.name)
     __status__ = "Development"
-    __copyright__ = "Copyright 2015–2020"
-    __date__ = "2020-08-09"
+    __copyright__ = "Copyright 2016–2020"
+    __date__ = "2020-08-28"
     __uri__ = metadata["home-page"]
     __title__ = metadata["name"]
     __summary__ = metadata["summary"]
@@ -34,14 +36,12 @@ except PackageNotFoundError:
         )
     )
 
-from typeddfs.base_dfs import (
-    BaseDf,
-    InvalidDfError as _InvalidDfError,
-    MissingColumnError as _MissingColumnError,
-    UnexpectedColumnError as _UnexpectedColumnError,
-    AsymmetricDfError as _AsymmetricDfError,
-    ExtraConditionError as _ExtraConditionError,
-)
+from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
+from typeddfs.base_dfs import BaseDf
+from typeddfs.base_dfs import ExtraConditionError as _ExtraConditionError
+from typeddfs.base_dfs import InvalidDfError as _InvalidDfError
+from typeddfs.base_dfs import MissingColumnError as _MissingColumnError
+from typeddfs.base_dfs import UnexpectedColumnError as _UnexpectedColumnError
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 

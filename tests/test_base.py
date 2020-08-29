@@ -1,10 +1,11 @@
-import pytest
 import pandas as pd
+import pytest
 
 # noinspection PyProtectedMember
 from typeddfs.base_dfs import AbsDf
 from typeddfs.untyped_dfs import UntypedDf
-from . import sample_data, sample_data_str, SimpleOrg, SingleIndexOrg, MultiIndexOrg
+
+from . import MultiIndexOrg, SimpleOrg, SingleIndexOrg, sample_data, sample_data_2, sample_data_str
 
 raises = pytest.raises
 
@@ -34,11 +35,18 @@ class TestBase:
         assert MultiIndexOrg.convert(pd.DataFrame(sample_data())).is_multindex()
 
     def test_only(self):
-        df = SingleIndexOrg.convert(pd.DataFrame(sample_data()))
+        df = SingleIndexOrg.convert(pd.DataFrame(sample_data_2()))
+        assert df.only("multi") is None
         with raises(ValueError):
-            df.only("123")
+            df.only("multi", exclude_na=True)
+        with raises(ValueError):
+            df.only("none")
+        with raises(ValueError):
+            df.only("none", exclude_na=True)
         with raises(KeyError):
             df.only("abc")
+        assert df.only("only") == 1
+        assert df.only("only", exclude_na=True) == 1
 
     def test_lengths(self):
         df = SingleIndexOrg.convert(pd.DataFrame(sample_data()))

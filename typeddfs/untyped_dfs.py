@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from pathlib import PurePath
-from typing import Union, Optional
+from typing import Optional, Union
+
 import pandas as pd
 
 from typeddfs.base_dfs import *

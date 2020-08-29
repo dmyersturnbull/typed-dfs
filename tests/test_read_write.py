@@ -1,6 +1,8 @@
 import pytest
+
 from typeddfs.untyped_dfs import UntypedDf
-from . import tmpfile, sample_data, SimpleOrg, SingleIndexOrg, MultiIndexOrg
+
+from . import MultiIndexOrg, SimpleOrg, SingleIndexOrg, sample_data, tmpfile
 
 raises = pytest.raises
 
