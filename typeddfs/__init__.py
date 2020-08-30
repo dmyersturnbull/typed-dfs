@@ -1,17 +1,28 @@
 """
-Metadata for TypedDfs.
+Metadata for typeddfs.
 """
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Type
-
-import pandas as pd
+from typing import Optional, Type
 
 # importlib.metadata is compat with Python 3.8 only
 from importlib_metadata import PackageNotFoundError
 from importlib_metadata import metadata as __load
+
+from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
+from typeddfs.base_dfs import BaseDf
+from typeddfs.base_dfs import ExtraConditionFailedError as _ExtraConditionFailedError
+from typeddfs.base_dfs import InvalidDfError as _InvalidDfError
+from typeddfs.base_dfs import MissingColumnError as _MissingColumnError
+from typeddfs.base_dfs import NoValueError as _NoValueError
+from typeddfs.base_dfs import UnexpectedColumnError as _UnexpectedColumnError
+from typeddfs.base_dfs import UnexpectedIndexNameError as _UnexpectedIndexNameError
+from typeddfs.base_dfs import ValueNotUniqueError as _ValueNotUniqueError
+from typeddfs.builders import TypedDfBuilder
+from typeddfs.typed_dfs import TypedDf
+from typeddfs.untyped_dfs import UntypedDf
 
 logger = logging.getLogger(Path(__file__).parent.name)
 
@@ -20,7 +31,7 @@ try:
     metadata = __load(Path(__file__).parent.name)
     __status__ = "Development"
     __copyright__ = "Copyright 2016–2020"
-    __date__ = "2020-08-28"
+    __date__ = "2020-08-29"
     __uri__ = metadata["home-page"]
     __title__ = metadata["name"]
     __summary__ = metadata["summary"]
@@ -29,120 +40,43 @@ try:
     __author__ = metadata["author"]
     __maintainer__ = metadata["maintainer"]
     __contact__ = metadata["maintainer"]
-except PackageNotFoundError:
+except PackageNotFoundError:  # pragma: no cover
     logger.error(
-        "Could not load package metadata for {}. Is it installed?".format(
-            Path(__file__).absolute().parent.name
-        )
+        f"Could not load package metadata for {Path(__file__).absolute().parent.name}. Is it installed?"
     )
-
-from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
-from typeddfs.base_dfs import BaseDf
-from typeddfs.base_dfs import ExtraConditionError as _ExtraConditionError
-from typeddfs.base_dfs import InvalidDfError as _InvalidDfError
-from typeddfs.base_dfs import MissingColumnError as _MissingColumnError
-from typeddfs.base_dfs import UnexpectedColumnError as _UnexpectedColumnError
-from typeddfs.typed_dfs import TypedDf
-from typeddfs.untyped_dfs import UntypedDf
-
-
-class TypedDfBuilder:
-    def __init__(self, name: str, doc: Optional[str] = None):
-        self._name = name
-        self._doc = doc
-        self._req_meta = []
-        self._res_meta = []
-        self._req_cols = []
-        self._res_cols = []
-        self._drop = []
-        self._strict_meta = False
-        self._strict_cols = False
-        self._symmetric = False
-        self._extra_reqs = []
-
-    def require(self, *names: str, index: bool = False) -> TypedDfBuilder:
-        if index:
-            self._req_meta.extend(names)
-        else:
-            self._req_cols.extend(names)
-        return self
-
-    def reserve(self, *names: str, index: bool = False) -> TypedDfBuilder:
-        if index:
-            self._res_meta.extend(names)
-        else:
-            self._res_cols.extend(names)
-        return self
-
-    def drop(self, *names: str):
-        self._drop.extend(names)
-
-    def strict(self, index: bool = True, cols: bool = True) -> TypedDfBuilder:
-        self._strict_meta = index
-        self._strict_cols = cols
-        return self
-
-    def symmetric(self) -> TypedDfBuilder:
-        self._symmetric = True
-        return self
-
-    def condition(self, *conditions: Callable[[pd.DataFrame], Optional[str]]) -> TypedDfBuilder:
-        self._extra_reqs.extend(conditions)
-        return self
-
-    def build(self) -> Type[TypedDf]:
-        class New(TypedDf):
-            @classmethod
-            def more_indices_allowed(cls) -> bool:
-                return not self._strict_meta
-
-            @classmethod
-            def more_columns_allowed(cls) -> bool:
-                return not self._strict_cols
-
-            @classmethod
-            def required_columns(cls) -> Sequence[str]:
-                return self._req_cols
-
-            @classmethod
-            def reserved_columns(cls) -> Sequence[str]:
-                return self._res_cols
-
-            @classmethod
-            def reserved_index_names(cls) -> Sequence[str]:
-                return self._res_meta
-
-            @classmethod
-            def required_index_names(cls) -> Sequence[str]:
-                return self._req_meta
-
-            @classmethod
-            def must_be_symmetric(cls) -> bool:
-                return self._symmetric
-
-            @classmethod
-            def columns_to_drop(cls) -> Sequence[str]:
-                return self._drop
-
-            @classmethod
-            def extra_conditions(cls) -> Sequence[Callable[[pd.DataFrame], Optional[str]]]:
-                return self._extra_reqs
-
-        New.__name__ = self._name
-        New.__doc__ = self._doc
-        return New
 
 
 class TypedDfs:
+    """
+    The only thing you need to import from ``typeddfs``.
 
-    InvalidDfError = (_InvalidDfError,)
-    MissingColumnError = (_MissingColumnError,)
-    UnexpectedColumnError = (_UnexpectedColumnError,)
-    AsymmetricDfError = (_AsymmetricDfError,)
-    ExtraConditionError = _ExtraConditionError
+    Contains the ``typed()`` and ``untyped()`` static functions, which build new classes.
+    Also contains specific exception types used by typeddfs, such as ``InvalidDfError`` and ``MissingColumnError``.
+    """
+
+    pkg_metadata = metadata
+    NoValueError = _NoValueError
+    ValueNotUniqueError = _ValueNotUniqueError
+    InvalidDfError = _InvalidDfError
+    MissingColumnError = _MissingColumnError
+    UnexpectedColumnError = _UnexpectedColumnError
+    UnexpectedIndexNameError = _UnexpectedIndexNameError
+    AsymmetricDfError = _AsymmetricDfError
+    ExtraConditionFailedError = _ExtraConditionFailedError
 
     @classmethod
-    def example(cls):
+    def example(cls) -> Type[TypedDf]:
+        """
+        Creates a new example TypedDf subclass.
+        The class has:
+            - required index "key"
+            - required column "value"
+            - reserved column "note"
+            - no other columns
+
+        Returns:
+            The created class
+        """
         KeyValue = (
             TypedDfs.typed("KeyValue")  # typed means enforced requirements
             .require("key", index=True)  # automagically make this an index
@@ -154,10 +88,40 @@ class TypedDfs:
 
     @classmethod
     def typed(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
+        """
+        Creates a new builder (builder pattern) for a ``TypedDf``.
+        The final class will enforce constraints.
+
+        Args:
+            name: The name that will be used for the new class
+            doc: The docstring for the new class
+
+        Returns:
+            A builder pattern, to be used with chained calls
+
+        Example:
+            TypedDfs.typed("MyClass").require("name", index=True).build()
+        """
         return TypedDfBuilder(name, doc)
 
     @classmethod
     def untyped(cls, name: str, doc: Optional[str] = None) -> Type[UntypedDf]:
+        """
+        Creates a new subclass of ``UntypedDf``.
+        The returned class will NOT enforce any constraints,
+        but it will have some convenient methods.
+
+        Args:
+            name: The name that will be used for the new class
+            doc: The docstring for the new class
+
+        Returns:
+            A class instance
+
+        Example:
+            MyClass = TypedDfs.untyped("MyClass")
+        """
+
         class New(UntypedDf):
             pass
 

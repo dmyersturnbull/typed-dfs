@@ -1,3 +1,4 @@
+import contextlib
 import inspect
 from pathlib import Path
 from typing import Sequence
@@ -7,11 +8,14 @@ import pandas as pd
 from typeddfs.typed_dfs import TypedDf
 
 
+@contextlib.contextmanager
 def tmpfile() -> Path:
     caller = inspect.stack()[1][3]
     path = Path(__file__).parent.parent.parent / "resources" / "tmp" / (str(caller) + ".csv")
     path.parent.mkdir(parents=True, exist_ok=True)
-    return path
+    yield path
+    if path.exists():
+        path.unlink()
 
 
 def sample_data():
@@ -19,6 +23,15 @@ def sample_data():
         pd.Series({"abc": 1, "123": 2, "xyz": 3}),
         pd.Series({"abc": 4, "123": 5, "xyz": 6}),
     ]
+
+
+def sample_symmetric_df():
+    return pd.DataFrame(
+        [
+            pd.Series({"a": "x", "b": "y", "my_index": "a"}),
+            pd.Series({"a": "x", "b": "y", "my_index": "b"}),
+        ]
+    ).set_index("my_index")
 
 
 def sample_data_str():
@@ -35,17 +48,23 @@ def sample_data_2():
     ]
 
 
-class SimpleOrg(TypedDf):
+class TypedTrivial(TypedDf):
     pass
 
 
-class SingleIndexOrg(TypedDf):
+class TypedSingleIndex(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["abc"]
 
 
-class MultiIndexOrg(TypedDf):
+class TypedMultiIndex(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["abc", "xyz"]
+
+
+class TypedSymmetric(TypedDf):
+    @classmethod
+    def must_be_symmetric(cls) -> bool:
+        return True

@@ -6,3 +6,4 @@ Typed-Dfs is licensed under the [Apache License, version 2.0](https://www.apache
 ##### For pull requests:
 If you can, please update `CHANGELOG.md` and add your name to the contributors in `pyproject.toml`.
 Then run `tyrannosaurus sync`.
+

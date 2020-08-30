@@ -5,8 +5,6 @@ from typeddfs import TypedDf, TypedDfs, UntypedDf
 
 from . import sample_data
 
-raises = pytest.raises
-
 
 class TestCore:
     def test_empty_simple(self):
@@ -15,12 +13,12 @@ class TestCore:
         assert list(df.columns) == []
 
     def test_no_name_simple(self):
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             # noinspection PyTypeChecker
             TypedDfs.untyped(None)
 
     def test_no_name_fancy(self):
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             # noinspection PyTypeChecker
             TypedDfs.typed(None).build()
 
@@ -83,19 +81,19 @@ class TestCore:
     def test_extra_col(self):
         new = TypedDfs.typed("a class").require("abc", index=True).strict().build()
         df = pd.DataFrame(sample_data())
-        with raises(TypedDfs.UnexpectedColumnError):
+        with pytest.raises(TypedDfs.UnexpectedColumnError):
             new.convert(df)
 
     def test_extra_index(self):
         new = TypedDfs.typed("a class").require("xyz", index=False).strict().build()
         df = pd.DataFrame(sample_data())
-        with raises(TypedDfs.UnexpectedColumnError):
+        with pytest.raises(TypedDfs.UnexpectedColumnError):
             new.convert(df)
 
     def test_missing(self):
         new = TypedDfs.typed("a class").require("qqq", index=False).strict().build()
         df = pd.DataFrame(sample_data())
-        with raises(TypedDfs.MissingColumnError):
+        with pytest.raises(TypedDfs.MissingColumnError):
             new.convert(df)
 
 

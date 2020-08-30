@@ -4,6 +4,30 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
+## [0.3.0] - 2020-08-29
+
+### Removed:
+- `require_full` argument
+- support for Pandas <1.1
+
+## Changed:
+- `convert` now keeps non-reserved indices in the index as long as `more_indices_allowed` is false
+- Moved builder to a separate module
+- Changed or added type annotations using `__qualname__`
+- Moved some basic functions from `AbsFrame` to its superclass `PrettyFrame`
+
+## Added:
+- A method on `BaseFrame` called `such_that` to do type-retaining slicing
+
+### Fixed:
+- A bug in `only`
+- A bug in checking symmetry
+- Dropped unnecessary imports
+- Clarified that `detype` is needed for functions like `applymap` if requirements will fail the returned value
+- Improved test coverage
+- Added docstrings
+
+
 ## [0.2.0] - 2020-05-19
 
 ### Added:

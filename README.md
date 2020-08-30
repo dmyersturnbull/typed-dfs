@@ -19,7 +19,7 @@ which means **`read_csv` and `to_csv` are always inverses**.
 `MyDf.read_csv(mydf.to_csv())` is just `mydf`.
 
 The DataFrames will display nicely in Jupyter notebooks,
-and few convenience methods are added, such as `sort_natural` and `drop_cols`.
+and a few convenience methods are added, such as `sort_natural` and `drop_cols`.
 **[See the docs](https://typed-dfs.readthedocs.io/en/stable/)** for more information.
 
 Simple example for a CSV like this:

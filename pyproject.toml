@@ -12,7 +12,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.2.3"
+version = "0.3.0"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -98,38 +98,37 @@ environment  = false
 
 [tool.poetry.dependencies]
 python                   = ">=3.7, <4"
-tomlkit                  = ">=0.5, <1.0"
 importlib-metadata       = "^1"
-typer                    = ">=0.3, <1.0"
 natsort                  = "^7"
-numpy                    = ">=1.18, <2.0"
-pandas                   = "^1"
-tables                   = "^3"
+pandas                   = ">=1.1, <2.0"
+tables                   = ">=3.6, <4.0"
 
 [tool.poetry.dev-dependencies]
-pre-commit               = "^2"
+pre-commit               = ">=2.7, <3.0"
+pre-commit-hooks         = ">=3.2, <4.0"
 pytest                   = "^6"
 coverage                 = {extras = ["toml"], version = "^5"}
 pytest-cov               = "^2"
 sphinx                   = "^3"
 sphinx-autoapi           = "^1"
 sphinx-rtd-theme         = ">=0.5, <1.0"
-flake8                   = "^3"
-flake8-docstrings        = "^1"
+flake8                   = ">=3.8, <4.0"
+flake8-docstrings        = ">=1.5, <2.0"
 black                    = "=19.10b0"
 isort                    = "^5"
-hypothesis               = "^5"
 flake8-bugbear           = "^20"
 tomlkit                  = ">=0.5, <1.0"
 
 
 [tool.poetry.extras]
-dev       = [
-            "pre-commit", "pytest", "coverage", "pytest-cov", "hypothesis",
-            "sphinx", "sphinx-autoapi",
-            "flake8", "flake8-docstrings",
-            "black", "isort",
-            "flake8-bugbear"
+dev = [
+        "toml",
+        "pre-commit", "pre-commit-hooks",
+        "pytest", "coverage", "pytest-cov",
+        "sphinx", "sphinx-autoapi",
+        "flake8", "flake8-docstrings",
+        "black", "isort",
+        "flake8-bandit", "flake8-bugbear"
 ]
 
 
@@ -148,7 +147,7 @@ show_missing = true
 
 [tool.black]
 line-length = 100
-target-version = ["py37", "py38"]
+target-version = ["py38"]
 
 [tool.isort]
 line_length = 100
