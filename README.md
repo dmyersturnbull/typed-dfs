@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build status](https://img.shields.io/pypi/status/typeddfs)](https://pypi.org/project/typeddfs/)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
-[![Coverage Status](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=master)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=master&service=github)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=master)
 
 Pandas DataFrame subclasses that enforce structure and can self-organize.
 Because your functions can’t exactly accept _any_  DataFrame.
