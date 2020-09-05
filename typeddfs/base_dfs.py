@@ -502,6 +502,12 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
     An extended DataFrame with ``convert()`` and ``vanilla()`` methods.
     """
 
+    def __getitem__(self, item) -> __qualname__:
+        if isinstance(item, str) and item in self.index.names:
+            return self.index.get_level_values(item)
+        else:
+            return super().__getitem__(item)
+
     @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:
         """

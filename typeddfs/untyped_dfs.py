@@ -20,12 +20,6 @@ class UntypedDf(BaseDf):
     For example, calling ``df.reset_index()`` will return a ``UntypedDf`` of the same type as ``df``.
     """
 
-    def __getitem__(self, item) -> __qualname__:
-        if isinstance(item, str) and item in self.index.names:
-            return self.index.get_level_values(item)
-        else:
-            return super().__getitem__(item)
-
     @classmethod
     def read_csv(cls, *args, **kwargs) -> __qualname__:
         """

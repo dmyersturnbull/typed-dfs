@@ -25,7 +25,7 @@ from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 
 logger = logging.getLogger(Path(__file__).parent.name)
-
+pkg = Path(__file__).absolute().parent.name
 metadata = None
 try:
     metadata = __load(Path(__file__).parent.name)
@@ -41,9 +41,7 @@ try:
     __maintainer__ = metadata["maintainer"]
     __contact__ = metadata["maintainer"]
 except PackageNotFoundError:  # pragma: no cover
-    logger.error(
-        f"Could not load package metadata for {Path(__file__).absolute().parent.name}. Is it installed?"
-    )
+    logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
 
 
 class TypedDfs:

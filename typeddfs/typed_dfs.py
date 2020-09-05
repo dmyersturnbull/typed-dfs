@@ -80,6 +80,7 @@ class TypedDf(BaseDf):
 
         Raises:
             InvalidDfError: If a condition such as a required column or symmetry fails (specific subclasses)
+            TypeError: If ``df`` is not a DataFrame
         """
         if not isinstance(df, pd.DataFrame):
             raise TypeError(f"Can't convert {type(df)} to {cls.__name__}")
@@ -138,6 +139,23 @@ class TypedDf(BaseDf):
         df = self.copy()
         df.__class__ = Df
         return df
+
+    def meta(self) -> __qualname__:
+        """
+        Drops the columns, returning only the index but as the same type.
+
+        Returns:
+            A copy
+
+        Raises:
+            InvalidDfError: If the result does not pass the typing of this class
+        """
+        if len(self.columns) == 0:
+            return self
+        else:
+            df: __qualname__ = self[[self.columns[0]]]
+            df = df.drop(self.columns[0], axis=1)
+            return self.__class__.convert(df)
 
     @classmethod
     def read_csv(cls, path: PathLike, *args, **kwargs) -> __qualname__:
