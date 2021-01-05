@@ -1,8 +1,8 @@
 ---
-name: "🔒 Security issue"
-about: Security issue
+name: "🎁 Feature"
+about: Feature request
 title: ''
-labels: 'kind: security'
+labels: 'kind: new feature'
 assignees: ''
 ---
 

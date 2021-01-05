@@ -4,12 +4,10 @@ Metadata for typeddfs.
 from __future__ import annotations
 
 import logging
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import metadata as __load
 from pathlib import Path
 from typing import Optional, Type
-
-# importlib.metadata is compat with Python 3.8 only
-from importlib_metadata import PackageNotFoundError
-from importlib_metadata import metadata as __load
 
 from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
 from typeddfs.base_dfs import BaseDf
@@ -30,7 +28,7 @@ metadata = None
 try:
     metadata = __load(Path(__file__).parent.name)
     __status__ = "Development"
-    __copyright__ = "Copyright 2016–2020"
+    __copyright__ = "Copyright 2016–2021"
     __date__ = "2020-08-29"
     __uri__ = metadata["home-page"]
     __title__ = metadata["name"]
@@ -75,9 +73,10 @@ class TypedDfs:
         Returns:
             The created class
         """
+        # noinspection PyPep8Naming
         KeyValue = (
             TypedDfs.typed("KeyValue")  # typed means enforced requirements
-            .require("key", index=True)  # automagically make this an index
+            .require("key", str, index=True)  # automagically make this an index
             .require("value")  # required
             .reserve("note")  # permitted but not required
             .strict()  # don't allow other columns

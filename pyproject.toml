@@ -2,7 +2,11 @@
 description-file = "README.md"
 
 [build-system]
-requires = ["poetry>=1,<2", "coverage[toml]>=5,<6"]
+# virtualenv 20.0.34 partly breaks pre-commit under conda
+# https://github.com/ContinuumIO/anaconda-issues/issues/12094
+# Poetry uses pip and setuptools (although they're not included as dependencies)
+# We don't need to list wheel here, but setting a min vr can avoid generating inferior wheels
+requires = ["poetry>=1.1,<2", "virtualenv==20.0.33", "wheel>=0.36,<1.0"]
 build-backend = "poetry.masonry.api"
 
 
@@ -12,21 +16,20 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.3.1"
+version = "0.4.0"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
 license = "Apache-2.0"
 readme = "README.md"
 keywords = ["pandas", "typing", "columns", "structured"]
-homepage = "https://github.com/kokellab/typed-dfs"
-repository = "https://github.com/kokellab/typed-dfs"
+homepage = "https://github.com/dmyersturnbull/typed-dfs"
+repository = "https://github.com/dmyersturnbull/typed-dfs"
 documentation = "https://typed-dfs.readthedocs.io"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Natural Language :: English",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
 	"Intended Audience :: Developers",
@@ -41,8 +44,8 @@ include = [
 ]
 
 [tool.poetry.urls]
-CI = "https://github.com/kokellab/typeddfs/actions"
-Issues = "https://github.com/kokellab/typeddfs/issues"
+CI = "https://github.com/dmyersturnbull/typed-dfs/actions"
+Issues = "https://github.com/dmyersturnbull/typed-dfs/issues"
 Download = "https://pypi.org/project/typeddfs/"
 
 
@@ -97,27 +100,24 @@ environment  = false
 #########################################################################################
 
 [tool.poetry.dependencies]
-python                   = ">=3.7, <4"
-importlib-metadata       = "^1"
+python                   = ">=3.8, <4"
 natsort                  = "^7"
-pandas                   = ">=1.1, <2.0"
+pandas                   = ">=1.2, <2.0"
 tables                   = ">=3.6, <4.0"
 
 [tool.poetry.dev-dependencies]
-pre-commit               = ">=2.7, <3.0"
-pre-commit-hooks         = ">=3.2, <4.0"
-pytest                   = "^6"
-coverage                 = {extras = ["toml"], version = "^5"}
-pytest-cov               = "^2"
-sphinx                   = "^3"
-sphinx-autoapi           = "^1"
+pre-commit               = ">=2.9, <3.0"
+pre-commit-hooks         = ">=3.4, <4.0"
+bandit                   = ">=1.7, <2.0"
+pytest                   = ">=6.2, <7.0"
+coverage                 = {extras = ["toml"], version = ">=5.3, <6.0"}
+pytest-cov               = ">=2.10, <3.0"
+sphinx                   = ">=3.4, <4.0"
+sphinx-autoapi           = ">=1.5, <2.0"
 sphinx-rtd-theme         = ">=0.5, <1.0"
 flake8                   = ">=3.8, <4.0"
 flake8-docstrings        = ">=1.5, <2.0"
-black                    = "=19.10b0"
-isort                    = "^5"
-flake8-bugbear           = "^20"
-tomlkit                  = ">=0.5, <1.0"
+flake8-bugbear           = ">=20"
 
 
 [tool.poetry.extras]
@@ -127,8 +127,8 @@ dev = [
         "pytest", "coverage", "pytest-cov",
         "sphinx", "sphinx-autoapi",
         "flake8", "flake8-docstrings",
-        "black", "isort",
-        "flake8-bandit", "flake8-bugbear"
+        "black",
+        "bandit", "flake8-bugbear"
 ]
 
 
@@ -149,17 +149,6 @@ show_missing = true
 line-length = 100
 target-version = ["py38"]
 
-[tool.isort]
-line_length = 100
-
 [mypy]
 check_untyped_defs = true
 strict_optional = true
-
-[pycodestyle]
-max-line-length = 100
-statistics = true
-
-[pydocstyle]
-# 212 and 213 contradict; 203 and 204 contradict; D302 is not relevant in Py3
-ignore = ["D203", "D212", "D302"]

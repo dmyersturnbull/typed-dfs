@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Type
+from typing import Callable, Optional, Sequence, Type, Union, Any
 
 import pandas as pd
 
@@ -36,6 +36,7 @@ class TypedDfBuilder:
         self._res_meta = []
         self._req_cols = []
         self._res_cols = []
+        self._dtypes = {}
         self._drop = []
         self._strict_meta = False
         self._strict_cols = False
@@ -44,13 +45,14 @@ class TypedDfBuilder:
         if not isinstance(name, str):
             raise TypeError(f"Class name {name} is a {type(name)}, not str")
 
-    def require(self, *names: str, index: bool = False) -> __qualname__:
+    def require(self, *names: str, dtype: Optional[Type], index: bool = False) -> __qualname__:
         """
         Requires column(s) or index name(s).
         DataFrames will fail if they are missing any of these.
 
         Args:
             names: A varargs list of columns or index names
+            dtype: An automatically applied transformation of the column values using ``.astype``
             index: If True, put these in the index
 
         Returns:
@@ -64,9 +66,12 @@ class TypedDfBuilder:
             self._req_meta.extend(names)
         else:
             self._req_cols.extend(names)
+        if dtype is not None:
+            for name in names:
+                self._dtypes[name] = dtype
         return self
 
-    def reserve(self, *names: str, index: bool = False) -> __qualname__:
+    def reserve(self, *names: str, dtype: Optional[Type], index: bool = False) -> __qualname__:
         """
         Reserves column(s) or index name(s) for optional inclusion.
         A reserved column will be accepted even if ``strict`` is set.
@@ -75,6 +80,7 @@ class TypedDfBuilder:
 
         Args:
             names: A varargs list of columns or index names
+            dtype: An automatically applied transformation of the column values using ``.astype``
             index: If True, put these in the index
 
         Returns:
@@ -88,6 +94,9 @@ class TypedDfBuilder:
             self._res_meta.extend(names)
         else:
             self._res_cols.extend(names)
+        if dtype is not None:
+            for name in names:
+                self._dtypes[name] = dtype
         return self
 
     def drop(self, *names: str) -> __qualname__:

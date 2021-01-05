@@ -33,11 +33,11 @@ from typeddfs import TypedDfs
 
 # Build me a Key-Value-Note class!
 KeyValue = (
-    TypedDfs.typed('KeyValue')   # typed means enforced requirements
-    .require('key', index=True)  # automagically make this an index
-    .require('value')            # required
-    .reserve('note')             # permitted but not required
-    .strict()                    # don't allow other columns
+    TypedDfs.typed('KeyValue')        # typed means enforced requirements
+    .require('key', str, index=True)  # automagically make this an index
+    .require('value')                 # required
+    .reserve('note')                  # permitted but not required
+    .strict()                         # don't allow other columns
 ).build()
 
 # This will self-organize and use 'key' as the index:
