@@ -37,7 +37,7 @@ KeyValue = (
     .require("key", dtype=str, index=True)  # automagically make this an index
     .require("value")                 # required
     .reserve("note")                  # permitted but not required
-    .strict()                         # don	’t allow other columns
+    .strict()                         # don’t allow other columns
 ).build()
 
 # This will self-organize and use "key" as the index:
@@ -55,9 +55,9 @@ def my_special_function(df: KeyValue) -> float:
 ```
 
 All of the normal DataFrame methods are available.
-Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn	’t enforce requirements.
+Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce requirements.
 
 
 [New issues](https://github.com/dmyersturnbull/typed-dfs/issues) and pull requests are welcome.
-Please refer to the [contributing guide](https://github.com/dmyersturnbull/typed-dfs/blob/master/CONTRIBUTING.md).
+Please refer to the [contributing guide](https://github.com/dmyersturnbull/typed-dfs/blob/master/CONTRIBUTING.md).  
 Generated with [Tyrannosaurus](https://github.com/dmyersturnbull/tyrannosaurus).

@@ -4,9 +4,6 @@ repos:
   - repo: meta
     hooks:
       - id: check-hooks-apply
-      # this is useful but problematic
-      # e.g. excluding recipes/*.yml, if they exist
-      # - id: check-useless-excludes
   - repo: 'https://github.com/psf/black'
     rev: 20.8b1
     hooks:
