@@ -104,6 +104,7 @@ python                   = ">=3.8, <4"
 natsort                  = "^7"
 pandas                   = ">=1.2, <2.0"
 tables                   = ">=3.6, <4.0"
+tomlkit                  = ">=0.7, <1.0"
 
 [tool.poetry.dev-dependencies]
 pre-commit               = ">=2.9, <3.0"
@@ -122,7 +123,6 @@ flake8-bugbear           = ">=20"
 
 [tool.poetry.extras]
 dev = [
-        "toml",
         "pre-commit", "pre-commit-hooks",
         "pytest", "coverage", "pytest-cov",
         "sphinx", "sphinx-autoapi",

@@ -45,7 +45,9 @@ class TypedDfBuilder:
         if not isinstance(name, str):
             raise TypeError(f"Class name {name} is a {type(name)}, not str")
 
-    def require(self, *names: str, dtype: Optional[Type], index: bool = False) -> __qualname__:
+    def require(
+        self, *names: str, dtype: Optional[Type] = None, index: bool = False
+    ) -> __qualname__:
         """
         Requires column(s) or index name(s).
         DataFrames will fail if they are missing any of these.
@@ -71,7 +73,9 @@ class TypedDfBuilder:
                 self._dtypes[name] = dtype
         return self
 
-    def reserve(self, *names: str, dtype: Optional[Type], index: bool = False) -> __qualname__:
+    def reserve(
+        self, *names: str, dtype: Optional[Type] = None, index: bool = False
+    ) -> __qualname__:
         """
         Reserves column(s) or index name(s) for optional inclusion.
         A reserved column will be accepted even if ``strict`` is set.

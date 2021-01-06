@@ -76,8 +76,8 @@ class TypedDfs:
         # noinspection PyPep8Naming
         KeyValue = (
             TypedDfs.typed("KeyValue")  # typed means enforced requirements
-            .require("key", str, index=True)  # automagically make this an index
-            .require("value")  # required
+            .require("key", dtype=str, index=True)  # automagically make this an index
+            .require("value", dtype=str)  # required
             .reserve("note")  # permitted but not required
             .strict()  # don't allow other columns
         ).build()

@@ -33,29 +33,29 @@ from typeddfs import TypedDfs
 
 # Build me a Key-Value-Note class!
 KeyValue = (
-    TypedDfs.typed('KeyValue')        # typed means enforced requirements
-    .require('key', str, index=True)  # automagically make this an index
-    .require('value')                 # required
-    .reserve('note')                  # permitted but not required
-    .strict()                         # don't allow other columns
+    TypedDfs.typed("KeyValue")        # typed means enforced requirements
+    .require("key", dtype=str, index=True)  # automagically make this an index
+    .require("value")                 # required
+    .reserve("note")                  # permitted but not required
+    .strict()                         # don	’t allow other columns
 ).build()
 
-# This will self-organize and use 'key' as the index:
-df = KeyValue.read_csv('example.csv')
+# This will self-organize and use "key" as the index:
+df = KeyValue.read_csv("example.csv")
 
-# For fun, let's write it and read it back:
-df.to_csv('remke.csv')
-df = KeyValue('remake.csv')
-print(df.index_names(), df.column_names())  # ['key'], ['value', 'note']
+# For fun, let"s write it and read it back:
+df.to_csv("remke.csv")
+df = KeyValue("remake.csv")
+print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
 
 # And now, we can type a function to require a KeyValue,
 # and let it raise an `InvalidDfError` (here, a `MissingColumnError`):
 def my_special_function(df: KeyValue) -> float:
-    return KeyValue(df)['value'].sum()
+    return KeyValue(df)["value"].sum()
 ```
 
 All of the normal DataFrame methods are available.
-Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn't enforce requirements.
+Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn	’t enforce requirements.
 
 
 [New issues](https://github.com/dmyersturnbull/typed-dfs/issues) and pull requests are welcome.

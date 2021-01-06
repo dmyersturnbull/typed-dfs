@@ -13,6 +13,7 @@ def run() -> None:
     """
 
     # Build me a Key-Value-Note class!
+    # noinspection PyPep8Naming
     KeyValue = TypedDfs.example()
 
     # This will self-organize and use 'key' as the index:
