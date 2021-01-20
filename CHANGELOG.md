@@ -4,6 +4,14 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
+## [0.5.0] - 2021-01-19
+
+### Changed
+- Made `tables` an optional dependency; use `typeddfs[hdf5]`
+- `natsort` is no longer pinned to version 7; it's now `>=7`.
+  Added a note in the readme that this just requires some caution.
+
+
 ## [0.4.0] - 2020-08-29
 
 ### Removed

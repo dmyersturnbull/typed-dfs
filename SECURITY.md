@@ -6,7 +6,7 @@ These versions of typed-dfs are supported:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.4.x   | :white_check_mark: |
+| 0.5.x   | :white_check_mark: |
 
 
 ## How to report a vulnerability
