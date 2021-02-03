@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.4.0"
+version = "0.5.0"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -59,7 +59,7 @@ align    = true
 [tool.tyrannosaurus.sources]
 status             = "'Development'"
 date               = "'${today}'"
-copyright          = "'Copyright 2016–${today.year}'"
+copyright          = "'Copyright 2016–2021'"
 version            = "tool.poetry.version"
 release            = "tool.poetry.version"
 pyversions         = "tool.poetry.dependencies"
@@ -124,14 +124,6 @@ tomlkit                  = ">=0.7, <1.0"
 
 [tool.poetry.extras]
 hdf5 = ["tables"]
-dev = [
-        "pre-commit", "pre-commit-hooks",
-        "pytest", "coverage", "pytest-cov",
-        "sphinx", "sphinx-autoapi",
-        "flake8", "flake8-docstrings",
-        "black", "tomlkit",
-        "bandit", "flake8-bugbear"
-]
 
 
 #########################################################################################

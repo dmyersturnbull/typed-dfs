@@ -28,7 +28,7 @@ def run() -> None:
     print(my_special_function(df))
 
 
-__all__ = ["example", "run"]
+__all__ = ["run"]
 
 if __name__ == "__main__":  # pragma: no cover
     run()

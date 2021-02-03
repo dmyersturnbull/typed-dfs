@@ -1,15 +1,18 @@
+# Runs tests via tox
+# Runs on pull requests to main
 name: Test on pull request
 on:
   pull_request:
+    branches:
+      - main
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       matrix:
-        python-version:
-          # from tyrannosaurus "pymetaversion"; actual versions are handled in Tox
-          - 3.9
+        os: ["ubuntu-20.04"]
+        python-version: ["3.9"]
+    runs-on: "${{ matrix.os }}"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -23,3 +26,4 @@ jobs:
       - name: Test with tox
         run: |
           tox -v
+        

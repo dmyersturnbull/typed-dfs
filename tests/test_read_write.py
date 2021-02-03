@@ -52,6 +52,8 @@ class TestReadWrite:
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
 
+    """
+    # TODO re-enable when we get a pytables 3.9 wheels on Windows
     def test_hdf(self):
         with tmpfile() as path:
             df = TypedMultiIndex.convert(TypedMultiIndex(sample_data()))
@@ -59,6 +61,7 @@ class TestReadWrite:
             df2 = TypedMultiIndex.read_hdf(path)
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
+    """
 
 
 if __name__ == "__main__":
