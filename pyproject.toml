@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.5.0"
+version = "0.6.0"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -37,11 +37,7 @@ classifiers = [
     "Environment :: Console",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-include = [
-    "README.md",
-    "LICENSE.txt",
-    "CHANGELOG.md"
-]
+include = []
 
 [tool.poetry.urls]
 CI = "https://github.com/dmyersturnbull/typed-dfs/actions"
@@ -55,6 +51,7 @@ Download = "https://pypi.org/project/typeddfs/"
 
 [tool.tyrannosaurus.options]
 align    = true
+sort     = true
 
 [tool.tyrannosaurus.sources]
 status             = "'Development'"
@@ -86,11 +83,9 @@ recipes      = true
 license      = true
 authors      = true
 github       = true
-travis       = true
 dockerfile   = true
 readme       = true
 changelog    = true
-citation     = true
 codemeta     = true
 environment  = false
 
@@ -104,17 +99,19 @@ python                   = ">=3.8, <4"
 # natsort has major version bumps often
 natsort                  = ">=7"
 pandas                   = ">=1.2, <2.0"
-tables                   = {version=">=3.6, <4.0", optional=true}
+pyarrow                  = {version=">=3.0, <4.0", optional=true}
+#fastparquet              = {version=">=0.5, <1.0", optional=true}
+#tables                   = {version=">=3.6, <4.0", optional=true}
 
 [tool.poetry.dev-dependencies]
-pre-commit               = ">=2.9, <3.0"
+pre-commit               = ">=2.10, <3.0"
 pre-commit-hooks         = ">=3.4, <4.0"
 bandit                   = ">=1.7, <2.0"
 pytest                   = ">=6.2, <7.0"
-coverage                 = {extras = ["toml"], version = ">=5.3, <6.0"}
-pytest-cov               = ">=2.10, <3.0"
-sphinx                   = ">=3.4, <4.0"
-sphinx-autoapi           = ">=1.5, <2.0"
+coverage                 = {extras = ["toml"], version = ">=5.5, <6.0"}
+pytest-cov               = ">=2.11, <3.0"
+sphinx                   = ">=3.5, <4.0"
+sphinx-autoapi           = ">=1.7, <2.0"
 sphinx-rtd-theme         = ">=0.5, <1.0"
 flake8                   = ">=3.8, <4.0"
 flake8-docstrings        = ">=1.5, <2.0"
@@ -123,7 +120,9 @@ tomlkit                  = ">=0.7, <1.0"
 
 
 [tool.poetry.extras]
-hdf5 = ["tables"]
+#hdf5    = ["tables"]
+feather = ["pyarrow"]
+#parquet = ["fastparquet", "pyarrow"]
 
 
 #########################################################################################

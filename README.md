@@ -13,26 +13,33 @@
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
 
-Pandas DataFrame subclasses that enforce structure and can self-organize.
-Because your functions can’t exactly accept _any_  DataFrame.
+Pandas DataFrame subclasses that enforce structure and can self-organize.  
+*Because your functions can’t exactly accept **any**  DataFrame**.  
+`pip install typeddfs[feather]`
 
-The subclassed DataFrames can have required and/or optional columns and indices,
-and support custom requirements.
-Columns are automatically turned into indices,
-which means **`read_csv` and `to_csv` are always inverses**.
-`MyDf.read_csv(mydf.to_csv())` is just `mydf`.
+```python
+from typeddfs import TypedDfs
+MyDfType = (
+    TypedDfs.typed("MyDfType")
+    .require("name", index=True)        # always keep in index
+    .require("value", dtype=float)      # require a column and type
+    .drop("_temp")                      # auto-drop a column
+    .condition(lambda df: len(df)==12)  # require exactly 12 rows
+).build()
+# All normal Pandas functions work  (plus a few more, like sort_natural)
+```
 
-The DataFrames will display nicely in Jupyter notebooks,
-and a few convenience methods are added, such as `sort_natural` and `drop_cols`.
-**[See the docs](https://typed-dfs.readthedocs.io/en/stable/)** for more information.
+### 🎁 Features
 
-`pip install typeddfs[hdf5]` to install.
+- Columns are turned into indices as needed,
+  so **`read_csv` and `to_csv` are inverses**.
+  `MyDf.read_csv(mydf.to_csv())` is `mydf`. 
+- DataFrames display elegantly in Jupyter notebooks.
+- Extra methods such as `sort_natural` and `drop_cols`.
 
-Please note that HDF5 via pytables is 
-[unsupported in Python 3.9 on Windows](https://github.com/PyTables/PyTables/issues/854)
-as of 2021-02-03.
+### 🎨 Example
 
-Simple example for a CSV like this:
+For a CSV like this:
 
 | key   | value  | note |
 | ----- | ------ | ---- |
@@ -43,11 +50,11 @@ from typeddfs import TypedDfs
 
 # Build me a Key-Value-Note class!
 KeyValue = (
-    TypedDfs.typed("KeyValue")        # typed means enforced requirements
-    .require("key", dtype=str, index=True)  # automagically make this an index
-    .require("value")                 # required
-    .reserve("note")                  # permitted but not required
-    .strict()                         # don’t allow other columns
+    TypedDfs.typed("KeyValue")              # With enforced reqs / typing
+    .require("key", dtype=str, index=True)  # automagically add to index
+    .require("value")                       # required
+    .reserve("note")                        # permitted but not required
+    .strict()                               # disallow other columns
 ).build()
 
 # This will self-organize and use "key" as the index:
@@ -66,11 +73,58 @@ def my_special_function(df: KeyValue) -> float:
 
 All of the normal DataFrame methods are available.
 Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce requirements.
+**[See the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more information.
 
-A small note of caution: [natsort](https://github.com/SethMMorton/natsort) is no longer pinned
-to a specific major version as of version 0.5 because it receives somewhat frequent major updates.
+### 🔌 Serialization support
+
+Serialization is provided through Pandas, and some formats require additional packages.
+Pandas does not specify compatible versions, so typed-dfs specifies
+[extras](https://python-poetry.org/docs/pyproject/#extras) are provided in typed-dfs
+to ensure that those packages are installed with compatible versions.
+- To install with [Feather](https://arrow.apache.org/docs/python/feather.html) support,
+  use `pip install typeddfs[feather]`.
+- To install with support for all serialization formats,
+  use `pip install typeddfs[feather] fastparquet tables`.
+
+However, hdf5 and parquet have limited compatibility,
+restricted to some platforms and Python versions.
+In particular, neither is supported in Python 3.9 on Windows as of 2021-03-02.
+(See the [llvmlite issue](https://github.com/numba/llvmlite/issues/669)
+and [tables issue](https://github.com/PyTables/PyTables/issues/854).)
+
+Feather offers massively better performance over CSV, gzipped CSV, and HDF5
+in read speed, write speed, memory overhead, and compression ratios.
+Parquet typically results in smaller file sizes than Feather at some cost in speed.
+Feather is the preferred format for most cases.
+
+**⚠ Note:** The `hdf5` and `parquet` extras are currently disabled.
+
+| format   | packages              | extra     | compatibility | performance  |
+| -------- | --------------------  | --------- | ------------- | ------------ |
+| pickle   | none                  | none      | ❗ ️           | −           |
+| CSV      | none                  | none      | ✅             | −−          |
+| CSV.GZ   | none                  | none      | ✅             | −−          |
+| JSON     | none                  | none      | /️            | −−          |
+| JSON.GZ  | none                  | none      | /️            | −−          |
+| .npy †   | none                  | none      | †️            | +           |
+| .npz †   | none                  | none      | †️            | +           |
+| Feather  | `pyarrow`             | `feather` | ✅             | ++++        |
+| Parquet  | `pyarrow,fastparquet` | `parquet` | ❌             | +++         |
+| HDF5     | `tables`              | `hdf5`    | ❌             | −           |
+
+❗ == Pickle is explicitly not supported due to vulnerabilities and other issues.  
+/ == Mostly. JSON has inconsistent handling of `None`.  
+† == .npy and .npz only serialize numpy objects and therefore skip indices.
+
+### 📝 Extra notes
+
+A small note of caution: [natsort](https://github.com/SethMMorton/natsort) is not pinned
+to a specific major version because it receives somewhat frequent major updates.
 This means that the result of typed-df’s `sort_natural` could change.
-You can pin natsort to a specific major version; e.g. `natsort = "^7"` with [Poetry](https://python-poetry.org/).
+You can pin natsort to a specific major version;
+e.g. `natsort = "^7"` with [Poetry](https://python-poetry.org/) or `natsort>=7,<8` with pip.
+
+### 🍁 Contributing
 
 Typed-Dfs is licensed under the [Apache License, version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 [New issues](https://github.com/dmyersturnbull/typed-dfs/issues) and pull requests are welcome.

@@ -6,7 +6,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: 0 7 * * 6
+    - cron: "0 7 * * 6"
 jobs:
   markdown-link-check:
     name: Check Markdown links

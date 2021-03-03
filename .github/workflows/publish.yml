@@ -3,11 +3,9 @@
 name: Publish on release creation
 on:
   release:
-    types:
-      - published
+    types: [published]
   repository_dispatch:
-    types:
-      - release-made
+    types: [release-made]
 jobs:
   deploy:
     runs-on: ubuntu-20.04

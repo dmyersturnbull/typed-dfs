@@ -232,12 +232,40 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         return self.__class__._check_and_change(df)
 
     @classmethod
+    def read_feather(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+        # feather does not support MultiIndex, so reset index and use convert()
+        return cls.convert(pd.read_feather(*args, **kwargs))
+
+    # noinspection PyMethodOverriding
+    def to_feather(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
+        # feather does not support MultiIndex, so reset index and use convert()
+        return self.vanilla().reset_index().to_feather(path_or_buf, *args, **kwargs)
+
+    @classmethod
+    def read_parquet(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+        # parquet does not support MultiIndex, so reset index and use convert()
+        return cls.convert(pd.read_parquet(*args, **kwargs))
+
+    # noinspection PyMethodOverriding
+    def to_parquet(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
+        # parquet does not support MultiIndex, so reset index and use convert()
+        return self.vanilla().reset_index().to_parquet(path_or_buf, *args, **kwargs)
+
+    @classmethod
     def read_csv(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
         return cls._check_and_change(pd.read_csv(*args, **kwargs))
 
     # noinspection PyMethodOverriding
     def to_csv(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
         return self.vanilla().to_csv(path_or_buf, *args, **kwargs)
+
+    @classmethod
+    def read_json(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+        return cls._check_and_change(pd.read_json(*args, **kwargs))
+
+    # noinspection PyMethodOverriding
+    def to_json(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
+        return self.vanilla().to_json(path_or_buf, *args, **kwargs)
 
     @classmethod
     def read_hdf(cls, *args, key: str = "df", **kwargs) -> __qualname__:
@@ -251,6 +279,10 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
 
         Returns:
             A new instance of this class
+
+        Raises:
+            ImportError: If the ``tables`` package (pytables) is not available
+            OSError: Likely for some HDF5 configurations
         """
         # noinspection PyTypeChecker
         df: pd.DataFrame = pd.read_hdf(*args, key=key, **kwargs)
@@ -264,6 +296,10 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             path: A ``pathlib.Path`` or str value
             key: The HDF store key
             **kwargs: Passed to ``pd.DataFrame.to_hdf``
+
+        Raises:
+            ImportError: If the ``tables`` package (pytables) is not available
+            OSError: Likely for some HDF5 configurations
         """
         path = str(Path(path))
         x = self.vanilla()

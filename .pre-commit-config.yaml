@@ -1,9 +1,6 @@
-minimum_pre_commit_version: 2.9.0
+minimum_pre_commit_version: 2.10.0
 
 repos:
-  - repo: meta
-    hooks:
-      - id: check-hooks-apply
   - repo: 'https://github.com/psf/black'
     rev: 20.8b1
     hooks:
@@ -11,10 +8,12 @@ repos:
   - repo: 'https://github.com/pre-commit/pre-commit-hooks'
     rev: v3.4.0
     hooks:
+      - id: check-symlinks
+      - id: check-case-conflict
       - id: fix-byte-order-marker
       - id: end-of-file-fixer
+      - id: check-merge-conflict
       - id: debug-statements
-      - id: check-builtin-literals
       - id: check-toml
       - id: check-json
       - id: check-yaml

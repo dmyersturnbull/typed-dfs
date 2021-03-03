@@ -3,8 +3,7 @@
 name: Build & test
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 jobs:
   build:
     strategy:
@@ -30,6 +29,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pip install coveralls
+          pip install 'coveralls>=3,<4'
           coveralls --service=github
         if: ${{ matrix.os }} == ubuntu-20.04

@@ -9,9 +9,9 @@ from typeddfs.typed_dfs import TypedDf
 
 
 @contextlib.contextmanager
-def tmpfile() -> Path:
+def tmpfile(ext: str) -> Path:
     caller = inspect.stack()[1][3]
-    path = Path(__file__).parent.parent.parent / "resources" / "tmp" / (str(caller) + ".csv")
+    path = Path(__file__).parent.parent.parent / "resources" / "tmp" / (str(caller) + ext)
     path.parent.mkdir(parents=True, exist_ok=True)
     yield path
     if path.exists():
