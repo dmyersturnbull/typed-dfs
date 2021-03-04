@@ -239,7 +239,16 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     # noinspection PyMethodOverriding
     def to_feather(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
         # feather does not support MultiIndex, so reset index and use convert()
-        return self.vanilla().reset_index().to_feather(path_or_buf, *args, **kwargs)
+        # if an error occurs you end up with a 0-byte file
+        # so, let's delete it if that happens
+        # but don't delete it if it already exists!
+        existed = isinstance(path_or_buf, (PurePath, str)) and Path(path_or_buf).exists()
+        try:
+            return self.vanilla().reset_index().to_feather(path_or_buf, *args, **kwargs)
+        except:
+            if not existed:
+                Path(path_or_buf).unlink(missing_ok=True)
+            raise
 
     @classmethod
     def read_parquet(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
@@ -249,7 +258,16 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     # noinspection PyMethodOverriding
     def to_parquet(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
         # parquet does not support MultiIndex, so reset index and use convert()
-        return self.vanilla().reset_index().to_parquet(path_or_buf, *args, **kwargs)
+        # if an error occurs you end up with a 0-byte file
+        # so, let's delete it if that happens
+        # but don't delete it if it already exists!
+        existed = isinstance(path_or_buf, (PurePath, str)) and Path(path_or_buf).exists()
+        try:
+            return self.vanilla().reset_index().to_parquet(path_or_buf, *args, **kwargs)
+        except:
+            if not existed:
+                Path(path_or_buf).unlink(missing_ok=True)
+            raise
 
     @classmethod
     def read_csv(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
@@ -273,7 +291,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         Reads from HDF with ``key`` as the default, converting to this type.
 
         Args:
-            path: A ``pathlib.Path`` or str value
+            args: Passed; especially use ``path_or_buf``
             key: The HDF store key
             **kwargs: Passed to ``pd.DataFrame.to_hdf``
 
@@ -301,9 +319,18 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             ImportError: If the ``tables`` package (pytables) is not available
             OSError: Likely for some HDF5 configurations
         """
-        path = str(Path(path))
-        x = self.vanilla()
-        x.to_hdf(path, key, **kwargs)
+        path = Path(path)
+        df = self.vanilla()
+        # if an error occurs you end up with a 0-byte file
+        # so, let's delete it if that happens
+        # but don't delete it if it already exists!
+        existed = path.exists()
+        try:
+            df.to_hdf(str(path), key, **kwargs)
+        except:
+            if not existed:
+                path.unlink(missing_ok=True)
+            raise
 
     def vanilla(self) -> pd.DataFrame:
         """
