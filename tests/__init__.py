@@ -1,5 +1,6 @@
 import contextlib
 import inspect
+import random
 from pathlib import Path
 from typing import Sequence
 
@@ -10,8 +11,9 @@ from typeddfs.typed_dfs import TypedDf
 
 @contextlib.contextmanager
 def tmpfile(ext: str) -> Path:
-    caller = inspect.stack()[1][3]
-    path = Path(__file__).parent.parent.parent / "resources" / "tmp" / (str(caller) + ext)
+    # caller = inspect.stack()[1][3]
+    caller = str(random.randint(1, 100000))  # nosec
+    path = Path(__file__).parent / "resources" / "tmp" / (str(caller) + ext)
     path.parent.mkdir(parents=True, exist_ok=True)
     yield path
     if path.exists():
@@ -50,6 +52,12 @@ def sample_data_2():
 
 class TypedTrivial(TypedDf):
     pass
+
+
+class TypedOneColumn(TypedDf):
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["abc"]
 
 
 class TypedSingleIndex(TypedDf):

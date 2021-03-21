@@ -7,8 +7,11 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ## Added
 - Read/write wrappers for Feather, Parquet, and JSON
+- Added general functions `read_file` and `write_file`
+- `TypeDfs.wrap` and `FinalDf`
 
 ### Fixed
+- `to_csv` was not passing along `args` and `kwargs`
 - Slightly better build config
 
 ## [0.5.0] - 2021-01-19

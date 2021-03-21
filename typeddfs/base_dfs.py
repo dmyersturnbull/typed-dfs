@@ -3,7 +3,9 @@ Defines the superclasses of the types ``TypedDf`` and ``UntypedDf``.
 """
 from __future__ import annotations
 
+import csv
 import abc
+import os
 from pathlib import Path, PurePath
 from typing import Any, Iterable, List, Mapping, Optional, Sequence, Union
 from warnings import warn
@@ -12,6 +14,13 @@ import pandas as pd
 from natsort import natsorted, ns
 from pandas.core.frame import DataFrame as _InternalDataFrame
 
+
+class _Sentinal:
+    pass
+
+
+_SENTINAL = _Sentinal()
+_FAKE_SEP = "\u2008"  # 6-em space; very unlikely to occur
 PathLike = Union[str, PurePath]
 
 
@@ -70,10 +79,7 @@ class PrettyDf(_InternalDataFrame, metaclass=abc.ABCMeta):
             A Python list
         """
         lst = list(self.index.names)
-        if lst == [None]:
-            return []
-        else:
-            return lst
+        return [] if lst == [None] else lst
 
     def is_multindex(self) -> bool:
         """
@@ -231,59 +237,289 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
                 df = df.drop(c, axis=1)
         return self.__class__._check_and_change(df)
 
+    def write_file(self, path: Union[Path, str], *args, **kwargs):
+        """
+        Writes to a file (or possibly URL), guessing the format from the filename extension.
+        Delegates to the ``to_*`` functions of this class (e.g. ``to_csv``).
+        Only includes file formats that can be read back in with corresponding ``to`` methods,
+        and excludes pickle.
+
+        Supports:
+            - .csv, .tsv, or .tab (optionally with .gz, .zip, .bz2, or .xz)
+            - .json  (optionally with .gz, .zip, .bz2, or .xz)
+            - .feather
+            - .parquet or .snappy
+            - .h5 or .hdf
+            - .xlsx or .xls
+            - .txt, .lines, or .list (optionally with .gz, .zip, .bz2, or .xz);
+              see ``to_lines()``
+
+        Args:
+            path: Only path-like strings or pathlib objects are supported, not buffers
+                  (because we need a filename).
+            args: Positional args passed to the read_ function
+            kwargs: Keyword args passed to the function
+
+        Returns:
+            Whatever the corresponding method on ``pd.to_*`` returns.
+            This is usually either str or None
+        """
+        cls = self.__class__
+        return cls._guess_io(self, "to", path, _SENTINAL, _SENTINAL, _SENTINAL, "", *args, **kwargs)
+
+    @classmethod
+    def read_file(
+        cls,
+        path: Union[Path, str],
+        *args,
+        nl: Optional[str] = _SENTINAL,
+        header: Optional[str] = _SENTINAL,
+        skip_blank_lines: bool = _SENTINAL,
+        comment: str = "",
+        **kwargs,
+    ) -> __qualname__:
+        """
+        Reads from a file (or possibly URL), guessing the format from the filename extension.
+        Delegates to the ``read_*`` functions of this class.
+
+        You can always write and then read back to get the same dataframe::
+
+            # df is any DataFrame from typeddfs
+            # path can use any suffix
+            df.write_file(path))
+            df.read_file(path)
+
+        Supports:
+            - .csv, .tsv, or .tab (optionally with .gz, .zip, .bz2, or .xz)
+            - .json  (optionally with .gz, .zip, .bz2, or .xz)
+            - .feather
+            - .parquet or .snappy
+            - .h5 or .hdf
+            - .xlsx or .xls
+            - .fxf (fixed-width; read_fwf)
+            - .txt, .lines, or .list (optionally with .gz, .zip, .bz2, or .xz);
+              see ``read_lines()``
+
+        Args:
+            path: Only path-like strings or pathlib objects are supported, not buffers
+                  (because we need a filename).
+            nl: Passes ``line_terminator=nl`` to ``.read_csv`` if the output is a CSV/TSV variant.
+                This can usually be inferred and is more important with ``.write_file``.
+            header: Same as ``header`` in ``to_csv`` but not passed for non-CSV/TSV.
+                    Just allows passing header without worrying about whether it applies.
+            skip_blank_lines: Same idea as for ``header``
+            comment: Prefix indicating comments to ignore; only applies to ``to_lines``
+            args: Positional args passed to the read_ function
+            kwargs: Keyword args passed to the function
+
+        Returns:
+            An instance of this class
+        """
+        return cls._guess_io(
+            cls, "read", path, nl, header, skip_blank_lines, comment, *args, **kwargs
+        )
+
+    @classmethod
+    def _guess_io(
+        cls,
+        clazz,
+        prefix: str,
+        path: Union[Path, str],
+        nl: Optional[str],
+        header: Optional[str],
+        skip_blank_lines: Optional[bool],
+        comment: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        header = {} if header == _SENTINAL else dict(header=header)
+        skip_blank_lines = (
+            {} if skip_blank_lines == _SENTINAL else dict(skip_blank_lines=skip_blank_lines)
+        )
+        dct = {
+            ".feather": ("feather", {}),
+            ".parquet": ("parquet", {}),
+            ".snappy": ("parquet", {}),
+            ".h5": ("hdf", {}),
+            ".hdf": ("hdf", {}),
+            ".xlsx": ("excel", {}),
+            ".xls": ("excel", {}),
+        }
+        if prefix == "read":
+            dct.update(
+                {
+                    ".fwf": ("fwf", {}),
+                }
+            )
+        for compression in {".gz", ".zip", ".bz2", ".xz", ""}:
+            dct[".lines" + compression] = ("lines", dict(comment=comment))
+            dct[".txt" + compression] = ("lines", dict(comment=comment))
+            dct[".list" + compression] = ("lines", dict(comment=comment))
+            dct[".csv" + compression] = ("csv", nl)
+            dct[".json" + compression] = ("json", {})
+            dct[".tab" + compression] = ("csv", dict(sep="\t", **nl, **header, **skip_blank_lines))
+            dct[".tsv" + compression] = ("csv", dict(sep="\t", **nl, **header, **skip_blank_lines))
+        # `path` could be a URL, so don't use Path.suffix
+        for suffix, (fn, params) in dct.items():
+            if isinstance(path, (str, PurePath)) and str(path).endswith(suffix):
+                fn_name = prefix + "_" + fn
+                # Note the order! kwargs overwrites params
+                # clazz.to_csv(path, sep="\t")
+                my_kwargs = {**params, **kwargs}
+                return getattr(clazz, fn_name)(path, *args, **my_kwargs)
+        raise ValueError(f"Suffix for {path} not recognized")
+
+    def to_lines(
+        self,
+        path_or_buff,
+        comment: str = "",
+        nl: Optional[str] = _SENTINAL,
+    ) -> Optional[str]:
+        """
+        Writes a file that contains one row per line and 1 column per line.
+        Associated with ``.lines`` or ``.txt``.
+
+        .. caution::
+
+            For technical reasons, values cannot contain a 6-em space (U+2008).
+            Their presence will result in undefined behavior.
+
+        Args:
+            path_or_buff: Path or buffer
+            comment: Add a comment at the top line, such as ``'# list of fruits'``;
+                     No first line is added if empty
+            nl: Forces using \n as the line separator
+
+        Returns:
+            The string data if ``path_or_buff`` is a buffer; None if it is a file
+        """
+        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        if len(self.columns) != 1 or len(self.index_names()) != 0:
+            raise ValueError(f"Cannot write {len(self.columns)} columns to lines")
+        df = self.reset_index(drop=True)
+        data = [*([] if len(comment) == 0 else [comment]), *self[self.columns[0]].values.tolist()]
+        return pd.DataFrame(data).to_csv(
+            path_or_buff, index=False, sep=_FAKE_SEP, header=False, quoting=csv.QUOTE_NONE, **nl
+        )
+
+    @classmethod
+    def read_lines(
+        cls,
+        path_or_buff,
+        comment: str = "",
+        nl: Optional[str] = _SENTINAL,
+    ) -> __qualname__:
+        """
+        Reads a file that contains 1 row and 1 column per line.
+        Skips lines that are blank after trimming whitespace.
+        Also skips comments if ``comment`` is set.
+
+        .. caution::
+
+            For technical reasons, values cannot contain a 6-em space (U+2008).
+            Their presence will result in undefined behavior.
+
+        Args:
+            path_or_buff: Path or buffer
+            comment: Any line starting with this substring (excluding spaces) is ignored;
+                     no comment is used if empty
+            nl: Forces using \n as the line separator (can almost always be inferred)
+        """
+        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        df = pd.read_csv(
+            path_or_buff,
+            sep=_FAKE_SEP,
+            header=None,
+            quoting=csv.QUOTE_NONE,
+            skip_blank_lines=True,
+            **nl,
+            engine="python",
+        )
+        values = [
+            s.strip()
+            for s in df[df.columns[0]]
+            if s is not None
+            and len(s.strip()) > 0
+            and len(comment) == 0
+            or not s.strip().startswith(comment)
+        ]
+        df = pd.DataFrame(values)
+        if len(df.columns) != 1:
+            raise ValueError(f"Read multiple columns on {path_or_buff}")
+        if hasattr(cls, "required_columns"):
+            df.columns = cls.required_columns()
+        return cls._convert(df)
+
+    @classmethod
+    def read_json(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+        # feather does not support MultiIndex, so reset index and use convert()
+        return cls._convert(pd.read_json(*args, **kwargs))
+
+    def to_json(self, path_or_buf, *args, **kwargs) -> Optional[str]:
+        df = self.vanilla().reset_index()
+        return df.to_json(path_or_buf, *args, **kwargs)
+
     @classmethod
     def read_feather(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
         # feather does not support MultiIndex, so reset index and use convert()
-        return cls.convert(pd.read_feather(*args, **kwargs))
+        return cls._convert(pd.read_feather(*args, **kwargs))
 
-    # noinspection PyMethodOverriding
+    # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
     def to_feather(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
         # feather does not support MultiIndex, so reset index and use convert()
         # if an error occurs you end up with a 0-byte file
-        # so, let's delete it if that happens
-        # but don't delete it if it already exists!
-        existed = isinstance(path_or_buf, (PurePath, str)) and Path(path_or_buf).exists()
+        # this is fixed with exactly the same logic as for to_hdf -- see that method
+        try:
+            old_size = os.path.getsize(path_or_buf)
+        except BaseException:
+            old_size = None
         try:
             return self.vanilla().reset_index().to_feather(path_or_buf, *args, **kwargs)
-        except:
-            if not existed:
-                Path(path_or_buf).unlink(missing_ok=True)
+        except BaseException:
+            try:
+                size = os.path.getsize(path_or_buf)
+            except BaseException:
+                size = None
+            if size is not None and size == 0 and (old_size is None or old_size > 0):
+                try:
+                    Path(path_or_buf).unlink()
+                except BaseException:
+                    pass
             raise
 
     @classmethod
     def read_parquet(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
         # parquet does not support MultiIndex, so reset index and use convert()
-        return cls.convert(pd.read_parquet(*args, **kwargs))
+        return cls._convert(pd.read_parquet(*args, **kwargs))
 
-    # noinspection PyMethodOverriding
+    # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
     def to_parquet(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
         # parquet does not support MultiIndex, so reset index and use convert()
         # if an error occurs you end up with a 0-byte file
-        # so, let's delete it if that happens
-        # but don't delete it if it already exists!
-        existed = isinstance(path_or_buf, (PurePath, str)) and Path(path_or_buf).exists()
+        # this is fixed with exactly the same logic as for to_hdf -- see that method
         try:
-            return self.vanilla().reset_index().to_parquet(path_or_buf, *args, **kwargs)
-        except:
-            if not existed:
-                Path(path_or_buf).unlink(missing_ok=True)
+            old_size = os.path.getsize(path_or_buf)
+        except BaseException:
+            old_size = None
+        reset = self.vanilla().reset_index()
+        try:
+            return reset.to_parquet(path_or_buf, *args, **kwargs)
+        except BaseException:
+            try:
+                size = os.path.getsize(path_or_buf)
+            except BaseException:
+                size = None
+            if size is not None and size == 0 and (old_size is None or old_size > 0):
+                try:
+                    Path(path_or_buf).unlink()
+                except BaseException:
+                    pass
             raise
 
     @classmethod
     def read_csv(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
         return cls._check_and_change(pd.read_csv(*args, **kwargs))
-
-    # noinspection PyMethodOverriding
-    def to_csv(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
-        return self.vanilla().to_csv(path_or_buf, *args, **kwargs)
-
-    @classmethod
-    def read_json(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
-        return cls._check_and_change(pd.read_json(*args, **kwargs))
-
-    # noinspection PyMethodOverriding
-    def to_json(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
-        return self.vanilla().to_json(path_or_buf, *args, **kwargs)
 
     @classmethod
     def read_hdf(cls, *args, key: str = "df", **kwargs) -> __qualname__:
@@ -306,9 +542,15 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         df: pd.DataFrame = pd.read_hdf(*args, key=key, **kwargs)
         return cls._check_and_change(df)
 
+    # noinspection PyBroadException,PyFinal,DuplicatedCode
     def to_hdf(self, path: PathLike, key: str = "df", **kwargs) -> None:
         """
         Writes to HDF with ``key`` as the default. Calling pd.to_hdf on this would error.
+
+        Note:
+            This handles an edge case in vanilla ``pd.DataFrame.to_hdf``
+            that results in 0-byte files being written on error.
+            Those empty files are deleted if they're created and didn't already exist.
 
         Args:
             path: A ``pathlib.Path`` or str value
@@ -320,16 +562,34 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             OSError: Likely for some HDF5 configurations
         """
         path = Path(path)
-        df = self.vanilla()
         # if an error occurs you end up with a 0-byte file
-        # so, let's delete it if that happens
-        # but don't delete it if it already exists!
-        existed = path.exists()
+        # delete it if and only if we CREATED an empty file --
+        # subtle, but: we shouldn't delete the 0-byte file if it
+        # already existed and was 0 bytes
+        #
+        # just wrap in try-except -- it might not be a file and might not exist
+        # technically there's an edge case: what if it was just not readable?
+        # if it isn't readable now but becomes readable (and writable) by the time
+        # we try to write, then we delete it anyway
+        # that's a super unlikely bug and shouldn't matter anyway
+        try:
+            old_size = os.path.getsize(path)
+        except BaseException:
+            old_size = None
+        df = self.vanilla()
         try:
             df.to_hdf(str(path), key, **kwargs)
-        except:
-            if not existed:
-                path.unlink(missing_ok=True)
+        except BaseException:
+            # noinspection PyBroadException
+            try:
+                size = os.path.getsize(path)
+            except BaseException:
+                size = None
+            if size is not None and size == 0 and (old_size is None or old_size > 0):
+                try:
+                    Path(path).unlink()
+                except BaseException:
+                    pass
             raise
 
     def vanilla(self) -> pd.DataFrame:
@@ -381,7 +641,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            warn("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().reset_index(
                 level=level,
@@ -396,7 +656,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         self, keys, drop=True, append=False, inplace=False, verify_integrity=False
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            warn("inplace not supported. Use vanilla() if needed.")
         if len(keys) == 0 and append:
             return self
         elif len(keys) == 0:
@@ -443,6 +703,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             )
         )
 
+    # noinspection PyFinal
     def copy(self, deep: bool = False) -> __qualname__:
         return self.__class__._check_and_change(super().copy(deep=deep))
 
@@ -453,6 +714,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             )
         )
 
+    # noinspection PyFinal
     def ffill(self, axis=None, inplace=False, limit=None, downcast=None) -> __qualname__:
         if inplace:  # pragma: no cover
             warn("inplace not supported")
@@ -460,6 +722,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             super().ffill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
         )
 
+    # noinspection PyFinal
     def bfill(self, axis=None, inplace=False, limit=None, downcast=None) -> __qualname__:
         if inplace:  # pragma: no cover
             warn("inplace not supported")
@@ -467,6 +730,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             super().bfill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
         )
 
+    # noinspection PyFinal
     def abs(self) -> __qualname__:
         return self.__class__._check_and_change(super().abs())
 
@@ -497,8 +761,8 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             )
         )
 
-    def applymap(self, func) -> __qualname__:
-        return self.__class__._check_and_change(super().applymap(func))
+    def applymap(self, func, na_action: Optional[str] = None) -> __qualname__:
+        return self.__class__._check_and_change(super().applymap(func, na_action=na_action))
 
     def astype(self, dtype, copy=True, errors="raise") -> __qualname__:
         return self.__class__._check_and_change(
@@ -548,6 +812,16 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         for key, value in dict_conditions.items():
             df = df.loc[df[key] == value]
         return self.__class__._check_and_change(df)
+
+    @classmethod
+    def _convert(cls, df: pd.DataFrame):
+        # not great, but works ok
+        # if this is a BaseDf, use convert
+        # otherwise, just use check_and_change
+        if hasattr(cls, "convert"):
+            return cls.convert(df)
+        else:
+            return cls._check_and_change(df)
 
     @classmethod
     def _check_and_change(cls, df) -> __qualname__:

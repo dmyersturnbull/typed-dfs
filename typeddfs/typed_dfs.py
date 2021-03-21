@@ -163,8 +163,12 @@ class TypedDf(BaseDf):
         return cls.convert(df)
 
     def to_csv(self, path: PathLike, *args, **kwargs) -> Optional[str]:
-        df = self.vanilla().reset_index()
-        return df.to_csv(path, index=False)
+        # TODO not checking for index in the args
+        if "index" in kwargs:
+            return super().to_csv(path, *args, **kwargs)
+        else:
+            df = self.vanilla().reset_index()
+            return df.to_csv(path, *args, index=False, **kwargs)
 
     @classmethod
     def is_valid(cls, df: pd.DataFrame) -> bool:
@@ -261,10 +265,14 @@ class TypedDf(BaseDf):
     def _check_has_required(cls, df: pd.DataFrame) -> None:
         for c in set(cls.required_index_names()):
             if c not in set(df.index.names):
-                raise MissingColumnError(f"Missing index name {c}")
+                raise MissingColumnError(
+                    f"Missing index name {c} (indices are: {set(df.index.names)}; columns are: {set(df.columns.names)}))"
+                )
         for c in set(cls.required_columns()):
             if c not in set(df.columns):
-                raise MissingColumnError(f"Missing column {c}")
+                raise MissingColumnError(
+                    f"Missing column {c} (columns are: {set(df.columns.names)}; indices are: {set(df.index.names)})"
+                )
 
     @classmethod
     def _check_has_unexpected(cls, df: pd.DataFrame) -> None:

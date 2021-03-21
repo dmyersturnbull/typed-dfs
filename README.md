@@ -9,7 +9,7 @@
 [![Documentation status](https://readthedocs.org/projects/typed-dfs/badge)](https://typed-dfs.readthedocs.io/en/stable/)
 [![Coverage (coveralls)](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=main&service=github)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=main)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)  
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
 
@@ -35,7 +35,7 @@ MyDfType = (
   so **`read_csv` and `to_csv` are inverses**.
   `MyDf.read_csv(mydf.to_csv())` is `mydf`. 
 - DataFrames display elegantly in Jupyter notebooks.
-- Extra methods such as `sort_natural` and `drop_cols`.
+- Extra methods such as `sort_natural` and `write_file`.
 
 ### 🎨 Example
 
@@ -76,6 +76,14 @@ Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce r
 **[See the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more information.
 
 ### 🔌 Serialization support
+
+Like Pandas, TypedDfs can read and write to various formats.
+It provides the methods `read_file` and `write_file`, which guess the format from the
+filename extension. For example, `df.write_file("myfile.snappy)` writes Parquet files,
+and `df.write_file("myfile.tab.gz")` writes a gzipped, tab-delimited file.
+The `read_file` method works the same way: `MyDf.read_file("myfile.feather")` will
+read an Apache Arrow Feather file, and `MyDf.read_file("myfile.json.gzip")`reads
+a gzipped JSON file. You can pass keyword arguments to those functions.
 
 Serialization is provided through Pandas, and some formats require additional packages.
 Pandas does not specify compatible versions, so typed-dfs specifies

@@ -41,6 +41,7 @@ class UntypedDf(BaseDf):
             df.to_csv(path)
             df.__class__.read_csv(path) == df
         """
+        # TODO not checking for index in the args
         if "index" in kwargs:
             return super().to_csv(path, *args, **kwargs)
         else:

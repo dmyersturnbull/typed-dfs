@@ -9,6 +9,8 @@ from importlib.metadata import metadata as __load
 from pathlib import Path
 from typing import Optional, Type
 
+import pandas as pd
+
 from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
 from typeddfs.base_dfs import BaseDf
 from typeddfs.base_dfs import ExtraConditionFailedError as _ExtraConditionFailedError
@@ -40,6 +42,10 @@ try:
     __contact__ = metadata["maintainer"]
 except PackageNotFoundError:  # pragma: no cover
     logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
+
+
+class FinalDf(UntypedDf):
+    """An untyped DataFrame meant for general use."""
 
 
 class TypedDfs:
@@ -82,6 +88,18 @@ class TypedDfs:
             .strict()  # don't allow other columns
         ).build()
         return KeyValue
+
+    @classmethod
+    def wrap(cls, df: pd.DataFrame) -> FinalDf:
+        """
+        Just wraps a DataFrame into a simple untyped DataFrame.
+        Useful to quickly access a function only defined on typeddfs DataFrames.
+
+        Example:
+
+            TypedDfs.wrap(df).write_file("abc.feather")
+        """
+        return FinalDf(df)
 
     @classmethod
     def typed(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
@@ -127,4 +145,4 @@ class TypedDfs:
         return New
 
 
-__all__ = ["BaseDf", "UntypedDf", "TypedDf", "TypedDfs"]
+__all__ = ["BaseDf", "UntypedDf", "TypedDf", "TypedDfs", "FinalDf"]

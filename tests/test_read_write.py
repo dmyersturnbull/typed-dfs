@@ -10,7 +10,7 @@ class TestReadWrite:
         with tmpfile(".feather") as path:
             df = TypedMultiIndex.convert(TypedMultiIndex(sample_data()))
             df.to_feather(path, compression="lz4")
-            df2 = UntypedDf.read_feather(path)
+            df2 = TypedMultiIndex.read_feather(path)
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
 
@@ -18,7 +18,7 @@ class TestReadWrite:
         with tmpfile(".feather") as path:
             df = TypedMultiIndex.convert(TypedMultiIndex(sample_data()))
             df.to_feather(path, compression="zstd")
-            df2 = UntypedDf.read_feather(path)
+            df2 = TypedMultiIndex.read_feather(path)
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
 
