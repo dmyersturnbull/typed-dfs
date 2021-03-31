@@ -62,7 +62,7 @@ df = KeyValue.read_csv("example.csv")
 
 # For fun, let"s write it and read it back:
 df.to_csv("remke.csv")
-df = KeyValue("remake.csv")
+df = KeyValue.read_csv("remake.csv")
 print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
 
 # And now, we can type a function to require a KeyValue,
