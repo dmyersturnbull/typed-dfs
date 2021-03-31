@@ -29,11 +29,12 @@ class UntypedDf(BaseDf):
             df.to_csv(path)
             df.__class__.read_csv(path) == df
         """
-        index_col = kwargs.get("index_col", False)
-        df = pd.read_csv(*args, index_col=index_col)
+        # TODO not checking for index in the args
+        kwargs = {**dict(index_col=False), **kwargs}
+        df = pd.read_csv(*args, **kwargs)
         return cls._check_and_change(df)
 
-    def to_csv(self, path: PathLike, *args, **kwargs) -> Optional[str]:
+    def to_csv(self, path_or_buf: PathLike, *args, **kwargs) -> Optional[str]:
         """
         Writes CSV.
         Using to_csv() and read_csv() from BaseFrame, this property holds::
@@ -43,10 +44,10 @@ class UntypedDf(BaseDf):
         """
         # TODO not checking for index in the args
         if "index" in kwargs:
-            return super().to_csv(path, *args, **kwargs)
+            return super().to_csv(path_or_buf, *args, **kwargs)
         else:
             df = self.vanilla().reset_index(drop=list(self.index.names) == [None])
-            return df.to_csv(path, *args, index=False, **kwargs)
+            return df.to_csv(path_or_buf, *args, index=False, **kwargs)
 
 
 __all__ = ["UntypedDf"]

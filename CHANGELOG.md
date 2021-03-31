@@ -3,7 +3,12 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.6.0] - 2021-03-02
+## [0.6.1] - 2021-03-31
+
+### Fixed
+- Not passing kwargs to `UntypedDf.to_csv`
+
+## [0.6.0] - 2021-03-30
 
 ## Added
 - Read/write wrappers for Feather, Parquet, and JSON
