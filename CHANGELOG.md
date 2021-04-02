@@ -5,8 +5,12 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ## [0.6.1] - 2021-03-31
 
+### Added
+- `vanilla_reset`
+
 ### Fixed
 - Not passing kwargs to `UntypedDf.to_csv`
+- Simplified some read/write code
 
 ## [0.6.0] - 2021-03-30
 

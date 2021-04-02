@@ -194,7 +194,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             column: The name of the (single) column to sort by
             alg: Input as the ``alg`` argument to ``natsorted``
         """
-        df = self.copy().reset_index()
+        df = self.vanilla_reset()
         zzz = natsorted([s for s in df[column]], alg=alg)
         df["__sort"] = df[column].map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
@@ -395,10 +395,12 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
         nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        comment = [] if len(comment) == 0 else [comment]
         if len(self.columns) != 1 or len(self.index_names()) != 0:
             raise ValueError(f"Cannot write {len(self.columns)} columns to lines")
-        df = self.reset_index(drop=True)
-        data = [*([] if len(comment) == 0 else [comment]), *self[self.columns[0]].values.tolist()]
+        df = self.vanilla_reset()
+        data = df[df.columns[0]].values.tolist()
+        data = [*comment, *data]
         return pd.DataFrame(data).to_csv(
             path_or_buff, index=False, sep=_FAKE_SEP, header=False, quoting=csv.QUOTE_NONE, **nl
         )
@@ -457,7 +459,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         return cls._convert(pd.read_json(*args, **kwargs))
 
     def to_json(self, path_or_buf, *args, **kwargs) -> Optional[str]:
-        df = self.vanilla().reset_index()
+        df = self.vanilla_reset()
         return df.to_json(path_or_buf, *args, **kwargs)
 
     @classmethod
@@ -475,7 +477,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         except BaseException:
             old_size = None
         try:
-            return self.vanilla().reset_index().to_feather(path_or_buf, *args, **kwargs)
+            return self.vanilla_reset().to_feather(path_or_buf, *args, **kwargs)
         except BaseException:
             try:
                 size = os.path.getsize(path_or_buf)
@@ -502,7 +504,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             old_size = os.path.getsize(path_or_buf)
         except BaseException:
             old_size = None
-        reset = self.vanilla().reset_index()
+        reset = self.vanilla_reset()
         try:
             return reset.to_parquet(path_or_buf, *args, **kwargs)
         except BaseException:
@@ -518,8 +520,63 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             raise
 
     @classmethod
-    def read_csv(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
-        return cls._check_and_change(pd.read_csv(*args, **kwargs))
+    def read_csv(cls, *args, **kwargs) -> __qualname__:
+        """
+        Reads from CSV, converting to this type.
+        Using to_csv() and read_csv() from BaseFrame, this property holds::
+
+            df.to_csv(path)
+            df.__class__.read_csv(path) == df
+
+        Passing ``index`` on ``to_csv`` or ``index_col`` on ``read_csv``
+        explicitly will break this invariant.
+
+        Args:
+            args: Passed to ``pd.read_csv``; should start with a path or buffer
+            kwargs: Passed to ``pd.read_csv``.
+        """
+        kwargs = dict(kwargs)
+        # we want to set index=False, but we also want to let the user override
+        # checking for index in the positional args
+        # this is a really good case against positional arguments in languages
+        # 'index_col' is in the 6th positional slot
+        # that's ONLY IF we don't list the path as the first arg though!!!
+        # if we added path_or_buf before `*args`, this would need to be < 5
+        if len(args) < 6:
+            kwargs.setdefault("index_col", False)
+        df = pd.read_csv(*args, **kwargs)
+        return cls._convert(df)
+
+    def to_csv(self, *args, bom: bool = False, **kwargs) -> Optional[str]:
+        """
+        Writes to CSV.
+        Using to_csv() and read_csv() from BaseFrame, this property holds::
+
+            df.to_csv(path)
+            df.__class__.read_csv(path) == df
+
+        Passing ``index`` on ``to_csv`` or ``index_col`` on ``read_csv``
+        explicitly will break this invariant.
+
+        Args:
+            args: Passed to ``pd.read_csv``; should start with a path or buffer
+            bom: Special flag to set the encoding to utf-8-sig on Windows but utf-8 otherwise.
+                 This is useful because Windows often assumes ANSI (CP1252),
+                 so many applications (esp. Excel) can't open it correctly without a BOM.
+                 Passing `encoding` explicitly will override this.
+
+            kwargs: Passed to ``pd.read_csv``.
+        """
+        kwargs = dict(kwargs)
+        # same logic as for read_csv -- see that
+        if len(args) < 7:
+            kwargs.setdefault("index", False)
+        if bom and len(args) < 10 and os.name == "nt":
+            kwargs.setdefault("encoding", "utf-8-sig")
+        elif bom and len(args) < 10:
+            kwargs.setdefault("encoding", "utf-8")
+        df = self.vanilla_reset()
+        return df.to_csv(*args, **kwargs)
 
     @classmethod
     def read_hdf(cls, *args, key: str = "df", **kwargs) -> __qualname__:
@@ -591,6 +648,17 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
                 except BaseException:
                     pass
             raise
+
+    def vanilla_reset(self) -> pd.DataFrame:
+        """
+        Same as ``vanilla``, but resets the index -- but dropping the index if it has no name.
+        This means that an effectively index-less dataframe will not end up with an extra column
+        called 'index'.
+        """
+        if len(self.index_names()) > 0:
+            return self.vanilla().reset_index()
+        else:
+            return self.vanilla().reset_index(drop=True)
 
     def vanilla(self) -> pd.DataFrame:
         """

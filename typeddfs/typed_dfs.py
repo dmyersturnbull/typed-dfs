@@ -3,6 +3,7 @@ Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path, PurePath
 from typing import Callable, Optional, Sequence, Union
 
@@ -156,19 +157,6 @@ class TypedDf(BaseDf):
             df: __qualname__ = self[[self.columns[0]]]
             df = df.drop(self.columns[0], axis=1)
             return self.__class__.convert(df)
-
-    @classmethod
-    def read_csv(cls, filepath_or_buffer: PathLike, *args, **kwargs) -> __qualname__:
-        df = pd.read_csv(filepath_or_buffer, index_col=False, **kwargs)
-        return cls.convert(df)
-
-    def to_csv(self, path_or_buf: PathLike, *args, **kwargs) -> Optional[str]:
-        # TODO not checking for index in the args
-        if "index" in kwargs:
-            return super().to_csv(path_or_buf, *args, **kwargs)
-        else:
-            df = self.vanilla().reset_index()
-            return df.to_csv(path_or_buf, *args, index=False, **kwargs)
 
     @classmethod
     def is_valid(cls, df: pd.DataFrame) -> bool:
