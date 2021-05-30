@@ -4,6 +4,7 @@
 name: Static checks
 on:
   push:
+    branches: [ main ]
   pull_request:
   schedule:
     - cron: "0 7 * * 6"

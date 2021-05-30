@@ -3,7 +3,8 @@
 name: Test on pull request
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
+    paths-ignore: [ "**/*.md", "**/*.rst" ]
 jobs:
   build:
     strategy:

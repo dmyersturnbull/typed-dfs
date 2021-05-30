@@ -3,6 +3,16 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.6.2] - 2021-05-30
+
+### Changed
+- Bumped pyarrow to 4.0
+
+### Fixed
+- Bumped dev deps (Sphinx and git-commit)
+- Deleted .dockerignore and codemeta.json
+- Check workflow error on push
+
 ## [0.6.1] - 2021-03-31
 
 ### Added
