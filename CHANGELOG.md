@@ -3,19 +3,28 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.7.0] - 2021-06-07
+## [0.7.0] - 2021-06-08
 
 ### Added
-- `can_read` and `can_write`
-- Write (and read) to fixed-width and "flex" fixed-width
+- `can_read` and `can_write` on `BaseDf` to get supported file formats
+- Write (and read) to "flex" fixed-width;
+  currently, this is only used for ".flexwf" as a preview
 - `pretty_print`, which delegates to [tabulate](https://pypi.org/project/tabulate)
+- Optional post-processing method (`TypedDf.post_process`)
+- `known_column_names`, `known_index_names`, and `known_names`
 
 ### Removed
-- `comment` from `to_lines`
+- `comment` from `to_lines`; it was too confusing because no other write functions had one
 
 ### Changed
-- `assign` now overridden to handle indices
+- `dtype` values in `TypedDfBuilder` are now used;
+  specifically, `TypedDf.convert` calls `pd.Series.astype` with them.
+- Overrode `assign` to handle indices
+- Split some functionality of `AbsDf` into a superclass `_CoreDf`
 - Bumped pyarrow to 4.0
+- Various functions return more specific error types
+- Deprecated `TypedDfBuilder.condition` (renamed to `verify`)
+- Passing `inplace=True` where not supported now raises an error instead of warning
 - All `write_file` serialization now requires column names to be str for consistency
 - Empty DataFrames are read via `BaseDf.read_csv`, etc. without issue (`pd.read_csv` normally fails)
 
@@ -23,7 +32,8 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - `to_lines` and `read_lines` are fully inverses
 - Read/write are inverses for *untyped* DFs for all formats
 - Deleted .dockerignore and codemeta.json
-- Check workflow error on push
+- `check` workflow no longer errors on push
+- Better read/write tests; enabled Parquet-format tests
 
 ## [0.6.1] - 2021-03-31
 

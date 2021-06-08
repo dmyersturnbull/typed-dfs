@@ -3,24 +3,21 @@ Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
-from pathlib import PurePath
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Type, Any, Mapping
 
 import pandas as pd
 
-from typeddfs.base_dfs import (
+from typeddfs.base_dfs import BaseDf
+from typeddfs.df_errors import (
     AsymmetricDfError,
-    BaseDf,
     ExtraConditionFailedError,
     InvalidDfError,
     MissingColumnError,
-    PrettyDf,
     UnexpectedColumnError,
     UnexpectedIndexNameError,
 )
+from typeddfs._pretty_dfs import PrettyDf
 from typeddfs.untyped_dfs import UntypedDf
-
-PathLike = Union[str, PurePath]
 
 
 class Df(UntypedDf):
@@ -94,6 +91,10 @@ class TypedDf(BaseDf):
         df.__class__ = cls
         df = df.drop_cols(["index", "level_0"])  # these MUST be dropped
         df = df.drop_cols(cls.columns_to_drop())
+        # now let's convert the dtypes
+        for c, dt in cls.auto_dtypes().items():
+            if c in df.columns:
+                df[c] = df[c].astype(dt)
         # set index columns and used preferred order
         new_index_names = []
         # here we keep the order of reserved
@@ -102,12 +103,7 @@ class TypedDf(BaseDf):
                 new_index_names.append(c)
         # if the original index names are reserved columns, add them to the columns
         # otherwise, stick them at the end of the index
-        all_reserved = {
-            *cls.required_columns(),
-            *cls.reserved_columns(),
-            *cls.required_index_names(),
-            *cls.reserved_index_names(),
-        }
+        all_reserved = cls.known_names()
         # if it doesn't get added in here, it just stays in the columns -- which will be kept
         new_index_names.extend([s for s in original_index_names if s not in all_reserved])
         if len(new_index_names) > 0:  # raises an error otherwise
@@ -119,6 +115,9 @@ class TypedDf(BaseDf):
                 new_columns.append(c)
         # this lets us keep whatever extra columns
         df = df.cfirst(new_columns)
+        # call post-processing
+        if cls.post_processing() is not None:
+            df = cls.post_processing()(df)
         # check that it has every required column and index name
         cls._check(df)
         # now change the class
@@ -212,6 +211,47 @@ class TypedDf(BaseDf):
         return []
 
     @classmethod
+    def known_column_names(cls) -> Sequence[str]:
+        """
+        Returns all columns that are required or reserved.
+        The sort order positions required columns first.
+        """
+        return [*cls.required_columns(), *cls.reserved_columns()]
+
+    @classmethod
+    def known_index_names(cls) -> Sequence[str]:
+        """
+        Returns all index names that are required or reserved.
+        The sort order positions required columns first.
+        """
+        return [*cls.required_index_names(), *cls.reserved_index_names()]
+
+    @classmethod
+    def known_names(cls) -> Sequence[str]:
+        """
+        Returns all index and column names that are required or reserved.
+        The sort order is: required index, reserved index, required columns, reserved columns.
+        """
+        return [
+            *cls.required_index_names(),
+            *cls.reserved_index_names(),
+            *cls.required_columns(),
+            *cls.reserved_columns(),
+        ]
+
+    @classmethod
+    def auto_dtypes(cls) -> Mapping[str, Type[Any]]:
+        """
+        Returns a mapping from column/index names to the expected dtype.
+        These are used via ``pd.Series.as_type`` for automatic conversion.
+        An error will be raised if a ``as_type`` call fails.
+        Note that Pandas frequently just does not perform the conversion,
+        rather than raising an error.
+        The keys should be contained in ``known_names``, but this is not strictly required.
+        """
+        return {}
+
+    @classmethod
     def must_be_symmetric(cls) -> bool:
         """
         Returns whether the (single only) index values must match the column names.
@@ -227,7 +267,21 @@ class TypedDf(BaseDf):
         return []
 
     @classmethod
-    def extra_conditions(cls) -> Sequence[Callable[[pd.DataFrame], Optional[str]]]:
+    def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
+        """
+        A function to be called at the final stage of ``convert``,
+        immediately before ``extra_conditions`` are checked.
+        The function takes a copy of the input ``BaseDf`` and returns a new copy.
+
+        Note:
+            Although a copy is passed as input, the function should not modify it.
+            Technically, doing so will cause problems only if the DataFrame's internal values
+            are modified. The value passed is a *shallow* copy (see ``pd.DataFrame.copy``).
+        """
+        return None
+
+    @classmethod
+    def extra_conditions(cls) -> Sequence[Callable[[BaseDf], Optional[str]]]:
         """
         Additional requirements for the DataFrame to be conformant.
 

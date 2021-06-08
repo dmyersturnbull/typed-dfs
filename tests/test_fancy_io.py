@@ -1,13 +1,13 @@
 import io
-from typing import Set
+from typing import Set, Type
 import pytest
 import random
 
-from typeddfs import TypedDf
+from typeddfs import TypedDf, BaseDf
 
 # noinspection PyProtectedMember
 from typeddfs._utils import _Utils
-from typeddfs.base_dfs import NonStrColumnError, NotSingleColumnError
+from typeddfs.df_errors import NonStrColumnError, NotSingleColumnError, FilenameSuffixError
 
 from . import (
     tmpfile,
@@ -22,6 +22,7 @@ from . import (
     Ind1Col2,
     Ind2Col1,
     Ind2Col2,
+    logger,
 )
 
 gen = random.SystemRandom()
@@ -29,15 +30,14 @@ gen = random.SystemRandom()
 # h5, snappy, and parquet work too -- but can't run in CI yet
 assert _Utils.has_tabulate
 assert _Utils.has_feather
-if _Utils.has_parquet:
-    print("Parquet support is loaded.")
+assert _Utils.has_parquet
 if _Utils.has_hdf5:
     print("HDF5 support is loaded.")
 known_compressions = {"", ".gz", ".zip", ".bz2", ".xz"}
 
 
 def get_req_ext(txt: bool) -> Set[str]:
-    ne = {".feather"}
+    ne = {".feather", ".snappy", ".parquet"}
     xx = {".csv", ".tsv", ".tab", ".json", ".flexwf"}
     if txt:
         xx.add(".txt")
@@ -51,11 +51,7 @@ def get_req_ext(txt: bool) -> Set[str]:
 
 def get_actual_ext(cls) -> Set[str]:
     known = cls.can_read().intersection(cls.can_write())
-    return {
-        e
-        for e in known
-        if (e not in {".hdf", ".h5", ".hdf5", ".snappy", ".parquet", ".xls", ".xlsx", ".fwf"})
-    }
+    return {e for e in known if (e not in {".hdf", ".h5", ".hdf5", ".xls", ".xlsx", ".fwf"})}
 
 
 def rand_vals():
@@ -113,16 +109,57 @@ class TestReadWrite:
     def test_ind2_col2(self):
         self._test_great(Ind2Col2)
 
-    def _test_great(self, t):
+    def _test_great(self, t: Type[BaseDf]):
         for ext in get_actual_ext(t):
             if ext == ".feather" and t == ActuallyEmpty:
                 continue
-            with tmpfile(ext) as path:
-                df = rand_df(t)
+            try:
+                with tmpfile(ext) as path:
+                    df = rand_df(t)
+                    df.write_file(path)
+                    df2 = t.read_file(path)
+                    assert df2.index_names() == df.index_names()
+                    assert df2.column_names() == df.column_names()
+            except Exception:
+                logger.error(f"Failed on {t} / {ext}")
+                raise
+
+    def test_bad_suffix(self):
+        df = Untyped({"abc": [1, 2], "xyz": [1, 2]})
+        with tmpfile(".omg") as path:
+            with pytest.raises(FilenameSuffixError):
                 df.write_file(path)
-                df2 = t.read_file(path)
-                assert df2.index_names() == df.index_names()
-                assert df2.column_names() == df.column_names()
+
+    def test_nl_option(self):
+        df = Untyped({"abc": [1, 2], "xyz": [1, 2]})
+        with tmpfile(".csv") as path:
+            df.write_file(path, nl=True)
+            lines = [line for line in path.read_text().split("\n") if len(line.strip()) > 0]
+            assert lines == ["abc,xyz", "1,1", "2,2"]
+
+    def test_skip_blank_line(self):
+        lines = ["abc,xyz", "one,two", "", "three,four"]
+        with tmpfile(".csv") as path:
+            path.write_text("\n".join(lines))
+            df = Untyped.read_file(path, skip_blank_lines=True)
+            assert df.values.tolist() == [["one", "two"], ["three", "four"]]
+
+    def test_comment_option(self):
+        lines = ["abc,xyz", "one,two", "# this is a comment,yes", "three,four"]
+        # first, with no comment
+        with tmpfile(".csv") as path:
+            path.write_text("\n".join(lines))
+            df = Untyped.read_file(path)
+            assert df.values.tolist() == [
+                ["one", "two"],
+                ["# this is a comment", "yes"],
+                ["three", "four"],
+            ]
+        # now with a comment
+        with tmpfile(".csv") as path:
+            path.write_text("\n".join(lines))
+            df = Untyped.read_file(path, comment="#")
+            assert df.values.tolist() == [["one", "two"], ["three", "four"]]
 
     def test_non_str_cols(self):
         with tmpfile(".csv") as path:
@@ -151,13 +188,18 @@ class TestReadWrite:
     # noinspection DuplicatedCode
     def test_read_write_txt(self):
         for c in get_req_ext(True):
+            df = Col1(["a", "puppy", "and", "a", "parrot"], columns=["abc"])
             with tmpfile(c) as path:
-                df = Col1(["a", "puppy", "and", "a", "parrot"], columns=["abc"])
-                df = Col1.convert(df)
                 df.write_file(path)
                 df2 = Col1.read_file(path)
                 assert df2.index_names() == []
                 assert df2.column_names() == ["abc"]
+
+    def test_read_write_txt_fail(self):
+        df = rand_df(Col2)
+        with tmpfile(".lines") as path:
+            with pytest.raises(NotSingleColumnError):
+                df.to_lines(path)
 
     def test_read_write_flexwf_float(self):
         df = Col1([0.3, 0.4, 0.5], columns=["abc"])
@@ -169,11 +211,44 @@ class TestReadWrite:
         assert df.index_names() == df2.index_names()
         assert df.values.tolist() == df2.values.tolist()
 
+    def test_read_write_flexwf_fancy_delimiter(self):
+        df = Col1([0.3, 0.4, 0.5], columns=["abc"])
+        df = Col1.convert(df)
+        data = df.to_flexwf(None, sep="--->")
+        buf = io.StringIO(data)
+        df2 = df.read_flexwf(buf, sep="--->")
+        assert df.column_names() == df2.column_names()
+        assert df.index_names() == df2.index_names()
+        assert df.values.tolist() == df2.values.tolist()
+
     def test_tabulate(self):
         df = Col1(["a", "puppy", "and", "a", "parrot"], columns=["abc"])
         df = Col1.convert(df)
         assert df.pretty_print() == "abc\na\npuppy\nand\na\nparrot"
         assert len(df.pretty_print("pretty").splitlines()) == len(df) + 4
+
+    def test_lines_apply(self):
+        assert Untyped._lines_files_apply()
+        assert Col1._lines_files_apply()
+        assert Ind1._lines_files_apply()
+        assert not Col2._lines_files_apply()
+        assert not Ind1Col1._lines_files_apply()
+
+    def test_read_empty_csv(self):
+        df = Untyped({})
+        assert df.values.tolist() == []
+        with tmpfile(".csv") as path:
+            df.to_csv(path)
+            df2 = Untyped.read_csv(path)
+        assert df.values.tolist() == df2.values.tolist()
+
+    def test_read_empty_txt(self):
+        df = Untyped({})
+        assert df.values.tolist() == []
+        with tmpfile(".lines") as path:
+            df.to_csv(path)
+            df2 = Untyped.read_lines(path)
+        assert df.values.tolist() == df2.values.tolist()
 
 
 if __name__ == "__main__":

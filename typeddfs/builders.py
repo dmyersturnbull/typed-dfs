@@ -5,11 +5,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Type
+from typing import Callable, Optional, Sequence, Type, Mapping, Any
+from warnings import warn
 
 import pandas as pd
 
+from typeddfs import BaseDf
 from typeddfs.typed_dfs import TypedDf
+from typeddfs.df_errors import ClashError
 
 logger = logging.getLogger(Path(__file__).parent.name)
 
@@ -41,6 +44,7 @@ class TypedDfBuilder:
         self._strict_meta = False
         self._strict_cols = False
         self._symmetric = False
+        self._post_processing = None
         self._extra_reqs = []
         if not isinstance(name, str):
             raise TypeError(f"Class name {name} is a {type(name)}, not str")
@@ -55,11 +59,10 @@ class TypedDfBuilder:
         Args:
             names: A varargs list of columns or index names
             dtype: An automatically applied transformation of the column values using ``.astype``
-                   THIS PARAMETER IS **NOT IMPLEMENTED YET**
             index: If True, put these in the index
 
         Returns:
-            self
+            this builder for chaining
 
         Raises:
             ValueError: If a name was already added, or is "level_0" or "index"
@@ -90,7 +93,7 @@ class TypedDfBuilder:
             index: If True, put these in the index
 
         Returns:
-            self
+            this builder for chaining
 
         Raises:
             ValueError: If a name was already added, or is "level_0" or "index"
@@ -113,7 +116,7 @@ class TypedDfBuilder:
             names: Varargs list of names
 
         Returns:
-            self
+            this builder for chaining
         """
         self._drop.extend(names)
         return self
@@ -127,7 +130,7 @@ class TypedDfBuilder:
             cols: Disallow additional columns
 
         Returns:
-            self
+            this builder for chaining
         """
         self._strict_meta = index
         self._strict_cols = cols
@@ -138,20 +141,45 @@ class TypedDfBuilder:
         Requires the DataFrame to be have the same columns as values in the index.
 
         Returns:
-            self
+            this builder for chaining
         """
         self._symmetric = True
         return self
 
-    def condition(self, *conditions: Callable[[pd.DataFrame], Optional[str]]) -> __qualname__:
+    def post(self, fn: Callable[[BaseDf], BaseDf]) -> __qualname__:
+        """
+        Adds a method that is called on the converted DataFrame, immediately before
+        final optional conditions (``validate``) are verified.
+        The function must return a new DataFrame.
+
+        Returns:
+            this builder for chaining
+        """
+        self._post_processing = fn
+        return self
+
+    def verify(self, *conditions: Callable[[pd.DataFrame], Optional[str]]) -> __qualname__:
         """
         Adds additional requirement(s) for the DataFrames.
+
+        Returns:
+            this builder for chaining
 
         Args:
             conditions: Functions of the DataFrame that return None if the condition is met, or an error message
         """
         self._extra_reqs.extend(conditions)
         return self
+
+    def condition(self, *conditions) -> __qualname__:  # pragma: no cover
+        """
+        Deprecated alias for ``validate``.
+
+        Returns:
+            this builder for chaining
+        """
+        warn("TypedDfBuilder.condition is deprecated; use verify instead", DeprecationWarning)
+        return self.verify(*conditions)
 
     def build(self) -> Type[TypedDf]:
         """
@@ -162,12 +190,27 @@ class TypedDfBuilder:
             The new class
 
         Raises:
-            ValueError: If ``symmetric()`` was called and there are multiple required+reserved index names.
+            ClashError: If there is a contradiction in the specification
         """
         if self._symmetric and len([*self._res_meta, *self._req_meta]) > 1:
-            raise ValueError("Cannot enforce symmetry for multi-index DataFrames")
+            raise ClashError("Cannot enforce symmetry for multi-index DataFrames")
+
+        all_names = [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]
+        problem_names = [name for name in all_names if name in self._drop]
+        if len(problem_names) > 0:
+            raise ClashError(
+                f"Required/reserved column/index names {problem_names} are auto-dropped"
+            )
 
         class New(TypedDf):
+            @classmethod
+            def auto_dtypes(cls) -> Mapping[str, Type[Any]]:
+                return self._dtypes
+
+            @classmethod
+            def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
+                return self._post_processing
+
             @classmethod
             def more_indices_allowed(cls) -> bool:
                 return not self._strict_meta
@@ -210,12 +253,12 @@ class TypedDfBuilder:
 
     def _check(self, names: Sequence[str]) -> None:
         if any([name in {"index", "level_0"} for name in names]):
-            raise ValueError(
+            raise ClashError(
                 f"Any column called 'index' or 'level_0' is automatically dropped (reserving: {names})"
             )
         for name in names:
             if name in [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]:
-                raise ValueError(
+                raise ClashError(
                     f"Cannot add {name} to builder for {self._name}: it already exists"
                 )
 

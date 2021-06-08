@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 # noinspection PyProtectedMember
-from typeddfs.base_dfs import UnsupportedOperationError
+from typeddfs.df_errors import UnsupportedOperationError
 from typeddfs.untyped_dfs import UntypedDf
 
 from . import Trivial, sample_data, sample_data_2, sample_data_str

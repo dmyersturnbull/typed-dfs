@@ -1,4 +1,5 @@
 import contextlib
+import logging
 import random
 from pathlib import Path
 from typing import Sequence
@@ -7,6 +8,11 @@ import pandas as pd
 from typeddfs.untyped_dfs import UntypedDf
 
 from typeddfs.typed_dfs import TypedDf
+
+
+# Separate logging in the main package vs. inside test functions
+logger_name = Path(__file__).parent.parent.name.upper() + ".TEST"
+logger = logging.getLogger(logger_name)
 
 
 @contextlib.contextmanager

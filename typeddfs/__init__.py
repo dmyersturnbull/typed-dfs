@@ -1,5 +1,5 @@
 """
-Metadata for typeddfs.
+Metadata and top-level declarations for typeddfs.
 """
 from __future__ import annotations
 
@@ -11,15 +11,15 @@ from typing import Optional, Type
 
 import pandas as pd
 
-from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
+from typeddfs.df_errors import AsymmetricDfError as _AsymmetricDfError
 from typeddfs.base_dfs import BaseDf
-from typeddfs.base_dfs import ExtraConditionFailedError as _ExtraConditionFailedError
-from typeddfs.base_dfs import InvalidDfError as _InvalidDfError
-from typeddfs.base_dfs import MissingColumnError as _MissingColumnError
-from typeddfs.base_dfs import NoValueError as _NoValueError
-from typeddfs.base_dfs import UnexpectedColumnError as _UnexpectedColumnError
-from typeddfs.base_dfs import UnexpectedIndexNameError as _UnexpectedIndexNameError
-from typeddfs.base_dfs import ValueNotUniqueError as _ValueNotUniqueError
+from typeddfs.df_errors import ExtraConditionFailedError as _ExtraConditionFailedError
+from typeddfs.df_errors import InvalidDfError as _InvalidDfError
+from typeddfs.df_errors import MissingColumnError as _MissingColumnError
+from typeddfs.df_errors import NoValueError as _NoValueError
+from typeddfs.df_errors import UnexpectedColumnError as _UnexpectedColumnError
+from typeddfs.df_errors import UnexpectedIndexNameError as _UnexpectedIndexNameError
+from typeddfs.df_errors import ValueNotUniqueError as _ValueNotUniqueError
 from typeddfs.builders import TypedDfBuilder
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf

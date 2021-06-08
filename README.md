@@ -7,6 +7,7 @@
 [![Version on PyPi](https://img.shields.io/pypi/v/typeddfs?label=PyPi)](https://pypi.org/project/typeddfs)
 [![Build (Actions)](https://img.shields.io/github/workflow/status/dmyersturnbull/typed-dfs/Build%20&%20test?label=Tests)](https://github.com/dmyersturnbull/typed-dfs/actions)
 [![Coverage (coveralls)](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=main&service=github)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=main)
+[![Documentation status](https://readthedocs.org/projects/typed-dfs/badge)](https://typed-dfs.readthedocs.io/en/stable/)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
@@ -16,31 +17,40 @@ Pandas DataFrame subclasses that enforce structure and self-organize.
 *Because your functions can’t exactly accept **any**  DataFrame**.  
 `pip install typeddfs[feather,fwf]`
 
+Stop passing `index_cols=` and `header=` to `to_csv` and `read_csv`.
+Your “typed” dataframes will remember how they’re supposed to be written and read.
+That means columns are used for the index, string columns are always read as strings,
+and custom constraints are verified.
+
+Need to read a tab-delimited file? `read_file("myfile.tab")`.
+Feather? Parquet? HDF5? .json.zip? Gzipped fixed-width?
+Use `read_file`. Write a file? Use `write_file`.
+
+Some useful extra functions, plus various Pandas issues fixed:
+- `read_csv`/`to_csv`,  `read_json`/`to_json`, etc., are inverses.
+  `read_file`/`write_file`, too.
+- In Pandas, you can write an empty DataFrame but not read it.
+  Typed-dfs will always read in what you wrote out.
+- No more empty `.feather`/`.snappy`/`.h5` files written on error.
+- You can write fixed-width as well as read.
+
+
 ```python
 from typeddfs import TypedDfs
+
 MyDfType = (
     TypedDfs.typed("MyDfType")
-    .require("name", index=True)        # always keep in index
-    .require("value", dtype=float)      # require a column and type
-    .drop("_temp")                      # auto-drop a column
-    .condition(lambda df: len(df)==12)  # require exactly 12 rows
+        .require("name", index=True)  # always keep in index
+        .require("value", dtype=float)  # require a column and type
+        .drop("_temp")  # auto-drop a column
+        .verify(lambda ddf: len(ddf) == 12)  # require exactly 12 rows
 ).build()
-# All normal Pandas functions work  (plus a few more, like sort_natural)
+
+df = MyDfType.read_file(input("filename? [.feather/.csv.gz/.tsv.xz/etc.]"))
+df.sort_natural().write_file("myfile.feather")
 ```
 
-### 🎁 Features
-
-- Columns are turned into indices as needed,
-  so **`read_csv` and `to_csv` are inverses**.
-  `MyDf.read_csv(mydf.to_csv())` is `mydf`. 
-- And `read_file` and `write_file` are inverses, too.
-  They will determine the file format based on the filename suffix.
-  That includes, .csv, .tsv, .tab, .feather, .snappy, .h5, .json, .txt,
-  and combos like .json.gz or .tab.xz
-- DataFrames display elegantly in Jupyter notebooks.
-- Extra methods such as `sort_natural`
-
-### 🎨 Example
+### 🎨 More complex example
 
 For a CSV like this:
 
@@ -142,5 +152,5 @@ via [tabulate](https://pypi.org/project/tabulate/).
 
 Typed-Dfs is licensed under the [Apache License, version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 [New issues](https://github.com/dmyersturnbull/typed-dfs/issues) and pull requests are welcome.
-Please refer to the [contributing guide](https://github.com/dmyersturnbull/typed-dfs/blob/main/CONTRIBUTING.md).  
+Please refer to the [contributing guide](https://github.com/dmyersturnbull/typed-dfs/blob/main/CONTRIBUTING.md).
 Generated with [Tyrannosaurus](https://github.com/dmyersturnbull/tyrannosaurus).

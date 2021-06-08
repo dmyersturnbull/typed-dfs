@@ -3,8 +3,8 @@ import pytest
 
 from typeddfs import TypedDf, TypedDfs, UntypedDf
 
-# noinspection PyProtectedMember
-from typeddfs.base_dfs import AbsDf, BaseDf
+from typeddfs.base_dfs import BaseDf
+from typeddfs.abs_df import AbsDf
 
 from . import sample_data
 

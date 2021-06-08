@@ -5,7 +5,7 @@ import pytest
 from typeddfs.untyped_dfs import UntypedDf
 
 
-class TestBase:
+class TestUntyped:
     def test_getitem(self):
         df = UntypedDf([pd.Series(dict(abc="xyz", ind="qqq"))]).set_index("ind")
         assert list(df["abc"]) == ["xyz"]

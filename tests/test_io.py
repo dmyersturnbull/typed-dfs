@@ -76,8 +76,6 @@ class TestReadWrite:
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
 
-    """
-    # TODO: re-enable when llvmlite wheels are available for Python 3.9
     def test_parquet(self):
         with tmpfile(".parquet") as path:
             df = UntypedDf(sample_data())
@@ -85,7 +83,6 @@ class TestReadWrite:
             df2 = UntypedDf.read_parquet(path)
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
-    """
 
     """
     # TODO re-enable when we get a pytables 3.9 wheels on Windows

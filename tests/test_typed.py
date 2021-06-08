@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
 
-# noinspection PyProtectedMember
-from typeddfs.base_dfs import AbsDf, AsymmetricDfError
+from typeddfs.df_errors import AsymmetricDfError
+from typeddfs.abs_df import AbsDf
 from typeddfs.untyped_dfs import UntypedDf
 
 from . import (
@@ -13,6 +13,8 @@ from . import (
     sample_data,
     sample_data_str,
     sample_symmetric_df,
+    Ind1Col1,
+    Ind2Col2,
 )
 
 
@@ -108,6 +110,10 @@ class TestTyped:
         df = Trivial.convert(pd.DataFrame(sample_data()))
         assert isinstance(df.index_names(), list)
         assert df.index_names() == []
+
+    def test_known_names(self):
+        assert Ind1Col1.known_names() == ["qqq", "abc"]
+        assert Ind2Col2.known_names() == ["qqq", "rrr", "abc", "xyz"]
 
     def test_column_names(self):
         df = Trivial(sample_data())

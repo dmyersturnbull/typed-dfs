@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from typeddfs.base_dfs import PrettyDf
+from typeddfs.base_dfs import BaseDf
 from typeddfs.builders import TypedDfBuilder
+from typeddfs._pretty_dfs import PrettyDf
 
 # noinspection PyProtectedMember
+from typeddfs.df_errors import ClashError
 from typeddfs.typed_dfs import (
     ExtraConditionFailedError,
     TypedDf,
@@ -24,13 +26,13 @@ def always_fail(x):
 
 class TestBuilders:
     def test_symmetric_and_condition(self):
-        t = TypedDfBuilder("a").symmetric().condition(always_ok).build()
+        t = TypedDfBuilder("a").symmetric().verify(always_ok).build()
         assert t.required_columns() == []
         assert t.required_index_names() == []
         assert t.must_be_symmetric()
         assert t.extra_conditions() == [always_ok]
         TypedDf(pd.DataFrame())
-        t = TypedDfBuilder("a").symmetric().condition(always_fail).build()
+        t = TypedDfBuilder("a").symmetric().verify(always_fail).build()
         with pytest.raises(ExtraConditionFailedError):
             t.convert(pd.DataFrame())
 
@@ -54,6 +56,9 @@ class TestBuilders:
         assert t.reserved_columns() == []
         assert t.required_index_names() == ["column"]
         assert t.reserved_index_names() == ["reserved"]
+        assert t.known_index_names() == ["column", "reserved"]
+        assert t.known_column_names() == []
+        assert t.known_names() == ["column", "reserved"]
         assert not t.must_be_symmetric()
         assert t.extra_conditions() == []
 
@@ -64,6 +69,11 @@ class TestBuilders:
         assert df.column_names() == ["x", "zz"]
         df = t.convert(pd.DataFrame([pd.Series(dict(x="x", trash="y"))]))
         assert df.column_names() == ["x"]
+
+    def test_drop_clash(self):
+        t = TypedDfBuilder("a").reserve("trash").drop("trash")
+        with pytest.raises(ClashError):
+            t.build()
 
     def test_bad_type(self):
         with pytest.raises(TypeError):
@@ -133,13 +143,32 @@ class TestBuilders:
         t = TypedDfBuilder("a").strict(False, False).build()
         t.convert(pd.DataFrame([pd.Series(dict(x="x"))]))
 
-    """
     def test_reserve_dtype(self):
         t = TypedDfBuilder("a").reserve("x", dtype=np.float32).build()
-        t = t.convert(pd.DataFrame([pd.Series(dict(x="0.5"))]))
-        assert t.column_names() == ["x"]
-        assert t.values.tolist() == [[0.5]]
-    """
+        df = t.convert(pd.DataFrame([pd.Series(dict(x="0.5"))]))
+        assert df.column_names() == ["x"]
+        assert df.values.tolist() == [[0.5]]
+        with pytest.raises(ValueError):
+            t.convert(pd.DataFrame([pd.Series(dict(x="kitten"))]))
+
+    def test_dtype_post_process(self):
+        # make sure these happen in the right order:
+        # 1. dtype conversions
+        # 2. post-processing
+        # 3. final conditions
+
+        def post(dd: BaseDf) -> BaseDf:
+            assert dd["x"].dtype == np.float32
+            dd2 = dd.copy()
+            dd2["x"] += 9
+            return dd2
+
+        def cond(dd: BaseDf):
+            return None if dd["x"].dtype == np.float32 else "failed"
+
+        t = (TypedDfBuilder("a").reserve("x", dtype=np.float32).post(post).verify(cond)).build()
+        df = t.convert(pd.DataFrame([pd.Series(dict(x="0.5"))]))
+        assert df.values.tolist() == [[9.5]]
 
 
 if __name__ == "__main__":

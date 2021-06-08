@@ -1,5 +1,10 @@
+"""
+Internal utilities for typeddfs.
+"""
+
 import typing
-from typing import Any, Mapping
+from pathlib import PurePath
+from typing import Any, Mapping, Union
 from warnings import warn
 
 import pandas as pd
@@ -28,6 +33,10 @@ try:
         warn("wcwidth is not installed")
 except ImportError:  # pragma: no cover
     tabulate = None
+
+
+_FAKE_SEP = "\u2008"  # 6-em space; very unlikely to occur
+PathLike = Union[str, PurePath]
 
 
 class _Sentinal:
@@ -77,9 +86,9 @@ class _Utils:
             for x in [".tab", ".tsv"]:
                 dct[x + compression] = (
                     "csv",
-                    dict(sep="\t", **get("nl", "header", "comment", "skip_blank_lines")),
+                    dict(sep="\t", **get("nl", "comment", "skip_blank_lines")),
                 )
-            dct[".csv" + compression] = ("csv", get("nl", "header", "comment", "skip_blank_lines"))
+            dct[".csv" + compression] = ("csv", get("nl", "comment", "skip_blank_lines"))
             if _Utils.has_tabulate:
                 dct[".flexwf" + compression] = ("flexwf", get("sep", "comment"))
                 # dct[".fwf" + compression] = ("flexwf", get("sep"))
@@ -87,4 +96,4 @@ class _Utils:
         return {k: (prefix + fn, p) for k, (fn, p) in dct.items()}
 
 
-__all__ = ["_Utils"]
+__all__ = ["_Utils", "_FAKE_SEP", "PathLike", "_SENTINAL"]
