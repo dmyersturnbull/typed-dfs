@@ -3,15 +3,7 @@ Defines DataFrames with convenience methods but that do not enforce invariants.
 """
 from __future__ import annotations
 
-import os
-from pathlib import PurePath
-from typing import Optional, Union
-
-import pandas as pd
-
 from typeddfs.base_dfs import BaseDf
-
-PathLike = Union[str, PurePath]
 
 
 class UntypedDf(BaseDf):

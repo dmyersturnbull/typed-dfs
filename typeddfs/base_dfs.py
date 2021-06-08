@@ -6,22 +6,25 @@ from __future__ import annotations
 import csv
 import abc
 import os
+import re
+from io import StringIO
 from pathlib import Path, PurePath
-from typing import Any, Iterable, List, Mapping, Optional, Sequence, Union
-from warnings import warn
+from typing import Any, Iterable, List, Mapping, Optional, Sequence, Union, FrozenSet
 
 import pandas as pd
+from pandas.io.common import get_handle
+from tabulate import tabulate, TableFormat, Line, DataRow
 from natsort import natsorted, ns
 from pandas.core.frame import DataFrame as _InternalDataFrame
 
+from typeddfs._utils import _Utils, _SENTINAL
 
-class _Sentinal:
-    pass
-
-
-_SENTINAL = _Sentinal()
 _FAKE_SEP = "\u2008"  # 6-em space; very unlikely to occur
 PathLike = Union[str, PurePath]
+
+
+class UnsupportedOperationError(Exception):
+    pass
 
 
 class InvalidDfError(Exception):
@@ -263,9 +266,15 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         Returns:
             Whatever the corresponding method on ``pd.to_*`` returns.
             This is usually either str or None
+
+        Raises:
+            ValueError: If the type of a column or index name is non-str
         """
+        types = set(self.column_names()).union(self.index_names())
+        if any((not isinstance(c, str) for c in types)):
+            raise ValueError(f"Columns must be of str type to serialize, not {types}")
         cls = self.__class__
-        return cls._guess_io(self, "to", path, _SENTINAL, _SENTINAL, _SENTINAL, "", *args, **kwargs)
+        return cls._guess_io(self, True, path, {}, *args, **kwargs)
 
     @classmethod
     def read_file(
@@ -275,7 +284,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         nl: Optional[str] = _SENTINAL,
         header: Optional[str] = _SENTINAL,
         skip_blank_lines: bool = _SENTINAL,
-        comment: str = "",
+        comment: str = _SENTINAL,
         **kwargs,
     ) -> __qualname__:
         """
@@ -297,8 +306,9 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             - .h5 or .hdf
             - .xlsx or .xls
             - .fxf (fixed-width; read_fwf)
-            - .txt, .lines, or .list (optionally with .gz, .zip, .bz2, or .xz);
-              see ``read_lines()``
+            - .arrows (optional with .gz, etc.); uses ``--->`` as the delimiter, strips whitespace,
+              and ignores blank lines and comments (#)
+            - .txt, .lines, or .list (optionally .gz, .zip, .bz2, or .xz); see ``read_lines()``
 
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
@@ -315,65 +325,68 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         Returns:
             An instance of this class
         """
-        return cls._guess_io(
-            cls, "read", path, nl, header, skip_blank_lines, comment, *args, **kwargs
-        )
+        all_params = {}
+        if nl != _SENTINAL:
+            all_params["nl"] = dict(line_terminator="\n")
+        if header != _SENTINAL:
+            all_params["header"] = dict(header=header)
+        if skip_blank_lines != _SENTINAL:
+            all_params["skip_blank_lines"] = dict(skip_blank_lines=skip_blank_lines)
+        if comment != _SENTINAL:
+            all_params["comment"] = dict(comment=comment)
+        return cls._guess_io(cls, False, path, all_params, *args, **kwargs)
+
+    @classmethod
+    def can_read(cls) -> FrozenSet[str]:
+        """
+        Returns all filename extensions that can be read using ``read_file``.
+        Some, such as `.h5` and `.snappy`, are only included if their respective libraries
+        were imported (when typeddfs was imported).
+        The ``read_lines`` functions (``.txt``, ``.lines``, etc.) are only included if
+        this DataFrame *can* support only 1 column+index.
+        """
+        return frozenset(_Utils.guess_io(False, cls._lines_files_apply(), {}).keys())
+
+    @classmethod
+    def can_write(cls) -> FrozenSet[str]:
+        """
+        Returns all filename extensions that can be written to using ``write_file``.
+        Some, such as `.h5` and `.snappy`, are only included if their respective libraries
+        were imported (when typeddfs was imported).
+        The ``to_lines`` functions (``.txt``, ``.lines``, etc.) are only included if
+        this DataFrame type *can* support only 1 column+index.
+        """
+        return frozenset(_Utils.guess_io(True, cls._lines_files_apply(), {}).keys())
 
     @classmethod
     def _guess_io(
         cls,
         clazz,
-        prefix: str,
+        writing: bool,
         path: Union[Path, str],
-        nl: Optional[str],
-        header: Optional[str],
-        skip_blank_lines: Optional[bool],
-        comment: str,
+        all_params,
         *args,
         **kwargs,
     ) -> str:
-        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
-        header = {} if header == _SENTINAL else dict(header=header)
-        skip_blank_lines = (
-            {} if skip_blank_lines == _SENTINAL else dict(skip_blank_lines=skip_blank_lines)
-        )
-        dct = {
-            ".feather": ("feather", {}),
-            ".parquet": ("parquet", {}),
-            ".snappy": ("parquet", {}),
-            ".h5": ("hdf", {}),
-            ".hdf": ("hdf", {}),
-            ".xlsx": ("excel", {}),
-            ".xls": ("excel", {}),
-        }
-        if prefix == "read":
-            dct.update(
-                {
-                    ".fwf": ("fwf", {}),
-                }
-            )
-        for compression in {".gz", ".zip", ".bz2", ".xz", ""}:
-            dct[".lines" + compression] = ("lines", dict(comment=comment))
-            dct[".txt" + compression] = ("lines", dict(comment=comment))
-            dct[".list" + compression] = ("lines", dict(comment=comment))
-            dct[".csv" + compression] = ("csv", nl)
-            dct[".json" + compression] = ("json", {})
-            dct[".tab" + compression] = ("csv", dict(sep="\t", **nl, **header, **skip_blank_lines))
-            dct[".tsv" + compression] = ("csv", dict(sep="\t", **nl, **header, **skip_blank_lines))
+        # we want nice error messages, so lie to _Utils.guess_io;
+        # let it include .lines, etc., even if those won't work for this exact DF
+        writing = False if writing is False else True
+        inc_lines = cls._lines_files_apply()
+        all_params = {p[0]: p[1] for p in all_params.items() if p is not _SENTINAL}
+        path_is_a_path = isinstance(path, (str, PurePath))
+        dct = _Utils.guess_io(writing, inc_lines, all_params)
         # `path` could be a URL, so don't use Path.suffix
         for suffix, (fn, params) in dct.items():
-            if isinstance(path, (str, PurePath)) and str(path).endswith(suffix):
-                fn_name = prefix + "_" + fn
+            if path_is_a_path and str(path).endswith(suffix):
                 # Note the order! kwargs overwrites params
                 # clazz.to_csv(path, sep="\t")
                 my_kwargs = {**params, **kwargs}
-                return getattr(clazz, fn_name)(path, *args, **my_kwargs)
+                return getattr(clazz, fn)(path, *args, **my_kwargs)
         raise ValueError(f"Suffix for {path} not recognized")
 
     def to_lines(
         self,
         path_or_buff,
-        comment: str = "",
         nl: Optional[str] = _SENTINAL,
     ) -> Optional[str]:
         """
@@ -387,29 +400,24 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
 
         Args:
             path_or_buff: Path or buffer
-            comment: Add a comment at the top line, such as ``'# list of fruits'``;
-                     No first line is added if empty
             nl: Forces using \n as the line separator
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
         nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
-        comment = [] if len(comment) == 0 else [comment]
-        if len(self.columns) != 1 or len(self.index_names()) != 0:
-            raise ValueError(f"Cannot write {len(self.columns)} columns to lines")
         df = self.vanilla_reset()
-        data = df[df.columns[0]].values.tolist()
-        data = [*comment, *data]
-        return pd.DataFrame(data).to_csv(
-            path_or_buff, index=False, sep=_FAKE_SEP, header=False, quoting=csv.QUOTE_NONE, **nl
+        if len(df.columns) != 1:
+            raise ValueError(f"Cannot write {len(df.columns)} columns ({df}) to lines")
+        return df.to_csv(
+            path_or_buff, index=False, sep=_FAKE_SEP, header=True, quoting=csv.QUOTE_NONE, **nl
         )
 
     @classmethod
     def read_lines(
         cls,
         path_or_buff,
-        comment: str = "",
+        comment: Optional[str] = None,
         nl: Optional[str] = _SENTINAL,
     ) -> __qualname__:
         """
@@ -429,34 +437,116 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             nl: Forces using \n as the line separator (can almost always be inferred)
         """
         nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
-        df = pd.read_csv(
-            path_or_buff,
-            sep=_FAKE_SEP,
-            header=None,
-            quoting=csv.QUOTE_NONE,
-            skip_blank_lines=True,
-            **nl,
-            engine="python",
-        )
-        values = [
-            s.strip()
-            for s in df[df.columns[0]]
-            if s is not None
-            and len(s.strip()) > 0
-            and len(comment) == 0
-            or not s.strip().startswith(comment)
-        ]
-        df = pd.DataFrame(values)
-        if len(df.columns) != 1:
+        try:
+            df = pd.read_csv(
+                path_or_buff,
+                sep=_FAKE_SEP,
+                header=0,
+                index_col=False,
+                quoting=csv.QUOTE_NONE,
+                skip_blank_lines=True,
+                comment=comment,
+                encoding="utf8",
+                engine="python",
+                **nl,
+            )
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        if len(df.columns) > 1:
             raise ValueError(f"Read multiple columns on {path_or_buff}")
-        if hasattr(cls, "required_columns"):
-            df.columns = cls.required_columns()
         return cls._convert(df)
 
     @classmethod
+    def read_flexwf(
+        cls,
+        path_or_buff,
+        sep: str = r"\s+|\s+",
+        comment: Optional[str] = None,
+        nl: Optional[str] = _SENTINAL,
+    ) -> __qualname__:
+        """
+        Reads a "flexible-width format".
+        The delimiter (``sep``) is important.
+
+        These are designed to read and write (``to_flexwf``) as though they
+        were fixed-width. Specifically, all of the columns line up but are
+        separated by a possibly multi-character delimiter.
+
+        The files ignore blank lines, strip whitespace,
+        always have a header, have no default index column
+        (but can in ``required_columns()`` etc.), never quote values,
+
+        Args:
+            path_or_buff: Path or buffer
+            sep: The delimiter, which can be a regex pattern
+            comment: Prefix for comment lines
+            nl: Forces using \n as the line separator (can almost always be inferred)
+        """
+        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        try:
+            df = pd.read_csv(
+                path_or_buff,
+                sep=sep,
+                header=0,
+                index_col=False,
+                quoting=csv.QUOTE_NONE,
+                skip_blank_lines=True,
+                comment=comment,
+                encoding="utf8",
+                engine="python",
+                **nl,
+            )
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        return cls._convert(df)
+
+    def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
+        """
+        Outputs a pretty table using the ``tabulate`` package.
+        """
+        return self._tabulate(fmt, **kwargs)
+
+    def to_flexwf(self, path_or_buff, sep: str = " | ", mode: str = "w") -> Optional[str]:
+        """
+        Writes a fixed-width formatter, optionally with a delimiter, which can be multiple characters.
+
+        See ``read_flexwf`` for more info.
+
+        Args:
+            path_or_buff: Path or buffer
+            sep: The delimiter, 0 or more characters
+            mode: write or append (w/a)
+
+        Returns:
+            The string data if ``path_or_buff`` is a buffer; None if it is a file
+        """
+        fmt = TableFormat(
+            lineabove=None,
+            linebelowheader=None,
+            linebetweenrows=None,
+            linebelow=None,
+            headerrow=DataRow("", f" {sep} ", ""),
+            datarow=DataRow("", f" {sep} ", ""),
+            padding=0,
+            with_header_hide=None,
+        )
+        content = self._tabulate(fmt)
+        if path_or_buff is None:
+            return content
+        with get_handle(path_or_buff, mode, encoding="utf8") as f:
+            f.handle.write(content)
+
+    def _tabulate(self, fmt: Union[str, TableFormat], **kwargs) -> str:
+        df = self.vanilla_reset()
+        return tabulate(df.values.tolist(), list(df.columns), tablefmt=fmt, **kwargs)
+
+    @classmethod
     def read_json(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
-        # feather does not support MultiIndex, so reset index and use convert()
-        return cls._convert(pd.read_json(*args, **kwargs))
+        try:
+            df = pd.read_json(*args, **kwargs)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        return cls._convert(df)
 
     def to_json(self, path_or_buf, *args, **kwargs) -> Optional[str]:
         df = self.vanilla_reset()
@@ -465,7 +555,11 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     @classmethod
     def read_feather(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
         # feather does not support MultiIndex, so reset index and use convert()
-        return cls._convert(pd.read_feather(*args, **kwargs))
+        try:
+            df = pd.read_feather(*args, **kwargs)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        return cls._convert(df)
 
     # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
     def to_feather(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
@@ -476,8 +570,10 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             old_size = os.path.getsize(path_or_buf)
         except BaseException:
             old_size = None
+        df = self.vanilla_reset()
+        df.columns = df.columns.astype(str)
         try:
-            return self.vanilla_reset().to_feather(path_or_buf, *args, **kwargs)
+            return df.to_feather(path_or_buf, *args, **kwargs)
         except BaseException:
             try:
                 size = os.path.getsize(path_or_buf)
@@ -493,7 +589,11 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     @classmethod
     def read_parquet(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
         # parquet does not support MultiIndex, so reset index and use convert()
-        return cls._convert(pd.read_parquet(*args, **kwargs))
+        try:
+            df = pd.read_parquet(*args, **kwargs)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        return cls._convert(df)
 
     # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
     def to_parquet(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
@@ -544,7 +644,10 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         # if we added path_or_buf before `*args`, this would need to be < 5
         if len(args) < 6:
             kwargs.setdefault("index_col", False)
-        df = pd.read_csv(*args, **kwargs)
+        try:
+            df = pd.read_csv(*args, **kwargs)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
         return cls._convert(df)
 
     def to_csv(self, *args, bom: bool = False, **kwargs) -> Optional[str]:
@@ -595,9 +698,11 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             ImportError: If the ``tables`` package (pytables) is not available
             OSError: Likely for some HDF5 configurations
         """
-        # noinspection PyTypeChecker
-        df: pd.DataFrame = pd.read_hdf(*args, key=key, **kwargs)
-        return cls._check_and_change(df)
+        try:
+            df = pd.read_hdf(*args, key=key, **kwargs)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        return cls._convert(df)
 
     # noinspection PyBroadException,PyFinal,DuplicatedCode
     def to_hdf(self, path: PathLike, key: str = "df", **kwargs) -> None:
@@ -673,12 +778,12 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
 
     def drop_duplicates(self, **kwargs) -> __qualname__:
         if "inplace" in kwargs:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(super().drop_duplicates(**kwargs))
 
     def reindex(self, *args, **kwargs) -> __qualname__:
         if "inplace" in kwargs:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(super().reindex(*args, **kwargs))
 
     def sort_values(
@@ -692,7 +797,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         **kwargs,
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().sort_values(
                 by=by,
@@ -709,7 +814,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported. Use vanilla() if needed.")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().reset_index(
                 level=level,
@@ -724,7 +829,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         self, keys, drop=True, append=False, inplace=False, verify_integrity=False
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported. Use vanilla() if needed.")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         if len(keys) == 0 and append:
             return self
         elif len(keys) == 0:
@@ -742,7 +847,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
 
     def dropna(self, axis=0, how="any", thresh=None, subset=None, inplace=False) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().dropna(axis=axis, how=how, thresh=thresh, subset=subset, inplace=inplace)
         )
@@ -758,7 +863,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         **kwargs,
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().fillna(
                 value=value,
@@ -785,7 +890,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     # noinspection PyFinal
     def ffill(self, axis=None, inplace=False, limit=None, downcast=None) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().ffill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
         )
@@ -793,7 +898,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     # noinspection PyFinal
     def bfill(self, axis=None, inplace=False, limit=None, downcast=None) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().bfill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
         )
@@ -804,7 +909,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
 
     def rename(self, *args, **kwargs) -> __qualname__:
         if "inplace" in kwargs:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(super().rename(*args, **kwargs))
 
     def replace(
@@ -817,7 +922,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         method="pad",
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().replace(
                 to_replace=to_replace,
@@ -848,7 +953,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         errors="raise",
     ) -> __qualname__:
         if inplace:  # pragma: no cover
-            warn("inplace not supported")
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
         return self.__class__._check_and_change(
             super().drop(
                 labels=labels,
@@ -901,6 +1006,30 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         df.__class__ = cls
         return df
 
+    @classmethod
+    def _lines_files_apply(cls) -> bool:
+        if (
+            hasattr(cls, "required_columns")
+            and hasattr(cls, "reserved_columns")
+            and hasattr(cls, "required_index_names")
+            and hasattr(cls, "reserved_index_names")
+        ):
+            try:
+                return (
+                    len(
+                        {
+                            *getattr(cls, "required_columns")(),
+                            *getattr(cls, "reserved_columns")(),
+                            *getattr(cls, "required_index_names")(),
+                            *getattr(cls, "reserved_index_names")(),
+                        }
+                    )
+                    == 1
+                )
+            except (ValueError, TypeError):
+                pass
+        return True
+
 
 class BaseDf(AbsDf, metaclass=abc.ABCMeta):
     """
@@ -912,6 +1041,11 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
             return self.index.get_level_values(item)
         else:
             return super().__getitem__(item)
+
+    def set(self, key, value) -> __qualname__:
+        df = self.reset_index()
+        df[key] = value
+        return self._convert(df)
 
     @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:

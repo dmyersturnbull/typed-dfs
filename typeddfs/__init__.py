@@ -11,6 +11,7 @@ from typing import Optional, Type
 
 import pandas as pd
 
+from typeddfs._utils import _Utils
 from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
 from typeddfs.base_dfs import BaseDf
 from typeddfs.base_dfs import ExtraConditionFailedError as _ExtraConditionFailedError

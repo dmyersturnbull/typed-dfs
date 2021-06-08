@@ -1,3 +1,4 @@
+
 version: 2
 sphinx:
   configuration: docs/conf.py
@@ -6,5 +7,5 @@ build:
 python:
   version: 3.9
   install:
-    -
-      requirements: docs/requirements.txt
+    - requirements: docs/requirements.txt
+

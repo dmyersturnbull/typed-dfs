@@ -2,23 +2,23 @@ import pytest
 
 from typeddfs.untyped_dfs import UntypedDf
 
-from . import TypedMultiIndex, TypedSingleIndex, TypedTrivial, sample_data, tmpfile
+from . import Ind2, Ind1, Trivial, sample_data, tmpfile
 
 
 class TestReadWrite:
     def test_feather_lz4(self):
         with tmpfile(".feather") as path:
-            df = TypedMultiIndex.convert(TypedMultiIndex(sample_data()))
+            df = Ind2.convert(Ind2(sample_data()))
             df.to_feather(path, compression="lz4")
-            df2 = TypedMultiIndex.read_feather(path)
+            df2 = Ind2.read_feather(path)
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
 
     def test_feather_zstd(self):
         with tmpfile(".feather") as path:
-            df = TypedMultiIndex.convert(TypedMultiIndex(sample_data()))
+            df = Ind2.convert(Ind2(sample_data()))
             df.to_feather(path, compression="zstd")
-            df2 = TypedMultiIndex.read_feather(path)
+            df2 = Ind2.read_feather(path)
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
 
@@ -43,36 +43,36 @@ class TestReadWrite:
 
     def test_write_passing_index(self):
         with tmpfile(".csv") as path:
-            df = TypedTrivial(sample_data())
+            df = Trivial(sample_data())
             df.to_csv(path, index=["abc"])  # fine
             df = UntypedDf(sample_data())
             df.to_csv(path, index=["abc"])  # calls super immediately
 
     def test_typed_read_write_csv_noindex(self):
         with tmpfile(".csv") as path:
-            df = TypedTrivial(sample_data())
+            df = Trivial(sample_data())
             df.to_csv(path)
-            df2 = TypedTrivial.read_csv(path)
+            df2 = Trivial.read_csv(path)
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
 
     def test_typed_read_write_csv_singleindex(self):
         with tmpfile(".csv") as path:
-            df = TypedSingleIndex.convert(TypedSingleIndex(sample_data()))
+            df = Ind1.convert(Ind1(sample_data()))
             df.to_csv(path)
             assert df.index_names() == ["abc"]
             assert df.column_names() == ["123", "xyz"]
-            df2 = TypedSingleIndex.read_csv(path)
+            df2 = Ind1.read_csv(path)
             assert df2.index_names() == ["abc"]
             assert df2.column_names() == ["123", "xyz"]
 
     def test_typed_read_write_csv_multiindex(self):
         with tmpfile(".csv") as path:
-            df = TypedMultiIndex.convert(TypedMultiIndex(sample_data()))
+            df = Ind2.convert(Ind2(sample_data()))
             df.to_csv(path)
             assert df.index_names() == ["abc", "xyz"]
             assert df.column_names() == ["123"]
-            df2 = TypedMultiIndex.read_csv(path)
+            df2 = Ind2.read_csv(path)
             assert df2.index_names() == ["abc", "xyz"]
             assert df2.column_names() == ["123"]
 

@@ -3,13 +3,25 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.6.2] - 2021-05-30
+## [0.7.0] - 2021-06-07
+
+### Added
+- `BaseDf.set`
+- `BaseDf.can_read` and `BaseDf.can_write`
+- Write (and read) to fixed-width and "flex" fixed-width
+- `BaseDf.pretty_print`, which delegates to [tabulate](https://pypi.org/project/tabulate)
+
+### Removed
+- `comment` from `to_lines`
 
 ### Changed
 - Bumped pyarrow to 4.0
+- All `write_file` serialization now requires column names to be str for consistency
+- Empty DataFrames are read via `BaseDf.read_csv`, etc. without issue (`pd.read_csv` normally fails)
 
 ### Fixed
-- Bumped dev deps (Sphinx and git-commit)
+- `to_lines` and `read_lines` are fully inverses
+- Read/write are inverses for *untyped* DFs for all formats
 - Deleted .dockerignore and codemeta.json
 - Check workflow error on push
 
@@ -17,6 +29,9 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ### Added
 - `vanilla_reset`
+
+### Removed
+- Unused Sphinx/readthedocs files
 
 ### Fixed
 - Not passing kwargs to `UntypedDf.to_csv`

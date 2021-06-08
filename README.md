@@ -6,16 +6,15 @@
 [![Version on Github](https://img.shields.io/github/v/release/dmyersturnbull/typed-dfs?include_prereleases&label=GitHub)](https://github.com/dmyersturnbull/typed-dfs/releases)
 [![Version on PyPi](https://img.shields.io/pypi/v/typeddfs?label=PyPi)](https://pypi.org/project/typeddfs)
 [![Build (Actions)](https://img.shields.io/github/workflow/status/dmyersturnbull/typed-dfs/Build%20&%20test?label=Tests)](https://github.com/dmyersturnbull/typed-dfs/actions)
-[![Documentation status](https://readthedocs.org/projects/typed-dfs/badge)](https://typed-dfs.readthedocs.io/en/stable/)
 [![Coverage (coveralls)](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=main&service=github)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=main)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
 
-Pandas DataFrame subclasses that enforce structure and can self-organize.  
+Pandas DataFrame subclasses that enforce structure and self-organize.  
 *Because your functions can’t exactly accept **any**  DataFrame**.  
-`pip install typeddfs[feather]`
+`pip install typeddfs[feather,fwf]`
 
 ```python
 from typeddfs import TypedDfs
@@ -73,7 +72,6 @@ def my_special_function(df: KeyValue) -> float:
 
 All of the normal DataFrame methods are available.
 Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce requirements.
-**[See the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more information.
 
 ### 🔌 Serialization support
 
@@ -110,19 +108,20 @@ Feather is the preferred format for most cases.
 | format   | packages              | extra     | compatibility | performance  |
 | -------- | --------------------  | --------- | ------------- | ------------ |
 | pickle   | none                  | none      | ❗ ️           | −           |
-| CSV      | none                  | none      | ✅             | −−          |
-| CSV.GZ   | none                  | none      | ✅             | −−          |
-| JSON     | none                  | none      | /️            | −−          |
-| JSON.GZ  | none                  | none      | /️            | −−          |
+| csv      | none                  | none      | ✅             | −−          |
+| json     | none                  | none      | /️            | −−-         |
 | .npy †   | none                  | none      | †️            | +           |
 | .npz †   | none                  | none      | †️            | +           |
+| flexwf   | none                  | `fwf`     | ✅             | −−-         |
 | Feather  | `pyarrow`             | `feather` | ✅             | ++++        |
 | Parquet  | `pyarrow,fastparquet` | `parquet` | ❌             | +++         |
 | HDF5     | `tables`              | `hdf5`    | ❌             | −           |
 
 ❗ == Pickle is explicitly not supported due to vulnerabilities and other issues.  
 / == Mostly. JSON has inconsistent handling of `None`.  
-† == .npy and .npz only serialize numpy objects and therefore skip indices.
+† == .npy and .npz only serialize numpy objects and therefore skip indices.  
+Note: `.flexwf` is fixed-width with optional delimiters; `.fwf` is not used
+to avoid a potential future conflict with `pd.DataFrame.to_fwf` (which does not exist yet).
 
 ### 📝 Extra notes
 
@@ -131,6 +130,9 @@ to a specific major version because it receives somewhat frequent major updates.
 This means that the result of typed-df’s `sort_natural` could change.
 You can pin natsort to a specific major version;
 e.g. `natsort = "^7"` with [Poetry](https://python-poetry.org/) or `natsort>=7,<8` with pip.
+
+Fixed-width format is provided through Pandas `read_fwf` but can be written
+via [tabulate](https://pypi.org/project/tabulate/).
 
 ### 🍁 Contributing
 

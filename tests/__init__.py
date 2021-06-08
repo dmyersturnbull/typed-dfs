@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 import pandas as pd
+from typeddfs.untyped_dfs import UntypedDf
 
 from typeddfs.typed_dfs import TypedDf
 
@@ -50,26 +51,80 @@ def sample_data_2():
     ]
 
 
-class TypedTrivial(TypedDf):
+class Untyped(UntypedDf):
     pass
 
 
-class TypedOneColumn(TypedDf):
+class Trivial(TypedDf):
+    pass
+
+
+class ActuallyEmpty(TypedDf):
+    pass
+
+
+class Col1(TypedDf):
     @classmethod
     def required_columns(cls) -> Sequence[str]:
         return ["abc"]
 
 
-class TypedSingleIndex(TypedDf):
+class Ind1(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["abc"]
 
 
-class TypedMultiIndex(TypedDf):
+class Col2(TypedDf):
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["abc", "xyz"]
+
+
+class Ind2(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["abc", "xyz"]
+
+
+class Ind1Col1(TypedDf):
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["abc"]
+
+    @classmethod
+    def required_index_names(cls) -> Sequence[str]:
+        return ["qqq"]
+
+
+class Ind1Col2(TypedDf):
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["abc", "xyz"]
+
+    @classmethod
+    def required_index_names(cls) -> Sequence[str]:
+        return ["qqq"]
+
+
+class Ind2Col1(TypedDf):
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["abc"]
+
+    @classmethod
+    def required_index_names(cls) -> Sequence[str]:
+        return ["qqq", "rrr"]
+
+
+class Ind2Col2(TypedDf):
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["abc", "xyz"]
+
+    @classmethod
+    def required_index_names(cls) -> Sequence[str]:
+        return ["qqq", "rrr"]
 
 
 class TypedSymmetric(TypedDf):
