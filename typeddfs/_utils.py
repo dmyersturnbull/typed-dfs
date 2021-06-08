@@ -1,32 +1,32 @@
 import typing
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 from warnings import warn
 
 import pandas as pd
 
 try:
     import pyarrow
-except ImportError:
+except ImportError:  # pragma: no cover
     pyarrow = None
 
 try:
     import fastparquet
-except ImportError:
+except ImportError:  # pragma: no cover
     fastparquet = None
 
 try:
     import tables
-except ImportError:
+except ImportError:  # pragma: no cover
     tables = None
 
 try:
     import tabulate
 
     try:
-        import wcwidth
+        import wcwidth  # noqa: F401
     except ImportError:
         warn("wcwidth is not installed")
-except ImportError:
+except ImportError:  # pragma: no cover
     tabulate = None
 
 

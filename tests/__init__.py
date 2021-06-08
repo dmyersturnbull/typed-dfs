@@ -1,5 +1,4 @@
 import contextlib
-import inspect
 import random
 from pathlib import Path
 from typing import Sequence

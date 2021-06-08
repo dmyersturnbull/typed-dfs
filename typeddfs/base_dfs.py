@@ -6,17 +6,18 @@ from __future__ import annotations
 import csv
 import abc
 import os
-import re
-from io import StringIO
 from pathlib import Path, PurePath
 from typing import Any, Iterable, List, Mapping, Optional, Sequence, Union, FrozenSet
 
 import pandas as pd
 from pandas.io.common import get_handle
-from tabulate import tabulate, TableFormat, Line, DataRow
+
+# noinspection PyProtectedMember
+from tabulate import tabulate, TableFormat, DataRow
 from natsort import natsorted, ns
 from pandas.core.frame import DataFrame as _InternalDataFrame
 
+# noinspection PyProtectedMember
 from typeddfs._utils import _Utils, _SENTINAL
 
 _FAKE_SEP = "\u2008"  # 6-em space; very unlikely to occur
@@ -24,39 +25,51 @@ PathLike = Union[str, PurePath]
 
 
 class UnsupportedOperationError(Exception):
-    pass
+    """ """
 
 
-class InvalidDfError(Exception):
-    pass
+class FilenameSuffixError(UnsupportedOperationError):
+    """ """
+
+
+class NonStrColumnError(UnsupportedOperationError):
+    """ """
+
+
+class NotSingleColumnError(UnsupportedOperationError):
+    """ """
+
+
+class InvalidDfError(ValueError):
+    """ """
 
 
 class ExtraConditionFailedError(InvalidDfError):
-    pass
+    """ """
 
 
 class MissingColumnError(InvalidDfError):
-    pass
+    """ """
 
 
 class AsymmetricDfError(InvalidDfError):
-    pass
+    """ """
 
 
 class UnexpectedColumnError(InvalidDfError):
-    pass
+    """ """
 
 
 class UnexpectedIndexNameError(InvalidDfError):
-    pass
+    """ """
 
 
 class ValueNotUniqueError(ValueError):
-    pass
+    """ """
 
 
 class NoValueError(ValueError):
-    pass
+    """ """
 
 
 class PrettyDf(_InternalDataFrame, metaclass=abc.ABCMeta):
@@ -111,7 +124,7 @@ class PrettyDf(_InternalDataFrame, metaclass=abc.ABCMeta):
     @property
     def _constructor_expanddim(self):  # pragma: no cover
         # this raises a NotImplementedError in _InternalDataFrame, so let's override it here to prevent tools and IDEs from complaining
-        raise ValueError()
+        raise UnsupportedOperationError()
 
     def _repr_html_(self) -> str:
         """
@@ -201,9 +214,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         zzz = natsorted([s for s in df[column]], alg=alg)
         df["__sort"] = df[column].map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
-        df = df.sort_values("__sort").drop_cols(
-            ["__sort"]
-        )  # .drop_cols(['__sort', 'level_0', 'index'])
+        df = df.sort_values("__sort").drop_cols(["__sort"])
         return self.__class__._check_and_change(df)
 
     def sort_natural_index(self, alg: int = ns.INT) -> __qualname__:
@@ -217,9 +228,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         zzz = natsorted([s for s in df.index], alg=alg)
         df["__sort"] = df.index.map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
-        df = df.sort_values("__sort").drop_cols(
-            ["__sort"]
-        )  # .drop_cols(['__sort', 'level_0', 'index'])
+        df = df.sort_values("__sort").drop_cols(["__sort"])
         return self.__class__._check_and_change(df)
 
     def drop_cols(self, cols: Union[str, Iterable[str]]) -> __qualname__:
@@ -272,7 +281,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         """
         types = set(self.column_names()).union(self.index_names())
         if any((not isinstance(c, str) for c in types)):
-            raise ValueError(f"Columns must be of str type to serialize, not {types}")
+            raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
         cls = self.__class__
         return cls._guess_io(self, True, path, {}, *args, **kwargs)
 
@@ -382,14 +391,14 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
                 # clazz.to_csv(path, sep="\t")
                 my_kwargs = {**params, **kwargs}
                 return getattr(clazz, fn)(path, *args, **my_kwargs)
-        raise ValueError(f"Suffix for {path} not recognized")
+        raise FilenameSuffixError(f"Suffix for {path} not recognized")
 
     def to_lines(
         self,
         path_or_buff,
         nl: Optional[str] = _SENTINAL,
     ) -> Optional[str]:
-        """
+        r"""
         Writes a file that contains one row per line and 1 column per line.
         Associated with ``.lines`` or ``.txt``.
 
@@ -408,7 +417,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
         df = self.vanilla_reset()
         if len(df.columns) != 1:
-            raise ValueError(f"Cannot write {len(df.columns)} columns ({df}) to lines")
+            raise NotSingleColumnError(f"Cannot write {len(df.columns)} columns ({df}) to lines")
         return df.to_csv(
             path_or_buff, index=False, sep=_FAKE_SEP, header=True, quoting=csv.QUOTE_NONE, **nl
         )
@@ -420,7 +429,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         comment: Optional[str] = None,
         nl: Optional[str] = _SENTINAL,
     ) -> __qualname__:
-        """
+        r"""
         Reads a file that contains 1 row and 1 column per line.
         Skips lines that are blank after trimming whitespace.
         Also skips comments if ``comment`` is set.
@@ -453,18 +462,18 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
         if len(df.columns) > 1:
-            raise ValueError(f"Read multiple columns on {path_or_buff}")
+            raise NotSingleColumnError(f"Read multiple columns on {path_or_buff}")
         return cls._convert(df)
 
     @classmethod
     def read_flexwf(
         cls,
         path_or_buff,
-        sep: str = r"\s+|\s+",
+        sep: str = "--->",
         comment: Optional[str] = None,
         nl: Optional[str] = _SENTINAL,
     ) -> __qualname__:
-        """
+        r"""
         Reads a "flexible-width format".
         The delimiter (``sep``) is important.
 
@@ -498,6 +507,12 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
             )
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
+        df.columns = [c.strip() for c in df.columns]
+        for c in df.columns:
+            try:
+                df[c] = df[c].str.strip()
+            except AttributeError:
+                pass
         return cls._convert(df)
 
     def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
@@ -506,7 +521,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         """
         return self._tabulate(fmt, **kwargs)
 
-    def to_flexwf(self, path_or_buff, sep: str = " | ", mode: str = "w") -> Optional[str]:
+    def to_flexwf(self, path_or_buff, sep: str = "--->", mode: str = "w") -> Optional[str]:
         """
         Writes a fixed-width formatter, optionally with a delimiter, which can be multiple characters.
 
@@ -533,7 +548,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         content = self._tabulate(fmt)
         if path_or_buff is None:
             return content
-        with get_handle(path_or_buff, mode, encoding="utf8") as f:
+        with get_handle(path_or_buff, mode, encoding="utf8", compression="infer") as f:
             f.handle.write(content)
 
     def _tabulate(self, fmt: Union[str, TableFormat], **kwargs) -> str:
@@ -682,7 +697,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         return df.to_csv(*args, **kwargs)
 
     @classmethod
-    def read_hdf(cls, *args, key: str = "df", **kwargs) -> __qualname__:
+    def read_hdf(cls, *args, key: str = "df", **kwargs) -> __qualname__:  # pragma: no cover
         """
         Reads from HDF with ``key`` as the default, converting to this type.
 
@@ -705,7 +720,7 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
         return cls._convert(df)
 
     # noinspection PyBroadException,PyFinal,DuplicatedCode
-    def to_hdf(self, path: PathLike, key: str = "df", **kwargs) -> None:
+    def to_hdf(self, path: PathLike, key: str = "df", **kwargs) -> None:  # pragma: no cover
         """
         Writes to HDF with ``key`` as the default. Calling pd.to_hdf on this would error.
 
@@ -880,6 +895,11 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
     def copy(self, deep: bool = False) -> __qualname__:
         return self.__class__._check_and_change(super().copy(deep=deep))
 
+    def assign(self, **kwargs) -> __qualname__:
+        df = self.vanilla_reset()
+        df = df.assign(**kwargs)
+        return self.__class__._convert(df)
+
     def append(self, other, ignore_index=False, verify_integrity=False, sort=False) -> __qualname__:
         return self.__class__._check_and_change(
             super().append(
@@ -1018,10 +1038,10 @@ class AbsDf(PrettyDf, metaclass=abc.ABCMeta):
                 return (
                     len(
                         {
-                            *getattr(cls, "required_columns")(),
-                            *getattr(cls, "reserved_columns")(),
-                            *getattr(cls, "required_index_names")(),
-                            *getattr(cls, "reserved_index_names")(),
+                            *cls.required_columns(),
+                            *cls.reserved_columns(),
+                            *cls.required_index_names(),
+                            *cls.reserved_index_names(),
                         }
                     )
                     == 1
@@ -1042,11 +1062,6 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
         else:
             return super().__getitem__(item)
 
-    def set(self, key, value) -> __qualname__:
-        df = self.reset_index()
-        df[key] = value
-        return self._convert(df)
-
     @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:
         """
@@ -1057,7 +1072,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
             df: The Pandas DataFrame or member of cls; will have its __class_ change but will otherwise not be affected
 
         Returns:
-            A non-copy
+            A copy
         """
         df = df.copy()
         df.__class__ = cls
@@ -1075,4 +1090,7 @@ __all__ = [
     "ExtraConditionFailedError",
     "NoValueError",
     "ValueNotUniqueError",
+    "UnsupportedOperationError",
+    "NonStrColumnError",
+    "NotSingleColumnError",
 ]

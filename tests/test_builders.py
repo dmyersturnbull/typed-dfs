@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -131,6 +132,14 @@ class TestBuilders:
         # neither strict
         t = TypedDfBuilder("a").strict(False, False).build()
         t.convert(pd.DataFrame([pd.Series(dict(x="x"))]))
+
+    """
+    def test_reserve_dtype(self):
+        t = TypedDfBuilder("a").reserve("x", dtype=np.float32).build()
+        t = t.convert(pd.DataFrame([pd.Series(dict(x="0.5"))]))
+        assert t.column_names() == ["x"]
+        assert t.values.tolist() == [[0.5]]
+    """
 
 
 if __name__ == "__main__":

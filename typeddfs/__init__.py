@@ -11,7 +11,6 @@ from typing import Optional, Type
 
 import pandas as pd
 
-from typeddfs._utils import _Utils
 from typeddfs.base_dfs import AsymmetricDfError as _AsymmetricDfError
 from typeddfs.base_dfs import BaseDf
 from typeddfs.base_dfs import ExtraConditionFailedError as _ExtraConditionFailedError
@@ -97,7 +96,6 @@ class TypedDfs:
         Useful to quickly access a function only defined on typeddfs DataFrames.
 
         Example:
-
             TypedDfs.wrap(df).write_file("abc.feather")
         """
         return FinalDf(df)

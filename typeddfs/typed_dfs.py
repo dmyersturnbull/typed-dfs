@@ -3,8 +3,7 @@ Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
-import os
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from typing import Callable, Optional, Sequence, Union
 
 import pandas as pd
@@ -154,7 +153,7 @@ class TypedDf(BaseDf):
         if len(self.columns) == 0:
             return self
         else:
-            df: __qualname__ = self[[self.columns[0]]]
+            df = self[[self.columns[0]]]
             df = df.drop(self.columns[0], axis=1)
             return self.__class__.convert(df)
 

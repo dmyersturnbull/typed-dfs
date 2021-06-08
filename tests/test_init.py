@@ -3,10 +3,19 @@ import pytest
 
 from typeddfs import TypedDf, TypedDfs, UntypedDf
 
+# noinspection PyProtectedMember
+from typeddfs.base_dfs import AbsDf, BaseDf
+
 from . import sample_data
 
 
 class TestCore:
+    def test_wrap(self):
+        df = pd.DataFrame({})
+        df2 = TypedDfs.wrap(df)
+        assert not isinstance(df, AbsDf)
+        assert isinstance(df2, BaseDf)
+
     def test_empty_simple(self):
         new = TypedDfs.untyped("a class")
         df = new.convert(pd.DataFrame())

@@ -11,7 +11,6 @@ def run() -> None:
     """
     Runs an example usage of typeddfs.
     """
-
     # Build me a Key-Value-Note class!
     # noinspection PyPep8Naming
     KeyValue = TypedDfs.example()

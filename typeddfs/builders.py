@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Type, Union, Any
+from typing import Callable, Optional, Sequence, Type
 
 import pandas as pd
 
@@ -55,6 +55,7 @@ class TypedDfBuilder:
         Args:
             names: A varargs list of columns or index names
             dtype: An automatically applied transformation of the column values using ``.astype``
+                   THIS PARAMETER IS **NOT IMPLEMENTED YET**
             index: If True, put these in the index
 
         Returns:
@@ -85,6 +86,7 @@ class TypedDfBuilder:
         Args:
             names: A varargs list of columns or index names
             dtype: An automatically applied transformation of the column values using ``.astype``
+                   THIS PARAMETER IS **NOT IMPLEMENTED YET**
             index: If True, put these in the index
 
         Returns:

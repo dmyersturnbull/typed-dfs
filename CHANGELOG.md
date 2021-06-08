@@ -6,15 +6,15 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 ## [0.7.0] - 2021-06-07
 
 ### Added
-- `BaseDf.set`
-- `BaseDf.can_read` and `BaseDf.can_write`
+- `can_read` and `can_write`
 - Write (and read) to fixed-width and "flex" fixed-width
-- `BaseDf.pretty_print`, which delegates to [tabulate](https://pypi.org/project/tabulate)
+- `pretty_print`, which delegates to [tabulate](https://pypi.org/project/tabulate)
 
 ### Removed
 - `comment` from `to_lines`
 
 ### Changed
+- `assign` now overridden to handle indices
 - Bumped pyarrow to 4.0
 - All `write_file` serialization now requires column names to be str for consistency
 - Empty DataFrames are read via `BaseDf.read_csv`, etc. without issue (`pd.read_csv` normally fails)

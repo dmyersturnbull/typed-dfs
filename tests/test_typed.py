@@ -69,6 +69,24 @@ class TestTyped:
         assert df2.index_names() == ["abc", "xyz"]
         assert df2.index.tolist() == [("bbb", 6), ("zzz", 3)]
 
+    def test_meta(self):
+        df = Ind2.convert(pd.DataFrame(sample_data_str()))
+        df = df.meta()
+        assert df.index_names() == ["abc", "xyz"]
+        assert df.column_names() == []
+
+    def test_assign(self):
+        df = Ind2.convert(pd.DataFrame(sample_data_str()))
+        df2 = df.assign(**{"123": "omg"}).vanilla_reset()
+        assert df2.values.tolist() == [["zzz", 3, "omg"], ["bbb", 6, "omg"]]
+
+    def test_meta_empty(self):
+        df = Trivial({})
+        df2 = df.meta()
+        assert df is df2
+        assert df2.column_names() == []
+        assert df2.index_names() == []
+
     def test_change(self):
         # should be in place
         df = pd.DataFrame(sample_data())

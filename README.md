@@ -33,8 +33,12 @@ MyDfType = (
 - Columns are turned into indices as needed,
   so **`read_csv` and `to_csv` are inverses**.
   `MyDf.read_csv(mydf.to_csv())` is `mydf`. 
+- And `read_file` and `write_file` are inverses, too.
+  They will determine the file format based on the filename suffix.
+  That includes, .csv, .tsv, .tab, .feather, .snappy, .h5, .json, .txt,
+  and combos like .json.gz or .tab.xz
 - DataFrames display elegantly in Jupyter notebooks.
-- Extra methods such as `sort_natural` and `write_file`.
+- Extra methods such as `sort_natural`
 
 ### 🎨 Example
 
