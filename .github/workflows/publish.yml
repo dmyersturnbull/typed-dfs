@@ -26,7 +26,7 @@ jobs:
         run: |
           poetry build
           poetry install
-      - name: Attach artifacts to the Github release
+      - name: Attach artifacts to the GitHub release
         uses: skx/github-action-publish-binaries@master
         with:
           args: 'dist/*'

@@ -106,6 +106,10 @@ pytest-cov               = "^2.11"
 flake8                   = "^3.9"
 flake8-docstrings        = "^1.5"
 flake8-bugbear           = ">=21"
+sphinx                   = "^4.0"
+sphinx-copybutton        = "^0.3"
+sphinx-autoapi           = "^1.5"
+sphinx-rtd-theme         = "^0.5"
 tomlkit                  = "^0.7"
 
 
