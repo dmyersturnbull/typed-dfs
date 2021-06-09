@@ -4,7 +4,7 @@ File formats for reading/writing to/from DFs.
 from __future__ import annotations
 import enum
 from collections import defaultdict
-from typing import Set
+from typing import Set, Union
 from typing import Mapping
 from warnings import warn
 
@@ -99,7 +99,7 @@ _support_map = {
 }
 
 
-class DfFileFormat(enum.Enum):
+class FileFormat(enum.Enum):
     """ """
 
     csv = enum.auto()
@@ -112,6 +112,27 @@ class DfFileFormat(enum.Enum):
     parquet = enum.auto()
     hdf = enum.auto()
     excel = enum.auto()
+
+    @classmethod
+    def of(cls, t: Union[str, FileFormat]) -> FileFormat:
+        if isinstance(t, FileFormat):
+            return t
+        return FileFormat[str(t).strip().lower()]
+
+    @classmethod
+    def from_path(cls, path: PathLike) -> FileFormat:
+        for suffix, fmt in _rev_valid_formats.items():
+            if str(path).endswith(suffix):
+                return FileFormat[fmt]
+        raise FilenameSuffixError(f"Suffix for {path} not recognized. Is an extra package needed?")
+
+    @classmethod
+    def all_readable(cls) -> Set[FileFormat]:
+        return {f for f in cls if f.can_read}
+
+    @classmethod
+    def all_writable(cls) -> Set[FileFormat]:
+        return {f for f in cls if f.can_write}
 
     @property
     def suffixes(self) -> Set[str]:
@@ -126,27 +147,12 @@ class DfFileFormat(enum.Enum):
         return _support_map.get(self.name, True)
 
     @classmethod
-    def from_suffix(cls, suffix: str) -> DfFileFormat:
+    def from_suffix(cls, suffix: str) -> FileFormat:
         try:
-            return DfFileFormat[_rev_valid_formats[suffix]]
+            return FileFormat[_rev_valid_formats[suffix]]
         except KeyError:
             msg = f"Suffix {suffix} not recognized. Is an extra package needed?"
             raise FilenameSuffixError(msg) from None
 
-    @classmethod
-    def from_path(cls, path: PathLike) -> DfFileFormat:
-        for suffix, fmt in _rev_valid_formats.items():
-            if str(path).endswith(suffix):
-                return DfFileFormat[fmt]
-        raise FilenameSuffixError(f"Suffix for {path} not recognized. Is an extra package needed?")
 
-    @classmethod
-    def all_readable(cls) -> Set[DfFileFormat]:
-        return {f for f in cls if f.can_read}
-
-    @classmethod
-    def all_writable(cls) -> Set[DfFileFormat]:
-        return {f for f in cls if f.can_write}
-
-
-__all__ = ["DfFileFormat", "DfFormatSupport"]
+__all__ = ["FileFormat", "DfFormatSupport"]

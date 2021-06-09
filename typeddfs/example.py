@@ -4,7 +4,7 @@ Near-replica of example from the readme.
 
 from pathlib import Path
 
-from typeddfs import TypedDfs
+from typeddfs._entries import TypedDfs
 
 
 def run() -> None:

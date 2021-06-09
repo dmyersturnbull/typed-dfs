@@ -1,7 +1,8 @@
 import pandas as pd
 import pytest
 
-from typeddfs import TypedDf, TypedDfs, UntypedDf
+from typeddfs import TypedDf, UntypedDf
+from typeddfs import TypedDfs
 
 from typeddfs.base_dfs import BaseDf
 from typeddfs.abs_df import AbsDf

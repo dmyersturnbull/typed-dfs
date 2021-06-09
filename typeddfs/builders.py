@@ -6,12 +6,12 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Type, Mapping, Any
+from typing import Callable, Optional, Sequence, Type, Mapping, Any, Union
 from warnings import warn
 
 import pandas as pd
 
-from typeddfs import BaseDf, DfFileFormat
+from typeddfs import BaseDf, FileFormat
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.df_errors import ClashError
 
@@ -184,29 +184,44 @@ class TypedDfBuilder:
         warn("TypedDfBuilder.condition is deprecated; use verify instead", DeprecationWarning)
         return self.verify(*conditions)
 
-    def add_read_kwarg(self, fmt: DfFileFormat, arg: str, value: str) -> __qualname__:
+    def add_read_kwargs(self, fmt: Union[FileFormat, str], **kwargs) -> __qualname__:
         """
         Adds keyword arguments that are passed to ``read_`` methods when called from ``read_file``.
         Rarely needed.
 
         Arguments:
             fmt: The file format (which corresponds to the delegated method)
-            arg: The name of the arg
-            value: The value of the arg
-        """
-        self._read_kwargs[fmt][arg] = value
+            kwargs: key-value pairs that are used for the specified format
 
-    def add_write_kwarg(self, fmt: DfFileFormat, arg: str, value: str) -> __qualname__:
+        Returns:
+            this builder for chaining
+        """
+        fmt = FileFormat.of(fmt)
+        for k, v in kwargs.items():
+            self._read_kwargs[fmt][k] = v
+        return self
+
+    def add_write_kwargs(self, fmt: Union[FileFormat, str], **kwargs) -> __qualname__:
         """
         Adds keyword arguments that are passed to ``to_`` methods when called from ``to_file``.
         Rarely needed.
 
+        Example:
+            .. code::
+
+                TypedDfs.typed("x").add_write_kwargs()
+
         Arguments:
             fmt: The file format (which corresponds to the delegated method)
-            arg: The name of the arg
-            value: The value of the arg
+            kwargs: key-value pairs that are used for the specified format
+
+        Returns:
+            this builder for chaining
         """
-        self._write_kwargs[fmt][arg] = value
+        fmt = FileFormat.of(fmt)
+        for k, v in kwargs.items():
+            self._write_kwargs[fmt][k] = v
+        return self
 
     def build(self) -> Type[TypedDf]:
         """
@@ -275,11 +290,11 @@ class TypedDfBuilder:
                 return self._extra_reqs
 
             @classmethod
-            def read_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+            def read_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
                 return self._read_kwargs
 
             @classmethod
-            def write_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+            def write_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
                 return self._write_kwargs
 
         New.__name__ = self._name

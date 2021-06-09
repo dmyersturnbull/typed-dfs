@@ -1,10 +1,12 @@
 import io
 from typing import Set, Type
+
+import pandas as pd
 import pytest
 import random
 
-from typeddfs import TypedDf, BaseDf
-from typeddfs.file_formats import DfFormatSupport
+from typeddfs import TypedDf, BaseDf, TypedDfBuilder
+from typeddfs.file_formats import DfFormatSupport, FileFormat
 from typeddfs.df_errors import NonStrColumnError, NotSingleColumnError, FilenameSuffixError
 
 from . import (
@@ -218,6 +220,14 @@ class TestReadWrite:
             df.to_csv(path)
             df2 = Untyped.read_lines(path)
         assert df.values.tolist() == df2.values.tolist()
+
+    def test_pass_io_options(self):
+        t = TypedDfBuilder("a").reserve("x", "y").add_write_kwargs(FileFormat.csv, sep="&").build()
+        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        with tmpfile(".csv") as path:
+            df.write_file(path)
+            lines = path.read_text(encoding="utf8").splitlines()
+            assert lines == ["x&y", "cat&dog"]
 
 
 if __name__ == "__main__":

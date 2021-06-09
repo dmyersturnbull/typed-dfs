@@ -34,16 +34,16 @@ Some useful extra functions, plus various Pandas issues fixed:
 - No more empty `.feather`/`.snappy`/`.h5` files written on error.
 - You can write fixed-width as well as read.
 
-
 ```python
-from typeddfs import TypedDfs
+
+from typeddfs._entries import TypedDfs
 
 MyDfType = (
-    TypedDfs.typed("MyDfType")
-        .require("name", index=True)  # always keep in index
-        .require("value", dtype=float)  # require a column and type
-        .drop("_temp")  # auto-drop a column
-        .verify(lambda ddf: len(ddf) == 12)  # require exactly 12 rows
+  TypedDfs.typed("MyDfType")
+    .require("name", index=True)  # always keep in index
+    .require("value", dtype=float)  # require a column and type
+    .drop("_temp")  # auto-drop a column
+    .verify(lambda ddf: len(ddf) == 12)  # require exactly 12 rows
 ).build()
 
 df = MyDfType.read_file(input("filename? [.feather/.csv.gz/.tsv.xz/etc.]"))
@@ -59,15 +59,16 @@ For a CSV like this:
 | abc   | 123    | ?    |
 
 ```python
-from typeddfs import TypedDfs
+
+from typeddfs._entries import TypedDfs
 
 # Build me a Key-Value-Note class!
 KeyValue = (
-    TypedDfs.typed("KeyValue")              # With enforced reqs / typing
+  TypedDfs.typed("KeyValue")  # With enforced reqs / typing
     .require("key", dtype=str, index=True)  # automagically add to index
-    .require("value")                       # required
-    .reserve("note")                        # permitted but not required
-    .strict()                               # disallow other columns
+    .require("value")  # required
+    .reserve("note")  # permitted but not required
+    .strict()  # disallow other columns
 ).build()
 
 # This will self-organize and use "key" as the index:
@@ -78,10 +79,11 @@ df.to_csv("remke.csv")
 df = KeyValue.read_csv("remake.csv")
 print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
 
+
 # And now, we can type a function to require a KeyValue,
 # and let it raise an `InvalidDfError` (here, a `MissingColumnError`):
 def my_special_function(df: KeyValue) -> float:
-    return KeyValue(df)["value"].sum()
+  return KeyValue(df)["value"].sum()
 ```
 
 All of the normal DataFrame methods are available.

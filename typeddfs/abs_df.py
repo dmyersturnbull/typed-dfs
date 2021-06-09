@@ -16,7 +16,7 @@ from pandas.io.common import get_handle
 # noinspection PyProtectedMember
 from tabulate import tabulate, TableFormat, DataRow
 
-from typeddfs.file_formats import DfFileFormat
+from typeddfs.file_formats import FileFormat
 from typeddfs._core_dfs import CoreDf
 from typeddfs._utils import _SENTINAL, _FAKE_SEP, PathLike
 from typeddfs.df_errors import NonStrColumnError, NotSingleColumnError
@@ -53,7 +53,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     """
 
     @classmethod
-    def read_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+    def read_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
         """
         Passes kwargs into read functions from ``read_file``.
         These are keyword arguments that are automatically added into
@@ -65,7 +65,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return {}
 
     @classmethod
-    def write_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+    def write_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
         """
         Passes kwargs into write functions from ``to_file``.
         These are keyword arguments that are automatically added into
@@ -151,7 +151,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return cls._call_io(cls, False, path)
 
     @classmethod
-    def can_read(cls) -> Set[DfFileFormat]:
+    def can_read(cls) -> Set[FileFormat]:
         """
         Returns all formats that can be read using ``read_file``.
         Some, such as hdf and Parquet (Snappy), are only included if their respective libraries
@@ -161,12 +161,12 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         """
         return {
             f
-            for f in DfFileFormat.all_readable()
-            if f is not DfFileFormat.lines or cls._lines_files_apply()
+            for f in FileFormat.all_readable()
+            if f is not FileFormat.lines or cls._lines_files_apply()
         }
 
     @classmethod
-    def can_write(cls) -> Set[DfFileFormat]:
+    def can_write(cls) -> Set[FileFormat]:
         """
         Returns all formats that can be written to using ``write_file``.
         Some, such as hdf5 and Parquet are only included if their respective libraries
@@ -176,8 +176,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         """
         return {
             f
-            for f in DfFileFormat.all_writable()
-            if f is not DfFileFormat.lines or cls._lines_files_apply()
+            for f in FileFormat.all_writable()
+            if f is not FileFormat.lines or cls._lines_files_apply()
         }
 
     def to_lines(
@@ -592,7 +592,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         writing: bool,
         path: Union[Path, str],
     ) -> str:
-        fmt = DfFileFormat.from_path(path)
+        fmt = FileFormat.from_path(path)
         fn_name = "to_" + fmt.name if writing else "read_" + fmt.name
         kwargs = (cls.write_kwargs() if writing else cls.read_kwargs()).get(fmt, {})
         fn = getattr(clazz, fn_name)

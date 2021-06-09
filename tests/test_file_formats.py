@@ -1,16 +1,16 @@
 import pytest
 
 from typeddfs.df_errors import FilenameSuffixError
-from typeddfs.file_formats import DfFileFormat
+from typeddfs.file_formats import FileFormat
 
 
 class TestFileFormats:
     def test(self):
-        assert DfFileFormat.from_path("abc.csv.gz") is DfFileFormat.csv
-        assert DfFileFormat.from_path("abc.txt.xz") is DfFileFormat.lines
-        assert DfFileFormat.from_path("abc.snappy") is DfFileFormat.parquet
+        assert FileFormat.from_path("abc.csv.gz") is FileFormat.csv
+        assert FileFormat.from_path("abc.txt.xz") is FileFormat.lines
+        assert FileFormat.from_path("abc.snappy") is FileFormat.parquet
         with pytest.raises(FilenameSuffixError):
-            DfFileFormat.from_path("abc.what")
+            FileFormat.from_path("abc.what")
 
 
 if __name__ == "__main__":
