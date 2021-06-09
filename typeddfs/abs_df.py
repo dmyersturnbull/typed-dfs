@@ -1,14 +1,14 @@
 """
-Defines a low-level DataFrame subclass that overrides
-a lot of methods to auto-change the type back to ``cls``.
+Defines a low-level DataFrame subclass.
+It overrides a lot of methods to auto-change the type back to ``cls``.
 """
 from __future__ import annotations
 
 import csv
 import abc
 import os
-from pathlib import Path, PurePath
-from typing import Optional, Union, FrozenSet
+from pathlib import Path
+from typing import Optional, Union, Mapping, Any, Set
 
 import pandas as pd
 from pandas.io.common import get_handle
@@ -16,9 +16,30 @@ from pandas.io.common import get_handle
 # noinspection PyProtectedMember
 from tabulate import tabulate, TableFormat, DataRow
 
+from typeddfs.file_formats import DfFileFormat
 from typeddfs._core_dfs import CoreDf
-from typeddfs._utils import _SENTINAL, _Utils, _FAKE_SEP, PathLike
-from typeddfs.df_errors import NonStrColumnError, FilenameSuffixError, NotSingleColumnError
+from typeddfs._utils import _SENTINAL, _FAKE_SEP, PathLike
+from typeddfs.df_errors import NonStrColumnError, NotSingleColumnError
+
+
+def _get_default_encoding(bom: bool) -> str:
+    if bom and os.name == "nt":
+        return "utf-8-sig"
+    else:
+        return "utf8"
+
+
+def _get_plain_table_format(sep: str):
+    return TableFormat(
+        lineabove=None,
+        linebelowheader=None,
+        linebetweenrows=None,
+        linebelow=None,
+        headerrow=DataRow("", f" {sep} ", ""),
+        datarow=DataRow("", f" {sep} ", ""),
+        padding=0,
+        with_header_hide=None,
+    )
 
 
 class AbsDf(CoreDf, metaclass=abc.ABCMeta):
@@ -31,7 +52,31 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
       - new methods ``read_file``, ``write_file``, and ``pretty_print``.
     """
 
-    def write_file(self, path: Union[Path, str], *args, nl: Optional[str] = _SENTINAL, **kwargs):
+    @classmethod
+    def read_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+        """
+        Passes kwargs into read functions from ``read_file``.
+        These are keyword arguments that are automatically added into
+        specific ``read_`` methods when called by ``read_file``.
+
+        Note:
+            This should rarely be needed
+        """
+        return {}
+
+    @classmethod
+    def write_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+        """
+        Passes kwargs into write functions from ``to_file``.
+        These are keyword arguments that are automatically added into
+        specific ``to_`` methods when called by ``write_file``.
+
+        Note:
+            This should rarely be needed
+        """
+        return {}
+
+    def write_file(self, path: Union[Path, str]):
         """
         Writes to a file (or possibly URL), guessing the format from the filename extension.
         Delegates to the ``to_*`` functions of this class (e.g. ``to_csv``).
@@ -51,10 +96,6 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
                   (because we need a filename).
-            args: Positional args passed to the read_ function
-            nl: Passes ``line_terminator=nl`` to ``.read_csv`` if the output is
-                a CSV/TSV variant or .lines or .flexwf
-            kwargs: Keyword args passed to the function
 
         Returns:
             Whatever the corresponding method on ``pd.to_*`` returns.
@@ -67,20 +108,16 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         if any((not isinstance(c, str) for c in types)):
             raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
         cls = self.__class__
-        all_params = {}
-        if nl != _SENTINAL:
-            all_params["line_terminator"] = "\n"
-        return cls._guess_io(self, True, path, all_params, *args, **kwargs)
+        return cls._call_io(self, True, path)
+
+    def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
+        """
+        Outputs a pretty table using the ``tabulate`` package.
+        """
+        return self._tabulate(fmt, **kwargs)
 
     @classmethod
-    def read_file(
-        cls,
-        path: Union[Path, str],
-        *args,
-        skip_blank_lines: bool = _SENTINAL,
-        comment: str = _SENTINAL,
-        **kwargs,
-    ) -> __qualname__:
+    def read_file(cls, path: Union[Path, str]) -> __qualname__:
         """
         Reads from a file (or possibly URL), guessing the format from the filename extension.
         Delegates to the ``read_*`` functions of this class.
@@ -107,42 +144,41 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
                   (because we need a filename).
-            skip_blank_lines: If text-based, skip blank lines
-            comment: Prefix indicating comments to ignore, if text-based
-            args: Positional args passed to the read_ function
-            kwargs: Keyword args passed to the function
 
         Returns:
             An instance of this class
         """
-        all_params = {}
-        if skip_blank_lines != _SENTINAL:
-            all_params["skip_blank_lines"] = skip_blank_lines
-        if comment != _SENTINAL:
-            all_params["comment"] = comment
-        return cls._guess_io(cls, False, path, all_params, *args, **kwargs)
+        return cls._call_io(cls, False, path)
 
     @classmethod
-    def can_read(cls) -> FrozenSet[str]:
+    def can_read(cls) -> Set[DfFileFormat]:
         """
-        Returns all filename extensions that can be read using ``read_file``.
-        Some, such as `.h5` and `.snappy`, are only included if their respective libraries
+        Returns all formats that can be read using ``read_file``.
+        Some, such as hdf and Parquet (Snappy), are only included if their respective libraries
         were imported (when typeddfs was imported).
-        The ``read_lines`` functions (``.txt``, ``.lines``, etc.) are only included if
+        The lines format (``.txt``, ``.lines``, etc.) is only included if
         this DataFrame *can* support only 1 column+index.
         """
-        return frozenset(_Utils.guess_io(False, cls._lines_files_apply(), {}).keys())
+        return {
+            f
+            for f in DfFileFormat.all_readable()
+            if f is not DfFileFormat.lines or cls._lines_files_apply()
+        }
 
     @classmethod
-    def can_write(cls) -> FrozenSet[str]:
+    def can_write(cls) -> Set[DfFileFormat]:
         """
-        Returns all filename extensions that can be written to using ``write_file``.
-        Some, such as `.h5` and `.snappy`, are only included if their respective libraries
+        Returns all formats that can be written to using ``write_file``.
+        Some, such as hdf5 and Parquet are only included if their respective libraries
         were imported (when typeddfs was imported).
-        The ``to_lines`` functions (``.txt``, ``.lines``, etc.) are only included if
+        The lines format (``.txt``, ``.lines``, etc.) is only included if
         this DataFrame type *can* support only 1 column+index.
         """
-        return frozenset(_Utils.guess_io(True, cls._lines_files_apply(), {}).keys())
+        return {
+            f
+            for f in DfFileFormat.all_writable()
+            if f is not DfFileFormat.lines or cls._lines_files_apply()
+        }
 
     def to_lines(
         self,
@@ -216,11 +252,33 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             raise NotSingleColumnError(f"Read multiple columns on {path_or_buff}")
         return cls._convert(df)
 
-    def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
+    @classmethod
+    def read_fwf(cls, *args, **kwargs) -> __qualname__:
+        return cls._convert(pd.read_fwf(*args, **kwargs))
+
+    def to_fwf(self, path_or_buff, sep: str = "  ", mode: str = "w") -> Optional[str]:
         """
-        Outputs a pretty table using the ``tabulate`` package.
+        Writes a fixed-width text format.
+        See ``read_fwf`` and ``to_flexwf`` for more info.
+
+        .. warning:
+
+            This method is subject to change in a future (major) version,
+            if Pandas introduces a method with the same name.
+
+        Args:
+            path_or_buff: Path or buffer
+            sep: The text that separates columns
+            mode: write or append (w/a)
+
+        Returns:
+            The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
-        return self._tabulate(fmt, **kwargs)
+        content = self._tabulate(_get_plain_table_format(sep))
+        if path_or_buff is None:
+            return content
+        with get_handle(path_or_buff, mode, encoding="utf8", compression="infer") as f:
+            f.handle.write(content)
 
     @classmethod
     def read_flexwf(
@@ -287,17 +345,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
-        fmt = TableFormat(
-            lineabove=None,
-            linebelowheader=None,
-            linebetweenrows=None,
-            linebelow=None,
-            headerrow=DataRow("", f" {sep} ", ""),
-            datarow=DataRow("", f" {sep} ", ""),
-            padding=0,
-            with_header_hide=None,
-        )
-        content = self._tabulate(fmt)
+        content = self._tabulate(_get_plain_table_format(sep))
         if path_or_buff is None:
             return content
         with get_handle(path_or_buff, mode, encoding="utf8", compression="infer") as f:
@@ -311,7 +359,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             df = pd.DataFrame()
         return cls._convert(df)
 
-    # noinspection PyFinal
+    # noinspection PyFinal,PyMethodOverriding
     def to_json(self, path_or_buf, *args, **kwargs) -> Optional[str]:
         df = self.vanilla_reset()
         return df.to_json(path_or_buf, *args, **kwargs)
@@ -384,6 +432,14 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             raise
 
     @classmethod
+    def read_tsv(cls, *args, **kwargs) -> __qualname__:
+        """
+        Reads tab-separated data.
+        See ``read_csv`` for more info.
+        """
+        return cls.read_csv(*args, sep="\t", **kwargs)
+
+    @classmethod
     def read_csv(cls, *args, **kwargs) -> __qualname__:
         """
         Reads from CSV, converting to this type.
@@ -414,6 +470,13 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             df = pd.DataFrame()
         return cls._convert(df)
 
+    def to_tsv(self, *args, bom: bool = False, **kwargs) -> Optional[str]:
+        """
+        Writes tab-separated data.
+        See ``to_csv`` for more info.
+        """
+        return self.to_csv(*args, bom=bom, sep="\t", **kwargs)
+
     # noinspection PyFinal
     def to_csv(self, *args, bom: bool = False, **kwargs) -> Optional[str]:
         """
@@ -439,10 +502,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         # same logic as for read_csv -- see that
         if len(args) < 7:
             kwargs.setdefault("index", False)
-        if bom and len(args) < 10 and os.name == "nt":
-            kwargs.setdefault("encoding", "utf-8-sig")
-        elif bom and len(args) < 10:
-            kwargs.setdefault("encoding", "utf-8")
+        default_encoding = _get_default_encoding(bom)
+        if bom and len(args) < 10:
+            kwargs.setdefault("encoding", default_encoding)
         df = self.vanilla_reset()
         return df.to_csv(*args, **kwargs)
 
@@ -524,44 +586,20 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return tabulate(df.values.tolist(), list(df.columns), tablefmt=fmt, **kwargs)
 
     @classmethod
-    def _guess_io(
+    def _call_io(
         cls,
         clazz,
         writing: bool,
         path: Union[Path, str],
-        all_params,
-        *args,
-        **kwargs,
     ) -> str:
-        # we want nice error messages, so lie to _Utils.guess_io;
-        # let it include .lines, etc., even if those won't work for this exact DF
-        writing = False if writing is False else True
-        inc_lines = cls._lines_files_apply()
-        all_params = {p[0]: p[1] for p in all_params.items() if p is not _SENTINAL}
-        path_is_a_path = isinstance(path, (str, PurePath))
-        dct = _Utils.guess_io(writing, inc_lines, all_params)
-        # `path` could be a URL, so don't use Path.suffix
-        for suffix, (fn, params) in dct.items():
-            if path_is_a_path and str(path).endswith(suffix):
-                # Note the order! kwargs overwrites params
-                # clazz.to_csv(path, sep="\t")
-                my_kwargs = {**params, **kwargs}
-                return getattr(clazz, fn)(path, *args, **my_kwargs)
-        raise FilenameSuffixError(f"Suffix for {path} not recognized")
+        fmt = DfFileFormat.from_path(path)
+        fn_name = "to_" + fmt.name if writing else "read_" + fmt.name
+        kwargs = (cls.write_kwargs() if writing else cls.read_kwargs()).get(fmt, {})
+        fn = getattr(clazz, fn_name)
+        return fn(path, **kwargs)
 
     @classmethod
     def _lines_files_apply(cls) -> bool:
-        if (
-            hasattr(cls, "required_columns")
-            and hasattr(cls, "reserved_columns")
-            and hasattr(cls, "required_index_names")
-            and hasattr(cls, "reserved_index_names")
-            and hasattr(cls, "known_names")
-        ):
-            try:
-                return len(cls.known_names()) == 1
-            except (ValueError, TypeError):  # pragma: no cover
-                pass
         return True
 
 

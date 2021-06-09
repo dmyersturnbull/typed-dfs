@@ -12,8 +12,10 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - `pretty_print`, which delegates to [tabulate](https://pypi.org/project/tabulate)
 - Optional post-processing method (`TypedDf.post_process`)
 - `known_column_names`, `known_index_names`, and `known_names`
+- Methods to set default read_file/to_file args
 
 ### Removed
+- All args from `read_file` and `to_file`
 - `comment` from `to_lines`; it was too confusing because no other write functions had one
 
 ### Changed

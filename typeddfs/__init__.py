@@ -13,6 +13,7 @@ import pandas as pd
 
 from typeddfs.df_errors import AsymmetricDfError as _AsymmetricDfError
 from typeddfs.base_dfs import BaseDf
+from typeddfs.file_formats import DfFileFormat
 from typeddfs.df_errors import ExtraConditionFailedError as _ExtraConditionFailedError
 from typeddfs.df_errors import InvalidDfError as _InvalidDfError
 from typeddfs.df_errors import MissingColumnError as _MissingColumnError
@@ -144,4 +145,4 @@ class TypedDfs:
         return New
 
 
-__all__ = ["BaseDf", "UntypedDf", "TypedDf", "TypedDfs", "FinalDf"]
+__all__ = ["BaseDf", "UntypedDf", "TypedDf", "TypedDfs", "FinalDf", "DfFileFormat"]

@@ -269,8 +269,8 @@ class TypedDf(BaseDf):
     @classmethod
     def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
         """
-        A function to be called at the final stage of ``convert``,
-        immediately before ``extra_conditions`` are checked.
+        A function to be called at the final stage of ``convert``.
+        It is called immediately before ``extra_conditions`` are checked.
         The function takes a copy of the input ``BaseDf`` and returns a new copy.
 
         Note:
@@ -337,6 +337,10 @@ class TypedDf(BaseDf):
             raise AsymmetricDfError(
                 f"The indices are {list(df.index)} but the rows are {list(df.columns)}"
             )
+
+    @classmethod
+    def _lines_files_apply(cls) -> bool:
+        return len(cls.known_names()) == 1
 
 
 __all__ = ["TypedDf"]

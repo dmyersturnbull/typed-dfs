@@ -4,13 +4,14 @@ Defines a builder pattern for ``TypedDf``.
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Optional, Sequence, Type, Mapping, Any
 from warnings import warn
 
 import pandas as pd
 
-from typeddfs import BaseDf
+from typeddfs import BaseDf, DfFileFormat
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.df_errors import ClashError
 
@@ -46,6 +47,8 @@ class TypedDfBuilder:
         self._symmetric = False
         self._post_processing = None
         self._extra_reqs = []
+        self._read_kwargs = defaultdict(dict)
+        self._write_kwargs = defaultdict(dict)
         if not isinstance(name, str):
             raise TypeError(f"Class name {name} is a {type(name)}, not str")
 
@@ -148,8 +151,8 @@ class TypedDfBuilder:
 
     def post(self, fn: Callable[[BaseDf], BaseDf]) -> __qualname__:
         """
-        Adds a method that is called on the converted DataFrame, immediately before
-        final optional conditions (``validate``) are verified.
+        Adds a method that is called on the converted DataFrame.
+        It is called immediately before final optional conditions (``verify``) are checked.
         The function must return a new DataFrame.
 
         Returns:
@@ -180,6 +183,30 @@ class TypedDfBuilder:
         """
         warn("TypedDfBuilder.condition is deprecated; use verify instead", DeprecationWarning)
         return self.verify(*conditions)
+
+    def add_read_kwarg(self, fmt: DfFileFormat, arg: str, value: str) -> __qualname__:
+        """
+        Adds keyword arguments that are passed to ``read_`` methods when called from ``read_file``.
+        Rarely needed.
+
+        Arguments:
+            fmt: The file format (which corresponds to the delegated method)
+            arg: The name of the arg
+            value: The value of the arg
+        """
+        self._read_kwargs[fmt][arg] = value
+
+    def add_write_kwarg(self, fmt: DfFileFormat, arg: str, value: str) -> __qualname__:
+        """
+        Adds keyword arguments that are passed to ``to_`` methods when called from ``to_file``.
+        Rarely needed.
+
+        Arguments:
+            fmt: The file format (which corresponds to the delegated method)
+            arg: The name of the arg
+            value: The value of the arg
+        """
+        self._write_kwargs[fmt][arg] = value
 
     def build(self) -> Type[TypedDf]:
         """
@@ -246,6 +273,14 @@ class TypedDfBuilder:
             @classmethod
             def extra_conditions(cls) -> Sequence[Callable[[pd.DataFrame], Optional[str]]]:
                 return self._extra_reqs
+
+            @classmethod
+            def read_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+                return self._read_kwargs
+
+            @classmethod
+            def write_kwargs(cls) -> Mapping[DfFileFormat, Mapping[str, Any]]:
+                return self._write_kwargs
 
         New.__name__ = self._name
         New.__doc__ = self._doc

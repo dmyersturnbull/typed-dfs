@@ -4,13 +4,14 @@ import pytest
 
 from typeddfs.base_dfs import BaseDf
 from typeddfs.builders import TypedDfBuilder
-from typeddfs._pretty_dfs import PrettyDf
 
 # noinspection PyProtectedMember
+from typeddfs._pretty_dfs import PrettyDf
+
 from typeddfs.df_errors import ClashError
-from typeddfs.typed_dfs import (
+from typeddfs.typed_dfs import TypedDf
+from typeddfs.df_errors import (
     ExtraConditionFailedError,
-    TypedDf,
     UnexpectedColumnError,
     UnexpectedIndexNameError,
 )

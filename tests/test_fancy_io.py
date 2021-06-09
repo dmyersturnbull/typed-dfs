@@ -4,9 +4,7 @@ import pytest
 import random
 
 from typeddfs import TypedDf, BaseDf
-
-# noinspection PyProtectedMember
-from typeddfs._utils import _Utils
+from typeddfs.file_formats import DfFormatSupport
 from typeddfs.df_errors import NonStrColumnError, NotSingleColumnError, FilenameSuffixError
 
 from . import (
@@ -27,12 +25,11 @@ from . import (
 
 gen = random.SystemRandom()
 
-# h5, snappy, and parquet work too -- but can't run in CI yet
-assert _Utils.has_tabulate
-assert _Utils.has_feather
-assert _Utils.has_parquet
-if _Utils.has_hdf5:
-    print("HDF5 support is loaded.")
+assert DfFormatSupport.has_tabulate
+assert DfFormatSupport.has_feather
+assert DfFormatSupport.has_parquet
+if DfFormatSupport.has_hdf5:
+    logger.info("HDF5 support is loaded. Cannot test... yet.")
 known_compressions = {"", ".gz", ".zip", ".bz2", ".xz"}
 
 
@@ -50,7 +47,10 @@ def get_req_ext(txt: bool) -> Set[str]:
 
 
 def get_actual_ext(cls) -> Set[str]:
-    known = cls.can_read().intersection(cls.can_write())
+    known_fmts = cls.can_read().intersection(cls.can_write())
+    known = set()
+    for k in known_fmts:
+        known.update(k.suffixes)
     return {e for e in known if (e not in {".hdf", ".h5", ".hdf5", ".xls", ".xlsx", ".fwf"})}
 
 
@@ -129,37 +129,6 @@ class TestReadWrite:
         with tmpfile(".omg") as path:
             with pytest.raises(FilenameSuffixError):
                 df.write_file(path)
-
-    def test_nl_option(self):
-        df = Untyped({"abc": [1, 2], "xyz": [1, 2]})
-        with tmpfile(".csv") as path:
-            df.write_file(path, nl=True)
-            lines = [line for line in path.read_text().split("\n") if len(line.strip()) > 0]
-            assert lines == ["abc,xyz", "1,1", "2,2"]
-
-    def test_skip_blank_line(self):
-        lines = ["abc,xyz", "one,two", "", "three,four"]
-        with tmpfile(".csv") as path:
-            path.write_text("\n".join(lines))
-            df = Untyped.read_file(path, skip_blank_lines=True)
-            assert df.values.tolist() == [["one", "two"], ["three", "four"]]
-
-    def test_comment_option(self):
-        lines = ["abc,xyz", "one,two", "# this is a comment,yes", "three,four"]
-        # first, with no comment
-        with tmpfile(".csv") as path:
-            path.write_text("\n".join(lines))
-            df = Untyped.read_file(path)
-            assert df.values.tolist() == [
-                ["one", "two"],
-                ["# this is a comment", "yes"],
-                ["three", "four"],
-            ]
-        # now with a comment
-        with tmpfile(".csv") as path:
-            path.write_text("\n".join(lines))
-            df = Untyped.read_file(path, comment="#")
-            assert df.values.tolist() == [["one", "two"], ["three", "four"]]
 
     def test_non_str_cols(self):
         with tmpfile(".csv") as path:
