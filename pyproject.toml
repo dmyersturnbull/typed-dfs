@@ -96,7 +96,7 @@ wcwidth                  = {version=">=0.2", optional=true}
 #tables                   = {version="^3.6", optional=true}
 
 [tool.poetry.dev-dependencies]
-black                    = "==21.5b2"
+black                    = "==21.6b0"
 pre-commit               = "^2.13"
 pre-commit-hooks         = "^4.0"
 bandit                   = "^1.7"
