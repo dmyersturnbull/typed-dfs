@@ -1,13 +1,9 @@
+# Check out https://pre-commit.com/ for documentation
+# and https://pre-commit.com/hooks.html for more hooks
 minimum_pre_commit_version: 2.13.0
-
 repos:
-  - repo: 'https://github.com/psf/black'
-    rev: 21.5b1
-    hooks:
-      - id: black
-  - repo: 'https://github.com/pre-commit/pre-commit-hooks'
-    rev: v4.0.1
-    hooks:
+  # --- Built-in hooks --
+  - hooks:
       - id: check-symlinks
       - id: check-case-conflict
       - id: fix-byte-order-marker
@@ -15,4 +11,36 @@ repos:
       - id: check-merge-conflict
       - id: check-toml
       - id: check-json
+      - id: fix-encoding-pragma
+        args: ["--remove"]
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
       - id: check-yaml
+        exclude: ^recipes/.*
+    repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+
+  # --- Commit msg checks ---
+  - hooks:
+      - id: commitizen
+        stages: ["commit-msg"]
+    repo: https://github.com/commitizen-tools/commitizen
+    rev: v2.17.9
+
+  # --- Linters ---
+  - hooks:
+      - id: black
+    repo: https://github.com/psf/black
+    rev: 21.6b0
+  - repo: https://github.com/asottile/blacken-docs
+    rev: v1.10.0
+    hooks:
+      - id: blacken-docs
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    hooks:
+      - id: prettier
+        stages: [commit]
+        exclude: ^recipes/.*
+    rev: v2.3.1

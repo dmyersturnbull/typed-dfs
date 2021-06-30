@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.7.0"
+version = "0.7.1"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -96,7 +96,7 @@ wcwidth                  = {version=">=0.2", optional=true}
 #tables                   = {version="^3.6", optional=true}
 
 [tool.poetry.dev-dependencies]
-black                    = "==21.5b2"
+black                    = "==21.6b0"
 pre-commit               = "^2.13"
 pre-commit-hooks         = "^4.0"
 bandit                   = "^1.7"
