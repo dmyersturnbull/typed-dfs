@@ -84,6 +84,14 @@ class TestReadWrite:
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
 
+    def test_xml(self):
+        with tmpfile(".xml.gz") as path:
+            df = UntypedDf(sample_data())
+            df.to_csv(path)
+            df2 = UntypedDf.read_csv(path)
+            assert list(df2.index.names) == [None]
+            assert set(df2.columns) == {"abc", "123", "xyz"}
+
     """
     # TODO re-enable when we get a pytables 3.9 wheels on Windows
     def test_hdf(self):

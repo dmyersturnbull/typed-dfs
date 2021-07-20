@@ -12,9 +12,8 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
-
 Pandas DataFrame subclasses that enforce structure and self-organize.  
-*Because your functions can’t exactly accept **any**  DataFrame**.  
+\*Because your functions can’t exactly accept **any** DataFrame\*\*.  
 `pip install typeddfs[feather,fwf]`
 
 Stop passing `index_cols=` and `header=` to `to_csv` and `read_csv`.
@@ -23,23 +22,23 @@ That means columns are used for the index, string columns are always read as str
 and custom constraints are verified.
 
 Need to read a tab-delimited file? `read_file("myfile.tab")`.
-Feather? Parquet? HDF5? .json.zip? Gzipped fixed-width?
+Feather? Parquet? HDF5? .json.zip? Gzipped fixed-width? XML?
 Use `read_file`. Write a file? Use `write_file`.
 
 Some useful extra functions, plus various Pandas issues fixed:
-- `read_csv`/`to_csv`,  `read_json`/`to_json`, etc., are inverses.
-  `read_file`/`write_file`, too.
-- In Pandas, you can write an empty DataFrame but not read it.
+
+- `read_csv`/`to_csv`, `read_json`/`to_json`, etc., are inverses.
+  `read_file`/`write_file`, too
+- You can always read and write empty DataFrames -- that doesn't raise weird exceptions.
   Typed-dfs will always read in what you wrote out.
 - No more empty `.feather`/`.snappy`/`.h5` files written on error.
 - You can write fixed-width as well as read.
 
 ```python
-
 from typeddfs._entries import TypedDfs
 
 MyDfType = (
-  TypedDfs.typed("MyDfType")
+    TypedDfs.typed("MyDfType")
     .require("name", index=True)  # always keep in index
     .require("value", dtype=float)  # require a column and type
     .drop("_temp")  # auto-drop a column
@@ -54,17 +53,16 @@ df.sort_natural().write_file("myfile.feather")
 
 For a CSV like this:
 
-| key   | value  | note |
-| ----- | ------ | ---- |
-| abc   | 123    | ?    |
+| key | value | note |
+| --- | ----- | ---- |
+| abc | 123   | ?    |
 
 ```python
-
 from typeddfs._entries import TypedDfs
 
 # Build me a Key-Value-Note class!
 KeyValue = (
-  TypedDfs.typed("KeyValue")  # With enforced reqs / typing
+    TypedDfs.typed("KeyValue")  # With enforced reqs / typing
     .require("key", dtype=str, index=True)  # automagically add to index
     .require("value")  # required
     .reserve("note")  # permitted but not required
@@ -83,7 +81,7 @@ print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
 # And now, we can type a function to require a KeyValue,
 # and let it raise an `InvalidDfError` (here, a `MissingColumnError`):
 def my_special_function(df: KeyValue) -> float:
-  return KeyValue(df)["value"].sum()
+    return KeyValue(df)["value"].sum()
 ```
 
 All of the normal DataFrame methods are available.
@@ -103,6 +101,7 @@ Serialization is provided through Pandas, and some formats require additional pa
 Pandas does not specify compatible versions, so typed-dfs specifies
 [extras](https://python-poetry.org/docs/pyproject/#extras) are provided in typed-dfs
 to ensure that those packages are installed with compatible versions.
+
 - To install with [Feather](https://arrow.apache.org/docs/python/feather.html) support,
   use `pip install typeddfs[feather]`.
 - To install with support for all serialization formats,
@@ -121,21 +120,23 @@ Feather is the preferred format for most cases.
 
 **⚠ Note:** The `hdf5` and `parquet` extras are currently disabled.
 
-| format   | packages              | extra     | compatibility | performance  |
-| -------- | --------------------  | --------- | ------------- | ------------ |
-| pickle   | none                  | none      | ❗ ️           | −           |
-| csv      | none                  | none      | ✅             | −−          |
-| json     | none                  | none      | /️            | −−-         |
-| .npy †   | none                  | none      | †️            | +           |
-| .npz †   | none                  | none      | †️            | +           |
-| flexwf   | none                  | `fwf`     | ✅             | −−-         |
-| Feather  | `pyarrow`             | `feather` | ✅             | ++++        |
-| Parquet  | `pyarrow,fastparquet` | `parquet` | ❌             | +++         |
-| HDF5     | `tables`              | `hdf5`    | ❌             | −           |
+| format  | packages              | extra     | compatibility | performance |
+| ------- | --------------------- | --------- | ------------- | ----------- |
+| pickle  | none                  | none      | ❗ ️          | −           |
+| csv     | none                  | none      | ✅            | −−          |
+| json    | none                  | none      | /️            | −−-         |
+| xml     | `lxml`                | `xml`     | .             | ---         |
+| .npy †  | none                  | none      | †️            | +           |
+| .npz †  | none                  | none      | †️            | +           |
+| flexwf  | none                  | `fwf`     | ✅            | −−-         |
+| Feather | `pyarrow`             | `feather` | ✅            | ++++        |
+| Parquet | `pyarrow,fastparquet` | `parquet` | ❌            | +++         |
+| HDF5    | `tables`              | `hdf5`    | ❌            | −           |
 
 ❗ == Pickle is explicitly not supported due to vulnerabilities and other issues.  
 / == Mostly. JSON has inconsistent handling of `None`.  
 † == .npy and .npz only serialize numpy objects and therefore skip indices.  
+. = requires Pandas 1.3+  
 Note: `.flexwf` is fixed-width with optional delimiters; `.fwf` is not used
 to avoid a potential future conflict with `pd.DataFrame.to_fwf` (which does not exist yet).
 

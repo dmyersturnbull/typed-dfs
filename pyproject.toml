@@ -32,6 +32,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
 	"Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Environment :: Console",
@@ -94,9 +95,11 @@ tabulate                 = {version="^0.8", optional=true}
 wcwidth                  = {version=">=0.2", optional=true}
 #fastparquet              = {version="^0.6", optional=true}
 #tables                   = {version="^3.6", optional=true}
+lxml                     = {version="^4", optional=true}
+
 
 [tool.poetry.dev-dependencies]
-black                    = "==21.6b0"
+black                    = "==21.7b0"
 pre-commit               = "^2.13"
 pre-commit-hooks         = "^4.0"
 bandit                   = "^1.7"
@@ -116,6 +119,7 @@ tomlkit                  = ">=0.7, <1.0"
 [tool.poetry.extras]
 feather = ["pyarrow"]
 fwf = ["tabulate", "wcwidth"]
+xml = ["lxml"]
 #hdf5    = ["tables"]
 #parquet = ["fastparquet", "pyarrow"]
 

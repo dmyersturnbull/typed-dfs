@@ -14,6 +14,7 @@ from . import (
     Untyped,
     Trivial,
     ActuallyEmpty,
+    UntypedEmpty,
     Col1,
     Ind1,
     Col2,
@@ -37,7 +38,7 @@ known_compressions = {"", ".gz", ".zip", ".bz2", ".xz"}
 
 def get_req_ext(txt: bool) -> Set[str]:
     ne = {".feather", ".snappy", ".parquet"}
-    xx = {".csv", ".tsv", ".tab", ".json", ".flexwf"}
+    xx = {".csv", ".tsv", ".tab", ".json", ".xml", ".flexwf"}
     if txt:
         xx.add(".txt")
         xx.add(".lines")
@@ -66,7 +67,7 @@ def rand_df(t):
         cols = set(t.required_index_names()).union(set(t.required_columns()))
     else:
         cols = ["column"]
-    if len(cols) == 0 and t != ActuallyEmpty:
+    if len(cols) == 0 and t != ActuallyEmpty and t != UntypedEmpty:
         cols = ["made_up"]
     data = {c: rand_vals() for i, c in enumerate(cols)}
     return t.convert(t(data))
@@ -86,6 +87,9 @@ class TestReadWrite:
 
     def test_untyped(self):
         self._test_great(Untyped)
+
+    def test_untyped_empty(self):
+        self._test_great(UntypedEmpty)
 
     def test_trivial(self):
         self._test_great(Trivial)
@@ -119,9 +123,18 @@ class TestReadWrite:
                 with tmpfile(ext) as path:
                     df = rand_df(t)
                     df.write_file(path)
+                    if path.suffix in [".xml", ".json", ".csv", ".tsv", ".lines", ".txt"]:
+                        raw_data = path.read_text(encoding="utf-8")
+                    else:
+                        raw_data = None
                     df2 = t.read_file(path)
-                    assert df2.index_names() == df.index_names()
-                    assert df2.column_names() == df.column_names()
+
+                    assert (
+                        df2.index_names() == df.index_names()
+                    ), f"Wrong index [ path={path}, data = {raw_data} ]"
+                    assert (
+                        df2.column_names() == df.column_names()
+                    ), f"Wrong columns [ path={path}, data = {raw_data} ]"
             except Exception:
                 logger.error(f"Failed on {t} / {ext}")
                 raise
@@ -217,6 +230,14 @@ class TestReadWrite:
         df = Untyped({})
         assert df.values.tolist() == []
         with tmpfile(".lines") as path:
+            df.to_csv(path)
+            df2 = Untyped.read_lines(path)
+        assert df.values.tolist() == df2.values.tolist()
+
+    def test_read_empty_xml(self):
+        df = Untyped({})
+        assert df.values.tolist() == []
+        with tmpfile(".xml") as path:
             df.to_csv(path)
             df2 = Untyped.read_lines(path)
         assert df.values.tolist() == df2.values.tolist()

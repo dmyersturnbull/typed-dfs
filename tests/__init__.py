@@ -60,6 +60,10 @@ class Untyped(UntypedDf):
     pass
 
 
+class UntypedEmpty(UntypedDf):
+    pass
+
+
 class Trivial(TypedDf):
     pass
 

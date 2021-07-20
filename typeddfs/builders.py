@@ -11,7 +11,8 @@ from warnings import warn
 
 import pandas as pd
 
-from typeddfs import BaseDf, FileFormat
+from typeddfs import BaseDf
+from typeddfs.file_formats import FileFormat
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.df_errors import ClashError
 
@@ -303,14 +304,12 @@ class TypedDfBuilder:
 
     def _check(self, names: Sequence[str]) -> None:
         if any([name in {"index", "level_0"} for name in names]):
-            raise ClashError(
-                f"Any column called 'index' or 'level_0' is automatically dropped (reserving: {names})"
-            )
+            raise ClashError(f"Columns 'index' or 'level_0' are auto-dropped")
+        if any([name in {"__xml_is_empty_", "__xml_index_"} for name in names]):
+            raise ClashError(f"__xml_is_empty_ and __xml_index_ are forbidden names")
         for name in names:
             if name in [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]:
-                raise ClashError(
-                    f"Cannot add {name} to builder for {self._name}: it already exists"
-                )
+                raise ClashError(f"Column {name} for {self._name} already exists")
 
 
 __all__ = ["TypedDfBuilder"]
