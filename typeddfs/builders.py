@@ -50,10 +50,11 @@ class _GenericBuilder:
         self.add_read_kwargs("pickle", protocol=5)
         self.add_write_kwargs("pickle", protocol=5)
 
-    def subclass(self, clazz: T):
+    def subclass(self, clazz: T) -> __qualname__:
         self._clazz = clazz
+        return self
 
-    def add_methods(self, **kwargs: Callable[[BaseDf, ...], Any]):
+    def add_methods(self, **kwargs: Callable[[BaseDf, ...], Any]) -> __qualname__:
         """
         Attaches methods to the class.
 
@@ -61,8 +62,9 @@ class _GenericBuilder:
             add_methods(summary=lambda df: f"{len(df) rows")
         """
         self._methods.update(**kwargs)
+        return self
 
-    def add_classmethods(self, **kwargs: Callable[[Type[BaseDf], ...], Any]):
+    def add_classmethods(self, **kwargs: Callable[[Type[BaseDf], ...], Any]) -> __qualname__:
         """
         Attaches classmethods to the class.
         Mostly useful for factory methods.
@@ -71,6 +73,7 @@ class _GenericBuilder:
             add_classmethods(flat_instance=lambda t, value: MyClass(value))
         """
         self._classmethods.update(**kwargs)
+        return self
 
     def remap_suffixes(self, **kwargs) -> __qualname__:
         """
