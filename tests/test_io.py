@@ -1,8 +1,10 @@
 import pytest
+from lxml.etree import XMLSyntaxError  # nosec
+from typeddfs.df_errors import NoValueError
 
 from typeddfs.untyped_dfs import UntypedDf
 
-from . import Ind2, Ind1, Trivial, sample_data, tmpfile
+from . import Ind1, Ind2, Trivial, sample_data, tmpfile
 
 
 class TestReadWrite:
@@ -92,10 +94,50 @@ class TestReadWrite:
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
 
+    def test_html_untyped(self):
+        with tmpfile(".html") as path:
+            df = UntypedDf(sample_data())
+            df.to_html(path)
+            df2 = UntypedDf.read_html(path)
+            assert list(df2.index.names) == [None]
+            assert set(df2.columns) == {"abc", "123", "xyz"}
+
+    def test_html_singleindex(self):
+        with tmpfile(".html") as path:
+            df = Ind1.convert(Ind1(sample_data()))
+            df.to_html(path)
+            assert df.index_names() == ["abc"]
+            assert df.column_names() == ["123", "xyz"]
+            df2 = Ind1.read_html(path)
+            assert df2.index_names() == ["abc"]
+            assert df2.column_names() == ["123", "xyz"]
+
+    def test_html_multiindex(self):
+        with tmpfile(".html") as path:
+            df = Ind2.convert(Ind2(sample_data()))
+            df.to_html(path)
+            assert df.index_names() == ["abc", "xyz"]
+            assert df.column_names() == ["123"]
+            df2 = Ind2.read_html(path)
+            assert df2.index_names() == ["abc", "xyz"]
+            assert df2.column_names() == ["123"]
+
+    def test_html_invalid(self):
+        with tmpfile(".html") as path:
+            path.write_text("", encoding="utf8")
+            with pytest.raises(XMLSyntaxError):
+                UntypedDf.read_html(path)
+
+    def test_html_empty(self):
+        with tmpfile(".html") as path:
+            path.write_text("<html></html>", encoding="utf8")
+            with pytest.raises(NoValueError):
+                UntypedDf.read_html(path)
+
     """
-    # TODO re-enable when we get a pytables 3.9 wheels on Windows
+    # TODO re-enable when we get a tables 3.9 wheels on Windows
     def test_hdf(self):
-        with tmpfile() as path:
+        with tmpfile(".h5") as path:
             df = TypedMultiIndex.convert(TypedMultiIndex(sample_data()))
             df.to_hdf(path)
             df2 = TypedMultiIndex.read_hdf(path)

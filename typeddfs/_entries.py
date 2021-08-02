@@ -3,29 +3,28 @@ Convenient code for import.
 """
 import logging
 from pathlib import Path
-from typing import Type, Optional
+from typing import Optional, Type
 
 import pandas as pd
 
-from typeddfs.builders import TypedDfBuilder
-from typeddfs.typed_dfs import TypedDf
-from typeddfs.untyped_dfs import UntypedDf
-from typeddfs.file_formats import FileFormat
+from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder, TypedDfBuilder
 from typeddfs.df_errors import (
-    NoValueError,
-    ValueNotUniqueError,
+    ClashError,
+    FilenameSuffixError,
     InvalidDfError,
     MissingColumnError,
-    UnexpectedColumnError,
-    UnexpectedIndexNameError,
-    AsymmetricDfError,
-    ExtraConditionFailedError,
-    UnsupportedOperationError,
-    FilenameSuffixError,
     NonStrColumnError,
     NotSingleColumnError,
-    ClashError,
+    NoValueError,
+    UnexpectedColumnError,
+    UnexpectedIndexNameError,
+    UnsupportedOperationError,
+    ValueNotUniqueError,
+    VerificationFailedError,
 )
+from typeddfs.file_formats import FileFormat
+from typeddfs.typed_dfs import TypedDf
+from typeddfs.untyped_dfs import UntypedDf
 
 logger = logging.getLogger(Path(__file__).parent.name)
 
@@ -48,8 +47,7 @@ class TypedDfs:
     MissingColumnError = MissingColumnError
     UnexpectedColumnError = UnexpectedColumnError
     UnexpectedIndexNameError = UnexpectedIndexNameError
-    AsymmetricDfError = AsymmetricDfError
-    ExtraConditionFailedError = ExtraConditionFailedError
+    ExtraConditionFailedError = VerificationFailedError
     UnsupportedOperationError = UnsupportedOperationError
     FilenameSuffixError = FilenameSuffixError
     NonStrColumnError = NonStrColumnError
@@ -111,6 +109,28 @@ class TypedDfs:
             TypedDfs.typed("MyClass").require("name", index=True).build()
         """
         return TypedDfBuilder(name, doc)
+
+    @classmethod
+    def matrix(cls, name: str, doc: Optional[str] = None) -> MatrixDfBuilder:
+        """
+        Creates a new subclass of an ``MatrixDf``.
+
+        Args:
+            name: The name that will be used for the new class
+            doc: The docstring for the new class
+        """
+        return MatrixDfBuilder(name, doc)
+
+    @classmethod
+    def affinity_matrix(cls, name: str, doc: Optional[str] = None) -> AffinityMatrixDfBuilder:
+        """
+        Creates a new subclass of an ``AffinityMatrixDf``.
+
+        Args:
+            name: The name that will be used for the new class
+            doc: The docstring for the new class
+        """
+        return AffinityMatrixDfBuilder(name, doc)
 
     @classmethod
     def untyped(cls, name: str, doc: Optional[str] = None) -> Type[UntypedDf]:

@@ -61,7 +61,8 @@ class PrettyDf(_InternalDataFrame, metaclass=abc.ABCMeta):
 
     @property
     def _constructor_expanddim(self):  # pragma: no cover
-        # this raises a NotImplementedError in _InternalDataFrame, so let's override it here to prevent tools and IDEs from complaining
+        # this raises a NotImplementedError in _InternalDataFrame,
+        # so let's override it here to prevent tools and IDEs from complaining
         raise UnsupportedOperationError()
 
     def _repr_html_(self) -> str:
@@ -84,7 +85,8 @@ class PrettyDf(_InternalDataFrame, metaclass=abc.ABCMeta):
         Returns:
             A text description of the dimensions of this DataFrame
         """
-        # we could handle multi-level columns, but they're quite rare, and the number of rows is probably obvious when looking at it
+        # we could handle multi-level columns
+        # but they're quite rare, and the number of rows is probably obvious when looking at it
         if len(self.index.names) > 1:
             return f"{len(self)} rows × {len(self.columns)} columns, {len(self.index.names)} index columns"
         else:

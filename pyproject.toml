@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.7.1"
+version = "0.8.0"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -89,13 +89,19 @@ python                   = "^3.8"
 # natsort has major version bumps often
 natsort                  = ">=7"
 pandas                   = "^1.2"
-pyarrow                  = {version="^4.0", optional=true}
-tabulate                 = {version="^0.8", optional=true}
+tabulate                 = "^0.8"
 # we don't care about the exact version of wcwidth, as long as tabulate is ok with it
-wcwidth                  = {version=">=0.2", optional=true}
+wcwidth                  = ">=0.2"
+pyarrow                  = {version="^4.0", optional=true}
 #fastparquet              = {version="^0.6", optional=true}
-#tables                   = {version="^3.6", optional=true}
-lxml                     = {version="^4", optional=true}
+#tables                   = {version=">=3", optional=true}
+lxml                     = {version=">=4", optional=true}
+odfpy                    = {version=">=1", optional=true}
+openpyxl                 = {version=">=3", optional=true}
+xlrd                     = {version=">=2", optional=true}
+pyxlsb                   = {version=">=1", optional=true}
+html5lib                 = {version=">=1", optional=true}
+beautifulsoup4           = {version=">=4", optional=true}
 
 
 [tool.poetry.dev-dependencies]
@@ -103,14 +109,14 @@ black                    = "==21.7b0"
 pre-commit               = "^2.13"
 pre-commit-hooks         = "^4.0"
 bandit                   = "^1.7"
-pytest                   = "^6.2"
+pytest                   = ">=6.2"
 coverage                 = {extras = ["toml"], version = "^5.5"}
 pytest-cov               = "^2.11"
 flake8                   = "^3.9"
 flake8-docstrings        = "^1.5"
 flake8-bugbear           = ">=21"
-sphinx                   = "^4.0"
-sphinx-copybutton        = ">=0.3, <1.0"
+Sphinx                   = "^4.0"
+sphinx-copybutton        = ">=0.4, <1.0"
 sphinx-autoapi           = "^1.5"
 sphinx-rtd-theme         = ">=0.5, <1.0"
 tomlkit                  = ">=0.7, <1.0"
@@ -118,10 +124,13 @@ tomlkit                  = ">=0.7, <1.0"
 
 [tool.poetry.extras]
 feather = ["pyarrow"]
-fwf = ["tabulate", "wcwidth"]
+parquet = ["pyarrow"]  # fastparquet will also work
 xml = ["lxml"]
+excel = ["openpyxl", "defusedxml"]
+xlsb = ["pyxlsb"]
 #hdf5    = ["tables"]
-#parquet = ["fastparquet", "pyarrow"]
+html = ["html5lib", "beautifulsoup4"]
+all = ["pyarrow", "lxml", "openpyxl", "defusedxml", "pyxlsb", "html5lib", "beautifulsoup4"]
 
 
 #########################################################################################
@@ -150,7 +159,7 @@ show_missing = true
 
 [tool.black]
 line-length = 100
-target-version = ["py38"]
+target-version = ["py38", "py39"]
 
 [mypy]
 check_untyped_defs = true

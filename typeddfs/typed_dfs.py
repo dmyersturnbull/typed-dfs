@@ -3,20 +3,19 @@ Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
-from typing import Callable, Optional, Sequence, Type, Any, Mapping
+from typing import Any, Mapping, Sequence, Type
 
 import pandas as pd
 
+from typeddfs._pretty_dfs import PrettyDf
 from typeddfs.base_dfs import BaseDf
 from typeddfs.df_errors import (
-    AsymmetricDfError,
-    ExtraConditionFailedError,
     InvalidDfError,
     MissingColumnError,
     UnexpectedColumnError,
     UnexpectedIndexNameError,
+    VerificationFailedError,
 )
-from typeddfs._pretty_dfs import PrettyDf
 from typeddfs.untyped_dfs import UntypedDf
 
 
@@ -89,7 +88,7 @@ class TypedDf(BaseDf):
         df = df.reset_index()
         # remove trash columns
         df.__class__ = cls
-        df = df.drop_cols(["index", "level_0"])  # these MUST be dropped
+        df = df.drop_cols(["index", "level_0", "Unnamed: 0"])  # these MUST be dropped
         df = df.drop_cols(cls.columns_to_drop())
         # now let's convert the dtypes
         for c, dt in cls.auto_dtypes().items():
@@ -155,18 +154,6 @@ class TypedDf(BaseDf):
             df = self[[self.columns[0]]]
             df = df.drop(self.columns[0], axis=1)
             return self.__class__.convert(df)
-
-    @classmethod
-    def is_valid(cls, df: pd.DataFrame) -> bool:
-        """
-        Returns True if all of the required conditions pass.
-        This is provided as a sanity check only: It should always return True.
-        """
-        try:
-            cls.convert(df)
-            return True
-        except InvalidDfError:
-            return False
 
     @classmethod
     def more_columns_allowed(cls) -> bool:
@@ -252,13 +239,6 @@ class TypedDf(BaseDf):
         return {}
 
     @classmethod
-    def must_be_symmetric(cls) -> bool:
-        """
-        Returns whether the (single only) index values must match the column names.
-        """
-        return False
-
-    @classmethod
     def columns_to_drop(cls) -> Sequence[str]:
         """
         Returns the list of columns that are automatically dropped by ``convert``.
@@ -267,52 +247,25 @@ class TypedDf(BaseDf):
         return []
 
     @classmethod
-    def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
-        """
-        A function to be called at the final stage of ``convert``.
-        It is called immediately before ``extra_conditions`` are checked.
-        The function takes a copy of the input ``BaseDf`` and returns a new copy.
-
-        Note:
-            Although a copy is passed as input, the function should not modify it.
-            Technically, doing so will cause problems only if the DataFrame's internal values
-            are modified. The value passed is a *shallow* copy (see ``pd.DataFrame.copy``).
-        """
-        return None
-
-    @classmethod
-    def extra_conditions(cls) -> Sequence[Callable[[BaseDf], Optional[str]]]:
-        """
-        Additional requirements for the DataFrame to be conformant.
-
-        Returns:
-            A sequence of conditions that map the DF to None if the condition passes,
-            or the string of an error message if it fails
-        """
-        return []
-
-    @classmethod
     def _check(cls, df) -> None:
         cls._check_has_required(df)
         cls._check_has_unexpected(df)
-        if cls.must_be_symmetric():
-            cls._check_symmetric(df)
-        for req in cls.extra_conditions():
+        for req in cls.verifications():
             value = req(df)
             if value is not None:
-                raise ExtraConditionFailedError(value)
+                raise VerificationFailedError(value)
 
     @classmethod
     def _check_has_required(cls, df: pd.DataFrame) -> None:
         for c in set(cls.required_index_names()):
             if c not in set(df.index.names):
                 raise MissingColumnError(
-                    f"Missing index name {c} (indices are: {set(df.index.names)}; columns are: {set(df.columns.names)}))"
+                    f"Missing index name {c} (indices are: {set(df.index.names)}; cols are: {set(df.columns.names)}))"
                 )
         for c in set(cls.required_columns()):
             if c not in set(df.columns):
                 raise MissingColumnError(
-                    f"Missing column {c} (columns are: {set(df.columns.names)}; indices are: {set(df.index.names)})"
+                    f"Missing column {c} (cols are: {set(df.columns.names)}; indices are: {set(df.index.names)})"
                 )
 
     @classmethod
@@ -326,17 +279,6 @@ class TypedDf(BaseDf):
             for c in df.index_names():
                 if c not in cls.required_index_names() and c not in cls.reserved_index_names():
                     raise UnexpectedIndexNameError(f"Unexpected index name {c}")
-
-    @classmethod
-    def _check_symmetric(cls, df: pd.DataFrame) -> None:
-        if isinstance(df.index, pd.MultiIndex):
-            raise AsymmetricDfError(
-                f"The {cls.__name__} cannot be symmetric because it's multi-index"
-            )
-        if list(df.index) != list(df.columns):
-            raise AsymmetricDfError(
-                f"The indices are {list(df.index)} but the rows are {list(df.columns)}"
-            )
 
     @classmethod
     def _lines_files_apply(cls) -> bool:

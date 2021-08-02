@@ -1,0 +1,237 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from functools import partial
+from inspect import cleandoc
+from typing import Any, Optional, Sequence, Set, Tuple, Type, Union
+
+import numpy as np
+import pandas as pd
+from numpy.random import RandomState
+
+from typeddfs.base_dfs import BaseDf
+from typeddfs.df_errors import (
+    InvalidDfError,
+    RowColumnMismatchError,
+    VerificationFailedError,
+)
+from typeddfs.typed_dfs import TypedDf
+
+
+class LongFormMatrixDf(TypedDf):
+    """
+    A long-form matrix with columns "row", "column", and "value".
+    """
+
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["row", "column", "value"]
+
+
+class MatrixDf(BaseDf):
+    """
+    A dataframe that is best thought of as a simple matrix.
+    """
+
+    @classmethod
+    def convert(cls, df: pd.DataFrame) -> __qualname__:
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(f"Can't convert {type(df)} to {cls.__name__}")
+        # first always reset the index so we can manage what's in the index vs columns
+        # index_names() will return [] if no named indices are found
+        df.__class__ = cls
+        if cls.index_series_name() in df.columns:
+            df = df.set_index(cls.index_series_name())
+        df.columns.name = cls.column_series_name()
+        if cls.required_dtype() is not None:
+            df = df.astype(cls.required_dtype())
+        # now change the class
+        df.__class__ = cls
+        if cls.is_strict():
+            # noinspection PyProtectedMember
+            cls._check(df)
+        return df
+
+    @classmethod
+    def is_strict(cls) -> bool:
+        return False
+
+    @classmethod
+    def required_dtype(cls) -> Optional[Type[Any]]:
+        return None
+
+    @classmethod
+    def _check(cls, df) -> None:
+        for req in cls.verifications():
+            value = req(df)
+            if value is not None:
+                raise VerificationFailedError(value)
+
+    def is_symmetric(self) -> bool:
+        """
+        Returns True if the matrix is fully symmetric with exact equality.
+        """
+        return self.rows == self.cols and np.array_equal(self.values, self.T.values)
+
+    @classmethod
+    def column_series_name(cls) -> str:
+        return "column"
+
+    @classmethod
+    def index_series_name(cls) -> str:
+        return "row"
+
+    def sub_matrix(self, rows: Set[str], cols: Set[str]) -> __qualname__:
+        """
+        Returns a matrix containing only these labels.
+        """
+        return self.__class__(self.loc[rows][cols])
+
+    def long_form(self) -> LongFormMatrixDf:
+        """
+        Melts into a long-form DataFrame with columns "row", "column", and "value".
+
+        Consider calling ``triangle`` first if the matrix is (always) symmetric.
+        """
+        # TODO: melt wasn't working
+        df = []
+        for r, row in enumerate(self.rows):
+            for c, col in enumerate(self.cols):
+                df.append(pd.Series(dict(row=row, column=col, value=self.iat[r, c])))
+        return LongFormMatrixDf.convert(pd.DataFrame(df))
+
+    def triangle(self, upper: bool = False, strict: bool = False) -> __qualname__:
+        """
+        NaNs out the upper (or lower) triangle, returning a copy.
+
+        Arguments:
+            upper: Keep the upper triangular matrix instead of the lower
+            strict: Discard the diagonal (set it to NaN)
+        """
+        fn = np.triu if upper else np.tril
+        fn = partial(fn, k=1) if strict else fn
+        return self.__class__(self.where(fn(np.ones(self.shape)).astype(bool)))
+
+    def sort_alphabetical(self) -> __qualname__:
+        """
+        Sorts by the rows and columns alphabetically.
+        """
+        df = self.sort_natural_index()
+        df = df.transpose().sort_natural_index()
+        df = df.transpose()
+        return df
+
+    def shuffle(self, rand: Union[None, int, RandomState] = None) -> __qualname__:
+        """
+        Returns a copy with every value mapped to a new location.
+        Destroys the correct links between labels and values.
+        Useful for permutation tests.
+        """
+        cp = deepcopy(self.flatten())
+        if rand is None:
+            rand = np.random.RandomState()
+        elif isinstance(rand, int):
+            rand = np.random.RandomState(seed=rand)
+        rand.shuffle(cp)
+        values = cp.reshape((len(self.rows), len(self.columns)))
+        return self.__class__(values, index=self.rows, columns=self.columns)
+
+    def diagonals(self) -> np.array:
+        """
+        Returns an array of the diagonal elements.
+        """
+        return pd.Series(np.diag(self), index=[self.index, self.columns]).values
+
+    def flatten(self) -> np.array:
+        """
+        Flattens the values into a 1-d array.
+        """
+        return self.values.flatten()
+
+    @property
+    def dim_str(self) -> str:
+        """
+        Returns a simple string of n_rows by n_columns.
+        E.g.: ``15 × 15``.
+        """
+        return f"{len(self.rows)} × {len(self.columns)}"
+
+    @property
+    def dims(self) -> Tuple[int, int]:
+        """
+        Returns (n rows, n_columns).
+        """
+        return len(self.rows), len(self.columns)
+
+    @property
+    def rows(self):
+        """
+        Returns the row labels.
+        """
+        return self.index.tolist()
+
+    @property
+    def cols(self):
+        """
+        Returns the column labels.
+        """
+        return self.columns.tolist()
+
+    def _repr_html_(self) -> str:
+        cls = self.__class__
+        mark = "✅" if self.__class__.is_valid(self) else "❌"
+        return cleandoc(
+            f"""
+            <strong>{cls.name}: {self.dim} {mark}</strong>
+            {pd.DataFrame._repr_html_(self)}
+        """
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)} @ {hex(id(self))})"
+        )
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)})"
+
+
+class AffinityMatrixDf(MatrixDf):
+    """
+    A similarity or distance matrix.<strong>{}: {} {}</strong>\n{}
+    The rows and columns must match, and only 1 index is allowed.
+    """
+
+    @classmethod
+    def _check(cls, df: BaseDf):
+        rows = df.index.tolist()
+        cols = df.columns.tolist()
+        if df.rows != df.cols:
+            raise RowColumnMismatchError(f"Rows {rows} but columns {cols}")
+        if df.index.name != df.__class__.index_series_name():
+            raise InvalidDfError(f"Index name {df.index.name} should be {df.index_series_name()}")
+        if df.columns.name != df.__class__.column_series_name():
+            raise InvalidDfError(
+                f"Column name {df.columns.name} should be {df.column_series_name()}"
+            )
+        for req in cls.verifications():
+            value = req(df)
+            if value is not None:
+                raise VerificationFailedError(value)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)} @ {hex(id(self))})"
+        )
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)})"
+
+    def symmetrize(self) -> __qualname__:
+        """
+        Averages with its transpose, forcing it to be symmetric.
+        """
+        return self.__class__(0.5 * (self + self.T))
+
+
+__all__ = ["MatrixDf", "AffinityMatrixDf", "LongFormMatrixDf"]

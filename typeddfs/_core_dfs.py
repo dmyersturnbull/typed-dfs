@@ -1,11 +1,11 @@
 import abc
-from typing import Any, Union, Sequence, Iterable, Optional, Mapping
+from typing import Any, Iterable, Mapping, Sequence, Union
 
 import pandas as pd
 from natsort import natsorted, ns
 
 from typeddfs._pretty_dfs import PrettyDf
-from typeddfs.df_errors import ValueNotUniqueError, NoValueError, UnsupportedOperationError
+from typeddfs.df_errors import NoValueError, UnsupportedOperationError, ValueNotUniqueError
 
 
 class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
@@ -127,199 +127,107 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         return df
 
     def drop_duplicates(self, **kwargs) -> __qualname__:
-        if "inplace" in kwargs:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
+        self._no_inplace(kwargs)
         return self.__class__._check_and_change(super().drop_duplicates(**kwargs))
 
     def reindex(self, *args, **kwargs) -> __qualname__:
-        if "inplace" in kwargs:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
+        self._no_inplace(kwargs)
         return self.__class__._check_and_change(super().reindex(*args, **kwargs))
 
-    def sort_values(
-        self,
-        by,
-        axis=0,
-        ascending=True,
-        inplace=False,
-        kind="quicksort",
-        na_position="last",
-        **kwargs,
-    ) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().sort_values(
-                by=by,
-                axis=axis,
-                ascending=ascending,
-                inplace=inplace,
-                kind=kind,
-                na_position=na_position,
-                **kwargs,
-            )
-        )
+    def sort_values(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().sort_values(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
-    def reset_index(
-        self, level=None, drop=False, inplace=False, col_level=0, col_fill=""
-    ) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().reset_index(
-                level=level,
-                drop=drop,
-                inplace=inplace,
-                col_level=col_level,
-                col_fill=col_fill,
-            )
-        )
+    def reset_index(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().reset_index(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
     def set_index(
         self, keys, drop=True, append=False, inplace=False, verify_integrity=False
     ) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
+        self._no_inplace(dict(inplace=inplace))
         if len(keys) == 0 and append:
             return self
         elif len(keys) == 0:
-            # TODO what happens to the other args?
             return self.__class__._check_and_change(super().reset_index(drop=drop))
-        return self.__class__._check_and_change(
-            super().set_index(
-                keys=keys,
-                drop=drop,
-                append=append,
-                inplace=inplace,
-                verify_integrity=verify_integrity,
-            )
+        df = super().set_index(
+            keys=keys,
+            drop=drop,
+            append=append,
+            inplace=inplace,
+            verify_integrity=verify_integrity,
         )
+        return self.__class__._check_and_change(df)
 
-    def dropna(self, axis=0, how="any", thresh=None, subset=None, inplace=False) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().dropna(axis=axis, how=how, thresh=thresh, subset=subset, inplace=inplace)
-        )
+    def dropna(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().dropna(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
-    def fillna(
-        self,
-        value=None,
-        method=None,
-        axis=None,
-        inplace=False,
-        limit=None,
-        downcast=None,
-        **kwargs,
-    ) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().fillna(
-                value=value,
-                method=method,
-                axis=axis,
-                inplace=inplace,
-                limit=limit,
-                downcast=downcast,
-                **kwargs,
-            )
-        )
+    def fillna(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().fillna(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
     # noinspection PyFinal
     def copy(self, deep: bool = False) -> __qualname__:
-        return self.__class__._check_and_change(super().copy(deep=deep))
+        df = super().copy(deep=deep)
+        return self.__class__._check_and_change(df)
 
     def assign(self, **kwargs) -> __qualname__:
         df = self.vanilla_reset()
         df = df.assign(**kwargs)
-        return self.__class__._convert(df)
+        return self.__class__._convert_typed(df)
 
-    def append(self, other, ignore_index=False, verify_integrity=False, sort=False) -> __qualname__:
-        return self.__class__._check_and_change(
-            super().append(
-                other, ignore_index=ignore_index, verify_integrity=verify_integrity, sort=sort
-            )
-        )
+    def append(self, *args, **kwargs) -> __qualname__:
+        df = super().append(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
-    # noinspection PyFinal
-    def ffill(self, axis=None, inplace=False, limit=None, downcast=None) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().ffill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
-        )
+    def transpose(self, *args, copy: bool = False) -> __qualname__:
+        df = super().transpose(*args, copy=copy)
+        return self.__class__._check_and_change(df)
 
     # noinspection PyFinal
-    def bfill(self, axis=None, inplace=False, limit=None, downcast=None) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().bfill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
-        )
+    def ffill(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().ffill(*args, **kwargs)
+        return self.__class__._check_and_change(df)
+
+    # noinspection PyFinal
+    def bfill(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().bfill(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
     # noinspection PyFinal
     def abs(self) -> __qualname__:
         return self.__class__._check_and_change(super().abs())
 
     def rename(self, *args, **kwargs) -> __qualname__:
-        if "inplace" in kwargs:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(super().rename(*args, **kwargs))
+        self._no_inplace(kwargs)
+        df = super().rename(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
-    def replace(
-        self,
-        to_replace=None,
-        value=None,
-        inplace=False,
-        limit=None,
-        regex=False,
-        method="pad",
-    ) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().replace(
-                to_replace=to_replace,
-                value=value,
-                inplace=inplace,
-                limit=limit,
-                regex=regex,
-                method=method,
-            )
-        )
+    def replace(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().replace(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
-    def applymap(self, func, na_action: Optional[str] = None) -> __qualname__:
-        return self.__class__._check_and_change(super().applymap(func, na_action=na_action))
+    def applymap(self, *args, **kwargs) -> __qualname__:
+        df = super().applymap(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
-    def astype(self, dtype, copy=True, errors="raise") -> __qualname__:
-        return self.__class__._check_and_change(
-            super().astype(dtype=dtype, copy=copy, errors=errors)
-        )
+    def astype(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().astype(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
-    def drop(
-        self,
-        labels=None,
-        axis=0,
-        index=None,
-        columns=None,
-        level=None,
-        inplace=False,
-        errors="raise",
-    ) -> __qualname__:
-        if inplace:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
-        return self.__class__._check_and_change(
-            super().drop(
-                labels=labels,
-                axis=axis,
-                index=index,
-                columns=columns,
-                level=level,
-                inplace=inplace,
-                errors=errors,
-            )
-        )
+    def drop(self, *args, **kwargs) -> __qualname__:
+        self._no_inplace(kwargs)
+        df = super().drop(*args, **kwargs)
+        return self.__class__._check_and_change(df)
 
     def st(
         self, *array_conditions: Sequence[bool], **dict_conditions: Mapping[str, Any]
@@ -342,7 +250,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         return self.__class__._check_and_change(df)
 
     @classmethod
-    def _convert(cls, df: pd.DataFrame):
+    def _convert_typed(cls, df: pd.DataFrame):
         # not great, but works ok
         # if this is a BaseDf, use convert
         # otherwise, just use check_and_change
@@ -360,6 +268,10 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
     def _change(cls, df) -> __qualname__:
         df.__class__ = cls
         return df
+
+    def _no_inplace(self, kwargs):
+        if kwargs.get("inplace") is True:  # pragma: no cover
+            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
 
 
 __all__ = ["CoreDf"]

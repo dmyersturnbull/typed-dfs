@@ -1,11 +1,9 @@
 import pandas as pd
 import pytest
 
-from typeddfs import TypedDf, UntypedDf
-from typeddfs import TypedDfs
-
-from typeddfs.base_dfs import BaseDf
+from typeddfs import TypedDf, TypedDfs, UntypedDf
 from typeddfs.abs_df import AbsDf
+from typeddfs.base_dfs import BaseDf
 
 from . import sample_data
 
