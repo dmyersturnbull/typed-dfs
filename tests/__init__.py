@@ -5,10 +5,9 @@ from pathlib import Path
 from typing import Sequence
 
 import pandas as pd
-from typeddfs.untyped_dfs import UntypedDf
 
 from typeddfs.typed_dfs import TypedDf
-
+from typeddfs.untyped_dfs import UntypedDf
 
 # Separate logging in the main package vs. inside test functions
 logger_name = Path(__file__).parent.parent.name.upper() + ".TEST"
@@ -23,7 +22,11 @@ def tmpfile(ext: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     yield path
     if path.exists():
-        path.unlink()
+        # noinspection PyBroadException
+        try:
+            path.unlink()
+        except BaseException:
+            logger.error(f"Could not close {path}")
 
 
 def sample_data():
@@ -134,9 +137,3 @@ class Ind2Col2(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["qqq", "rrr"]
-
-
-class TypedSymmetric(TypedDf):
-    @classmethod
-    def must_be_symmetric(cls) -> bool:
-        return True

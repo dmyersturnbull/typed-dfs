@@ -12,30 +12,41 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
-Pandas DataFrame subclasses that enforce structure and self-organize.  
-\*Because your functions can’t exactly accept **any** DataFrame\*\*.  
-`pip install typeddfs[feather,fwf]`
+Pandas DataFrame subclasses that enforce structure, self-organize, and read/write correctly.
+`pip install typeddfs`
 
-Stop passing `index_cols=` and `header=` to `to_csv` and `read_csv`.
-Your “typed” dataframes will remember how they’re supposed to be written and read.
-That means columns are used for the index, string columns are always read as strings,
-and custom constraints are verified.
+Stop passing `index_cols=` and `header=` on read/write.
+Your types will remember how they’re supposed to be read.
+That means columns are used for the index, columns are given the correct types,
+and constraints are verified.
+
+As a bonus, adds clear documentation and early failure to your code.
+As in, `def my_func(df: MyDataFrameType)`.
+Because your functions can’t exactly accept _any_ DataFrame.
+
+### 🎁️ Features
 
 Need to read a tab-delimited file? `read_file("myfile.tab")`.
-Feather? Parquet? HDF5? .json.zip? Gzipped fixed-width? XML?
+Feather? Parquet? HDF5? .json.zip? XML?
 Use `read_file`. Write a file? Use `write_file`.
+As in: `df.write_file(input("Output path?"))`.
+`read_file`/`write_file`, `read_csv`/`to_csv`, `read_json`/`to_json`, `read_xml`/`to_xml`,
+etc., are now inverses.
 
-Some useful extra functions, plus various Pandas issues fixed:
+Specific issues with Pandas functions fixed, too:
 
-- `read_csv`/`to_csv`, `read_json`/`to_json`, etc., are inverses.
-  `read_file`/`write_file`, too
-- You can always read and write empty DataFrames -- that doesn't raise weird exceptions.
-  Typed-dfs will always read in what you wrote out.
+- No more indices silently dropped when writing some DataFrames and formats.
+- No more columns silently renamed when reading some DataFrames and formats.
+- No more blank extra columns added when reading some DataFrames and formats.
+- You can read empty DataFrames, just like you can write them.
+- You can write an empty DataFrame to any format, not just some.
 - No more empty `.feather`/`.snappy`/`.h5` files written on error.
-- You can write fixed-width as well as read.
+- Have type-level defaults, instead of passing `encoding=`, `skip_blank_lines=`, etc., everywhere.
+
+### 🎨 Simple example
 
 ```python
-from typeddfs._entries import TypedDfs
+from typeddfs import TypedDfs
 
 MyDfType = (
     TypedDfs.typed("MyDfType")
@@ -49,7 +60,28 @@ df = MyDfType.read_file(input("filename? [.feather/.csv.gz/.tsv.xz/etc.]"))
 df.sort_natural().write_file("myfile.feather")
 ```
 
-### 🎨 More complex example
+### 📉 A matrix-style DataFrame
+
+```python
+import numpy as np
+from typeddfs import TypedDfs
+
+Symmetric64 = (
+    TypedDfs.matrix("Symmetric64", doc="A symmetric float64 matri")
+    .dtype(np.float64)
+    .verify(lambda df: df.values.sum().sum() == 1.0)
+    .add_methods(product=lambda df: df.flatten().product())
+).build()
+
+mx = Symmetric64.read_file("input.tab")
+print(mx.product())  # defined above
+if mx.is_symmetric():
+    mx = mx.triangle()  # it's symmetric, so we only need half
+    long = mx.drop_na().long_form()  # columns: "row", 'column", and "value"
+    long.write_file("long-form.xml")
+```
+
+### 🔍 More complex example
 
 For a CSV like this:
 
@@ -58,7 +90,7 @@ For a CSV like this:
 | abc | 123   | ?    |
 
 ```python
-from typeddfs._entries import TypedDfs
+from typeddfs import TypedDfs
 
 # Build me a Key-Value-Note class!
 KeyValue = (
@@ -73,7 +105,7 @@ KeyValue = (
 df = KeyValue.read_csv("example.csv")
 
 # For fun, let"s write it and read it back:
-df.to_csv("remke.csv")
+df.to_csv("remake.csv")
 df = KeyValue.read_csv("remake.csv")
 print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
 
@@ -86,6 +118,14 @@ def my_special_function(df: KeyValue) -> float:
 
 All of the normal DataFrame methods are available.
 Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce requirements.
+Use `.convert(df)` to convert a DataFrame to your type.
+
+### 💔 Limitations
+
+- Multi-level columns are not yet supported.
+- Duplicate column names are not supported.
+- A typed DF cannot have columns "level_0", "index", or "Unnamed: 0".
+- `inplace` is forbidden in some functions; avoid it or use `.vanilla()`.
 
 ### 🔌 Serialization support
 
@@ -104,52 +144,62 @@ to ensure that those packages are installed with compatible versions.
 
 - To install with [Feather](https://arrow.apache.org/docs/python/feather.html) support,
   use `pip install typeddfs[feather]`.
-- To install with support for all serialization formats,
-  use `pip install typeddfs[feather] fastparquet tables`.
-
-However, hdf5 and parquet have limited compatibility,
-restricted to some platforms and Python versions.
-In particular, neither is supported in Python 3.9 on Windows as of 2021-03-02.
-(See the [llvmlite issue](https://github.com/numba/llvmlite/issues/669)
-and [tables issue](https://github.com/PyTables/PyTables/issues/854).)
+- To install with support for all formats,
+  use `pip install typeddfs[feather,fwf,xml,xlsx,xls,ods,xlsb` and `pip install tables`.
 
 Feather offers massively better performance over CSV, gzipped CSV, and HDF5
 in read speed, write speed, memory overhead, and compression ratios.
 Parquet typically results in smaller file sizes than Feather at some cost in speed.
 Feather is the preferred format for most cases.
 
-**⚠ Note:** The `hdf5` and `parquet` extras are currently disabled.
+**⚠ Note:** The `hdf5` extra is currently disabled.
 
-| format  | packages              | extra     | compatibility | performance |
-| ------- | --------------------- | --------- | ------------- | ----------- |
-| pickle  | none                  | none      | ❗ ️          | −           |
-| csv     | none                  | none      | ✅            | −−          |
-| json    | none                  | none      | /️            | −−-         |
-| xml     | `lxml`                | `xml`     | .             | ---         |
-| .npy †  | none                  | none      | †️            | +           |
-| .npz †  | none                  | none      | †️            | +           |
-| flexwf  | none                  | `fwf`     | ✅            | −−-         |
-| Feather | `pyarrow`             | `feather` | ✅            | ++++        |
-| Parquet | `pyarrow,fastparquet` | `parquet` | ❌            | +++         |
-| HDF5    | `tables`              | `hdf5`    | ❌            | −           |
+| format   | packages                     | extra     | sanity | speed | file sizes |
+| -------- | ---------------------------- | --------- | ------ | ----- | ---------- |
+| Feather  | `pyarrow`                    | `feather` | ++     | ++++  | +++        |
+| Parquet  | `pyarrow` or `fastparquet` † | `parquet` | ++     | +++   | ++++       |
+| csv/tsv  | none                         | none      | ++     | −−    | −−         |
+| flexwf ‡ | none                         | none      | ++     | −−    | −−         |
+| .fwf     | none                         | none      | +      | −−    | −−         |
+| json     | none                         | none      | −−     | −−−   | −−−        |
+| xml      | `lxml`                       | `xml`     | +      | −−−   | −−−        |
+| .npy     | none                         | none      | ++     | +     | +++        |
+| .npz     | none                         | none      | ++     | +     | +++        |
+| .html    | `html5lib,beautifulsoup4`    | `html`    | −−     | −−−   | −−−        |
+| pickle   | none                         | none      | −− ️   | −     | −          |
+| XLSX     | `openpyxl,defusedxml`        | `excel`   | +      | −−    | +          |
+| ODS      | `openpyxl,defusedxml`        | `excel`   | +      | −−    | +          |
+| XLS      | `openpyxl,defusedxml`        | `excel`   | −−     | −−    | +          |
+| XLSB     | `pyxlsb`                     | `xlsb`    | −−     | −−    | ++         |
+| HDF5     | `tables`                     | `hdf5`    | −−     | −     | ++         |
 
-❗ == Pickle is explicitly not supported due to vulnerabilities and other issues.  
-/ == Mostly. JSON has inconsistent handling of `None`.  
-† == .npy and .npz only serialize numpy objects and therefore skip indices.  
-. = requires Pandas 1.3+  
-Note: `.flexwf` is fixed-width with optional delimiters; `.fwf` is not used
-to avoid a potential future conflict with `pd.DataFrame.to_fwf` (which does not exist yet).
+**Notes:**
+
+- † `fastparquet` can be used instead. It is slower but much smaller.
+- ‡ `.flexwf` is fixed-width with optional delimiters.
+- JSON has inconsistent handling of `None`. ([orjson](https://github.com/ijl/orjson) is more consistent).
+- XML requires Pandas 1.3+.
+- .npy and .npz only serialize numpy objects.
+- .html is not supported in `read_file` and `write_file`.
+- Pickle is insecure and not recommended.
+- Pandas supports odfpy for ODS and xlrd for XLS. In fact, it prefers those.
+  However, they are very buggy; openpyxl is much better.
+- XLSM, XLTX, XLTM, XLS, and XLSB files can contain macros, which Microsoft Excel will ingest.
+- XLS is a deprecated format.
+- XLSB is not fully supported in Pandas.
+- HDF may not work on all platforms yet due to a
+  [tables issue](https://github.com/PyTables/PyTables/issues/854).
 
 ### 📝 Extra notes
 
-A small note of caution: [natsort](https://github.com/SethMMorton/natsort) is not pinned
-to a specific major version because it receives somewhat frequent major updates.
+Dependencies in the extras are only restricted to minimum version numbers;
+libraries that use them can set their own version ranges.
+For example, typed-dfs only requires pyarrow >= 0.4, but Pandas can further restrict it.
+[natsort](https://github.com/SethMMorton/natsort) is also only assigned a minimum version number;
+this is because it receives frequent major version bumps.
 This means that the result of typed-df’s `sort_natural` could change.
-You can pin natsort to a specific major version;
+To fix this, pin natsort to a specific major version;
 e.g. `natsort = "^7"` with [Poetry](https://python-poetry.org/) or `natsort>=7,<8` with pip.
-
-Fixed-width format is provided through Pandas `read_fwf` but can be written
-via [tabulate](https://pypi.org/project/tabulate/).
 
 ### 🍁 Contributing
 

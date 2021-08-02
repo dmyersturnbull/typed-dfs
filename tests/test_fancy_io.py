@@ -1,43 +1,58 @@
 import io
+import random
 from typing import Set, Type
 
 import pandas as pd
 import pytest
-import random
 
-from typeddfs import TypedDf, BaseDf, TypedDfBuilder
+from typeddfs import BaseDf, TypedDf
+from typeddfs.builders import TypedDfBuilder
+from typeddfs.df_errors import FilenameSuffixError, NonStrColumnError, NotSingleColumnError
 from typeddfs.file_formats import DfFormatSupport, FileFormat
-from typeddfs.df_errors import NonStrColumnError, NotSingleColumnError, FilenameSuffixError
 
 from . import (
-    tmpfile,
-    Untyped,
-    Trivial,
     ActuallyEmpty,
-    UntypedEmpty,
     Col1,
-    Ind1,
     Col2,
-    Ind2,
+    Ind1,
     Ind1Col1,
     Ind1Col2,
+    Ind2,
     Ind2Col1,
     Ind2Col2,
+    Trivial,
+    Untyped,
+    UntypedEmpty,
     logger,
+    tmpfile,
 )
 
 gen = random.SystemRandom()
 
-assert DfFormatSupport.has_tabulate
 assert DfFormatSupport.has_feather
 assert DfFormatSupport.has_parquet
-if DfFormatSupport.has_hdf5:
-    logger.info("HDF5 support is loaded. Cannot test... yet.")
+assert DfFormatSupport.has_xlsx
+assert DfFormatSupport.has_xls
+assert DfFormatSupport.has_xlsb
+assert DfFormatSupport.has_ods
 known_compressions = {"", ".gz", ".zip", ".bz2", ".xz"}
 
 
 def get_req_ext(txt: bool) -> Set[str]:
-    ne = {".feather", ".snappy", ".parquet"}
+    ne = {
+        ".feather",
+        ".snappy",
+        ".parquet",
+        ".xlsx",
+        ".xls",
+        ".ods",
+        ".odf",
+        ".odt",
+        ".xlsb",
+        ".pickle",
+        ".pkl",
+    }
+    ne.add(".fwf")
     xx = {".csv", ".tsv", ".tab", ".json", ".xml", ".flexwf"}
     if txt:
         xx.add(".txt")
@@ -51,10 +66,11 @@ def get_req_ext(txt: bool) -> Set[str]:
 
 def get_actual_ext(cls) -> Set[str]:
     known_fmts = cls.can_read().intersection(cls.can_write())
+    exclude_for_now = {".hdf", ".h5", ".hdf5"}
     known = set()
     for k in known_fmts:
         known.update(k.suffixes)
-    return {e for e in known if (e not in {".hdf", ".h5", ".hdf5", ".xls", ".xlsx", ".fwf"})}
+    return {e for e in known if (e not in exclude_for_now)}
 
 
 def rand_vals():
@@ -117,14 +133,21 @@ class TestReadWrite:
 
     def _test_great(self, t: Type[BaseDf]):
         for ext in get_actual_ext(t):
-            if ext == ".feather" and t == ActuallyEmpty:
-                continue
             try:
                 with tmpfile(ext) as path:
                     df = rand_df(t)
                     df.write_file(path)
-                    if path.suffix in [".xml", ".json", ".csv", ".tsv", ".lines", ".txt"]:
-                        raw_data = path.read_text(encoding="utf-8")
+                    if path.suffix in [
+                        ".xml",
+                        ".json",
+                        ".csv",
+                        ".tsv",
+                        ".lines",
+                        ".txt",
+                        ".flexwf",
+                        ".fwf",
+                    ]:
+                        raw_data = path.read_text(encoding="utf8")
                     else:
                         raw_data = None
                     df2 = t.read_file(path)
@@ -198,9 +221,9 @@ class TestReadWrite:
     def test_read_write_flexwf_fancy_delimiter(self):
         df = Col1([0.3, 0.4, 0.5], columns=["abc"])
         df = Col1.convert(df)
-        data = df.to_flexwf(None, sep="--->")
+        data = df.to_flexwf(None)
         buf = io.StringIO(data)
-        df2 = df.read_flexwf(buf, sep="--->")
+        df2 = df.read_flexwf(buf)
         assert df.column_names() == df2.column_names()
         assert df.index_names() == df2.index_names()
         assert df.values.tolist() == df2.values.tolist()

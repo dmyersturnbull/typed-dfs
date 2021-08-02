@@ -2,11 +2,14 @@
 Defines the superclasses of the types ``TypedDf`` and ``UntypedDf``.
 """
 from __future__ import annotations
+
 import abc
+from typing import Callable, Optional, Sequence, Union
 
 import pandas as pd
 
 from typeddfs.abs_df import AbsDf
+from typeddfs.df_errors import InvalidDfError, VerificationFailedError
 
 
 class BaseDf(AbsDf, metaclass=abc.ABCMeta):
@@ -38,6 +41,54 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
         """
         df = df.copy()
         df.__class__ = cls
+        # noinspection PyTypeChecker
+        df = cls._post_process(df)
+        return df
+
+    @classmethod
+    def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
+        """
+        A function to be called at the final stage of ``convert``.
+        It is called immediately before ``verifications`` are checked.
+        The function takes a copy of the input ``BaseDf`` and returns a new copy.
+
+        Note:
+            Although a copy is passed as input, the function should not modify it.
+            Technically, doing so will cause problems only if the DataFrame's internal values
+            are modified. The value passed is a *shallow* copy (see ``pd.DataFrame.copy``).
+        """
+        return None
+
+    @classmethod
+    def verifications(cls) -> Sequence[Callable[[BaseDf], Union[None, bool, str]]]:
+        """
+        Additional requirements for the DataFrame to be conformant.
+
+        Returns:
+            A sequence of conditions that map the DF to None or True if the condition passes,
+            or False or the string of an error message if it fails
+        """
+        return []
+
+    @classmethod
+    def is_valid(cls, df: pd.DataFrame) -> bool:
+        try:
+            cls._check(df)
+        except InvalidDfError:
+            return False
+        return True
+
+    @classmethod
+    def _check(cls, df) -> None:
+        for req in cls.verifications():
+            value = req(df)
+            if value is not None and value is not True:
+                raise VerificationFailedError(str(value))
+
+    @classmethod
+    def _post_process(cls, df) -> pd.DataFrame:
+        if cls.post_processing() is not None:
+            df = cls.post_processing()(df)
         return df
 
 

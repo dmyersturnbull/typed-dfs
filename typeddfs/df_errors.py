@@ -27,7 +27,7 @@ class InvalidDfError(ValueError):
     """ """
 
 
-class ExtraConditionFailedError(InvalidDfError):
+class VerificationFailedError(InvalidDfError):
     """ """
 
 
@@ -35,7 +35,7 @@ class MissingColumnError(InvalidDfError):
     """ """
 
 
-class AsymmetricDfError(InvalidDfError):
+class RowColumnMismatchError(InvalidDfError):
     """ """
 
 
@@ -52,4 +52,8 @@ class ValueNotUniqueError(ValueError):
 
 
 class NoValueError(ValueError):
+    """ """
+
+
+class LengthMismatchError(ValueError):
     """ """

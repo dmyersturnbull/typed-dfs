@@ -3,6 +3,43 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.8.0] - 2021-08-03
+
+### Added
+
+- Matrix DFs
+- Pickle support
+- `Utils`
+- `AbsDf.text_encoding`
+- Extras `excel` and `xlsb`
+- `AbsDf.read_html`
+- To `TypedDfBuilder`: `remap_suffixes`, `encoding`, `newlines`, `subclass`, and `add_methods`
+
+### Changed
+
+- `TypedDf.is_valid` no longer tries to convert; it just uses the DataFrame as-is
+- Text encoding is UTF-8 by default, dictated by `AbsDf.text_encoding`
+- `extra_requirements` renamed to `verifications`
+- `fastparquet` no longer used in `parquet` extra
+- `CoreDf.transpose` now overridden and re-types.
+- `read_excel` uses openpyxl by default for XLSX-like, XLS, and ODS-like (in contrast to Pandas)
+- `post_processing`, `verifications`, and related functions were moved up to `BaseDf`
+- Some `AbsDf` delegates to `DataFrame` now just take `*args` and `**kwargs` for simplicity.
+- `tabulate` and `wcwidth` are now required dependencies.
+- Optional dependency that are not used directly now have >= version ranges
+
+### Fixed
+
+- You can now write empty DataFrames to Feather.
+- `to_excel` is much less likely to error for ODF, ODS, ODT, and XLS.
+- Keyword arguments added via `write_kwargs` and `read_kwargs` no longer clash between CSV and TSV.
+- Possible bugs reading and writing to fwf and flexwf (use `disable_numparse`)
+
+### Removed
+
+- `nl` and `bom` options. See `.newline` and `.encoding` in `TypedDfBuilder` for alternatives.
+- Some deprecated options.
+
 ## [0.7.1] - 2021-07-19
 
 ### Added

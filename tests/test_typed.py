@@ -1,20 +1,17 @@
 import pandas as pd
 import pytest
 
-from typeddfs.df_errors import AsymmetricDfError
 from typeddfs.abs_df import AbsDf
 from typeddfs.untyped_dfs import UntypedDf
 
 from . import (
-    Ind2,
     Ind1,
-    TypedSymmetric,
+    Ind1Col1,
+    Ind2,
+    Ind2Col2,
     Trivial,
     sample_data,
     sample_data_str,
-    sample_symmetric_df,
-    Ind1Col1,
-    Ind2Col2,
 )
 
 
@@ -123,32 +120,9 @@ class TestTyped:
 
     def test_isvalid(self):
         df = pd.DataFrame(sample_data())
+        assert not Ind2.is_valid(df)
+        df = df.set_index(["abc", "xyz"])
         assert Ind2.is_valid(df)
-        assert not Ind2.is_valid(df.drop("abc", axis=1))
-
-    def test_symmetric(self):
-        df = sample_symmetric_df()
-        TypedSymmetric(df)
-        TypedSymmetric.convert(df)
-        assert TypedSymmetric.is_valid(df)
-
-    def test_asymmetric_multiindex(self):
-        df = pd.DataFrame(sample_data()).set_index(["abc", "xyz"])
-        assert not TypedSymmetric.is_valid(df)
-        with pytest.raises(AsymmetricDfError):
-            TypedSymmetric.convert(df)
-
-    def test_asymmetric_shape(self):
-        df = pd.DataFrame(sample_data())
-        assert not TypedSymmetric.is_valid(df)
-        with pytest.raises(AsymmetricDfError):
-            TypedSymmetric.convert(df)
-
-    def test_asymmetric_names(self):
-        df = pd.DataFrame(sample_symmetric_df().reset_index(drop=True))
-        assert not TypedSymmetric.is_valid(df)
-        with pytest.raises(AsymmetricDfError):
-            TypedSymmetric.convert(df)
 
 
 if __name__ == "__main__":

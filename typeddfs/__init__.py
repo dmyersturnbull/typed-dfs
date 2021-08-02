@@ -8,14 +8,13 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import metadata as __load
 from pathlib import Path
 
-from typeddfs.df_errors import AsymmetricDfError as _AsymmetricDfError
+from typeddfs._entries import FinalDf, TypedDfs
 from typeddfs.base_dfs import BaseDf
-from typeddfs.file_formats import FileFormat
 from typeddfs.builders import TypedDfBuilder
+from typeddfs.file_formats import FileFormat
+from typeddfs.matrix_dfs import AffinityMatrixDf
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
-from typeddfs._entries import TypedDfs, FinalDf
-
 
 logger = logging.getLogger(Path(__file__).parent.name)
 pkg = Path(__file__).absolute().parent.name
@@ -37,4 +36,4 @@ except PackageNotFoundError:  # pragma: no cover
     logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
 
 
-__all__ = ["BaseDf", "UntypedDf", "TypedDf", "FinalDf", "TypedDfs"]
+__all__ = ["BaseDf", "UntypedDf", "TypedDf", "FinalDf", "AffinityMatrixDf", "TypedDfs"]

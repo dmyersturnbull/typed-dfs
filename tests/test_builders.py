@@ -2,19 +2,17 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from typeddfs.base_dfs import BaseDf
-from typeddfs.builders import TypedDfBuilder
-
 # noinspection PyProtectedMember
 from typeddfs._pretty_dfs import PrettyDf
-
-from typeddfs.df_errors import ClashError
-from typeddfs.typed_dfs import TypedDf
+from typeddfs.base_dfs import BaseDf
+from typeddfs.builders import TypedDfBuilder
 from typeddfs.df_errors import (
-    ExtraConditionFailedError,
+    ClashError,
     UnexpectedColumnError,
     UnexpectedIndexNameError,
+    VerificationFailedError,
 )
+from typeddfs.typed_dfs import TypedDf
 
 
 def always_ok(x):
@@ -26,15 +24,14 @@ def always_fail(x):
 
 
 class TestBuilders:
-    def test_symmetric_and_condition(self):
-        t = TypedDfBuilder("a").symmetric().verify(always_ok).build()
+    def test_condition(self):
+        t = TypedDfBuilder("a").verify(always_ok).build()
         assert t.required_columns() == []
         assert t.required_index_names() == []
-        assert t.must_be_symmetric()
-        assert t.extra_conditions() == [always_ok]
+        assert t.verifications() == [always_ok]
         TypedDf(pd.DataFrame())
-        t = TypedDfBuilder("a").symmetric().verify(always_fail).build()
-        with pytest.raises(ExtraConditionFailedError):
+        t = TypedDfBuilder("a").verify(always_fail).build()
+        with pytest.raises(VerificationFailedError):
             t.convert(pd.DataFrame())
 
     def test_require_and_reserve_col(self):
@@ -43,8 +40,7 @@ class TestBuilders:
         assert t.reserved_columns() == ["reserved"]
         assert t.required_index_names() == []
         assert t.reserved_index_names() == []
-        assert not t.must_be_symmetric()
-        assert t.extra_conditions() == []
+        assert t.verifications() == []
 
     def test_require_and_reserve_index(self):
         t = (
@@ -60,8 +56,7 @@ class TestBuilders:
         assert t.known_index_names() == ["column", "reserved"]
         assert t.known_column_names() == []
         assert t.known_names() == ["column", "reserved"]
-        assert not t.must_be_symmetric()
-        assert t.extra_conditions() == []
+        assert t.verifications() == []
 
     def test_drop(self):
         t = TypedDfBuilder("a").reserve("column").drop("trash").build()
@@ -83,10 +78,6 @@ class TestBuilders:
         with pytest.raises(TypeError):
             # noinspection PyTypeChecker
             TypedDfBuilder(5).build()
-
-    def test_bad_symmetry(self):
-        with pytest.raises(ValueError):
-            TypedDfBuilder("a").require("x", "y", index=True).symmetric().build()
 
     def test_bad_require(self):
         for index in [True, False]:

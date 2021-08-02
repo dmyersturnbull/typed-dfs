@@ -44,6 +44,7 @@ author = ", ".join(find("tool.poetry.authors", as_type=list))
 
 # Copyright string (for documentation)
 # It's not clear whether we're supposed to, but we'll add the license
+# noinspection PyShadowingBuiltins
 copyright = find("tool.tyrannosaurus.sources.copyright").strip("'")
 _license = find("tool.tyrannosaurus.sources.doc_license")
 _license_url = find("tool.tyrannosaurus.sources.doc_license_url")

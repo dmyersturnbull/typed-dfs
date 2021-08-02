@@ -4,42 +4,29 @@ It overrides a lot of methods to auto-change the type back to ``cls``.
 """
 from __future__ import annotations
 
-import csv
 import abc
+import csv
 import os
-from pathlib import Path
-from typing import Optional, Union, Mapping, Any, Set
+from pathlib import Path, PurePath
+from typing import Any, Generator, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import pandas as pd
-from pandas.io.common import get_handle
 
 # noinspection PyProtectedMember
-from tabulate import tabulate, TableFormat, DataRow
+from tabulate import TableFormat, tabulate
 
-from typeddfs.file_formats import FileFormat
 from typeddfs._core_dfs import CoreDf
-from typeddfs._utils import _SENTINAL, _FAKE_SEP, PathLike
-from typeddfs.df_errors import NonStrColumnError, NotSingleColumnError
+from typeddfs._utils import _FAKE_SEP, PathLike
+from typeddfs.df_errors import (
+    NonStrColumnError,
+    NotSingleColumnError,
+    ValueNotUniqueError,
+    NoValueError,
+)
+from typeddfs.file_formats import FileFormat
+from typeddfs.utils import Utils
 
-
-def _get_default_encoding(bom: bool) -> str:
-    if bom and os.name == "nt":
-        return "utf-8-sig"
-    else:
-        return "utf8"
-
-
-def _get_plain_table_format(sep: str):
-    return TableFormat(
-        lineabove=None,
-        linebelowheader=None,
-        linebetweenrows=None,
-        linebelow=None,
-        headerrow=DataRow("", f" {sep} ", ""),
-        datarow=DataRow("", f" {sep} ", ""),
-        padding=0,
-        with_header_hide=None,
-    )
+_SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
 
 
 class AbsDf(CoreDf, metaclass=abc.ABCMeta):
@@ -51,6 +38,26 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         (which is a subclass of this class)
       - new methods ``read_file``, ``write_file``, and ``pretty_print``.
     """
+
+    @classmethod
+    def remap_suffixes(cls) -> Mapping[str, FileFormat]:
+        """
+        Returns filename formats that have been re-mapped to file formats.
+        These are used in ``read_file`` and ``write_file``.
+
+        Note:
+            This should rarely be needed.
+            An exception might be ``.txt`` to tsv rather than lines; Excel uses this.
+        """
+        return {}
+
+    @classmethod
+    def text_encoding(cls) -> str:
+        """
+        Can be an exact encoding like utf-8, "platform", "utf8(bom)" or "utf16(bom)".
+        See the docs in ``TypedDfs.typed().encoding`` for details.
+        """
+        return "utf-8"
 
     @classmethod
     def read_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
@@ -102,13 +109,29 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             This is usually either str or None
 
         Raises:
+            InvalidDfError: If the DataFrame is not valid for this type
             ValueError: If the type of a column or index name is non-str
         """
+        self._check(self)
         types = set(self.column_names()).union(self.index_names())
         if any((not isinstance(c, str) for c in types)):
             raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
-        cls = self.__class__
-        return cls._call_io(self, True, path)
+        return self._call_write(path)
+
+    @classmethod
+    def _check(cls, df) -> None:
+        """
+        Should raise an ``InvalidDfError`` or subclass for issues.
+        """
+
+    def iter_row_col(self) -> Generator[Tuple[Tuple[int, int], Any], None, None]:
+        """
+        Iterates over ``((row, col), value)`` tuples.
+        The row and column are the row and column numbers, 1-indexed.
+        """
+        for row in range(len(self)):
+            for col in range(len(self.columns)):
+                yield (row, col), self.iat[row, col]
 
     def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
         """
@@ -136,9 +159,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             - .parquet or .snappy
             - .h5 or .hdf
             - .xlsx or .xls
-            - .fxf (fixed-width; read_fwf)
-            - .arrows (optional with .gz, etc.); uses ``--->`` as the delimiter, strips whitespace,
-              and ignores blank lines and comments (#)
+            - .fxf (fixed-width)
+            - .flexwf (fixed-but-unspecified-width with an optional delimiter)
             - .txt, .lines, or .list (optionally .gz, .zip, .bz2, or .xz); see ``read_lines()``
 
         Args:
@@ -148,7 +170,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Returns:
             An instance of this class
         """
-        return cls._call_io(cls, False, path)
+        df = cls._call_read(cls, path)
+        return cls._convert_typed(df)
 
     @classmethod
     def can_read(cls) -> Set[FileFormat]:
@@ -183,7 +206,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def to_lines(
         self,
         path_or_buff,
-        nl: Optional[str] = _SENTINAL,
+        mode: str = "w",
+        **kwargs,
     ) -> Optional[str]:
         r"""
         Writes a file that contains one row per line and 1 column per line.
@@ -196,25 +220,26 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
         Args:
             path_or_buff: Path or buffer
-            nl: Forces using \n as the line separator
+            mode: Write ('w') or append ('a')
+            kwargs: Passed to ``to_csv``
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
-        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        kwargs = dict(kwargs)
+        kwargs.setdefault("header", True)
         df = self.vanilla_reset()
         if len(df.columns) != 1:
             raise NotSingleColumnError(f"Cannot write {len(df.columns)} columns ({df}) to lines")
         return df.to_csv(
-            path_or_buff, index=False, sep=_FAKE_SEP, header=True, quoting=csv.QUOTE_NONE, **nl
+            path_or_buff, mode=mode, index=False, sep=_FAKE_SEP, quoting=csv.QUOTE_NONE, **kwargs
         )
 
     @classmethod
     def read_lines(
         cls,
         path_or_buff,
-        comment: Optional[str] = None,
-        nl: Optional[str] = _SENTINAL,
+        **kwargs,
     ) -> __qualname__:
         r"""
         Reads a file that contains 1 row and 1 column per line.
@@ -228,65 +253,114 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
         Args:
             path_or_buff: Path or buffer
-            comment: Any line starting with this substring (excluding spaces) is ignored;
-                     no comment is used if empty
-            nl: Forces using \n as the line separator (can almost always be inferred)
+            kwargs: Passed to ``read_csv``; May include 'comment', 'encoding', 'skip_blank_lines', and 'line_terminator'
         """
-        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        kwargs = dict(kwargs)
+        kwargs.setdefault("skip_blank_lines", True)
+        kwargs.setdefault("header", 0)
+        kwargs.setdefault("engine", "python")
         try:
             df = pd.read_csv(
                 path_or_buff,
                 sep=_FAKE_SEP,
-                header=0,
                 index_col=False,
                 quoting=csv.QUOTE_NONE,
-                skip_blank_lines=True,
-                comment=comment,
-                encoding="utf8",
-                engine="python",
-                **nl,
+                **kwargs,
             )
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
         if len(df.columns) > 1:
             raise NotSingleColumnError(f"Read multiple columns on {path_or_buff}")
-        return cls._convert(df)
+        return cls._convert_typed(df)
 
     @classmethod
     def read_fwf(cls, *args, **kwargs) -> __qualname__:
-        return cls._convert(pd.read_fwf(*args, **kwargs))
+        try:
+            return cls._convert_typed(pd.read_fwf(*args, **kwargs))
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        return cls._convert_typed(df)
 
-    def to_fwf(self, path_or_buff, sep: str = "  ", mode: str = "w") -> Optional[str]:
+    def to_fwf(
+        self,
+        path_or_buff,
+        mode: str = "w",
+        colspecs: Optional[Sequence[Tuple[int, int]]] = None,
+        widths: Optional[Sequence[int]] = None,
+        na_rep: Optional[str] = None,
+        float_format: Optional[str] = None,
+        date_format: Optional[str] = None,
+        decimal: str = ".",
+        **kwargs,
+    ) -> Optional[str]:
         """
         Writes a fixed-width text format.
         See ``read_fwf`` and ``to_flexwf`` for more info.
 
         .. warning:
 
-            This method is subject to change in a future (major) version,
-            if Pandas introduces a method with the same name.
+            This method is a preview. Not all options are complete, and
+            behavior is subject to change in a future (major) version.
+            Notably, Pandas may eventually introduce a method with the same name.
 
         Args:
             path_or_buff: Path or buffer
-            sep: The text that separates columns
             mode: write or append (w/a)
+            colspecs: A list of tuples giving the extents of the fixed-width fields of each line
+                      as half-open intervals (i.e., [from, to[ )
+            widths: A list of field widths which can be used instead of ``colspecs``
+                   if the intervals are contiguous
+            na_rep: Missing data representation
+            float_format: Format string for floating point numbers
+            date_format: Format string for datetime objects
+            decimal: Character recognized as decimal separator. E.g. use ‘,’ for European data.
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
-        content = self._tabulate(_get_plain_table_format(sep))
+        if colspecs is not None and widths is not None:
+            raise ValueError("Both widths and colspecs passed")
+        if widths is not None:
+            colspecs = []
+            at = 0
+            for w in widths:
+                colspecs.append((at, at + w))
+                at += w
+        # if colspecs is None:
+        if True:
+            # TODO: use format, etc.
+            content = self._tabulate(Utils.plain_table_format(" "), disable_numparse=True)
+        else:
+            df = self.vanilla_reset()
+            if len(df.columns) != len(colspecs):
+                raise ValueError(f"{colspecs} column intervals for {len(df.columns)} columns")
+            for col, (start, end) in zip(df.columns, colspecs):
+                width = end - start
+                mx = df[col].map(str).map(len).max()
+                if mx > width:
+                    raise ValueError(f"Column {col} has max length {mx} > {end-start}")
+            _number_format = {
+                "na_rep": na_rep,
+                "float_format": float_format,
+                "date_format": date_format,
+                "quoting": csv.QUOTE_NONE,
+                "decimal": decimal,
+            }
+            res = df._mgr.to_native_types(**_number_format)
+            data: Sequence[Sequence[Any]] = [res.iget_values(i) for i in range(len(res.items))]
+            content = None  # TODO
         if path_or_buff is None:
             return content
-        with get_handle(path_or_buff, mode, encoding="utf8", compression="infer") as f:
-            f.handle.write(content)
+        _encoding = dict(encoding=kwargs.get("encoding")) if "encoding" in kwargs else {}
+        _compression = dict(encoding=kwargs.get("compression")) if "compression" in kwargs else {}
+        Utils.write(path_or_buff, content, mode, **_encoding, **_compression)
 
     @classmethod
     def read_flexwf(
         cls,
         path_or_buff,
         sep: str = r"\|\|\|",
-        comment: Optional[str] = None,
-        nl: Optional[str] = _SENTINAL,
+        **kwargs,
     ) -> __qualname__:
         r"""
         Reads a "flexible-width format".
@@ -304,22 +378,19 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Args:
             path_or_buff: Path or buffer
             sep: The delimiter, a regex pattern
-            comment: Prefix for comment lines
-            nl: Forces using \n as the line separator (can almost always be inferred)
+            kwargs: Passed to ``read_csv``; may include 'comment' and 'skip_blank_lines'
         """
-        nl = {} if nl == _SENTINAL else dict(line_terminator="\n")
+        kwargs = dict(kwargs)
+        kwargs.setdefault("skip_blank_lines", True)
         try:
             df = pd.read_csv(
                 path_or_buff,
                 sep=sep,
-                header=0,
                 index_col=False,
                 quoting=csv.QUOTE_NONE,
-                skip_blank_lines=True,
-                comment=comment,
-                encoding="utf8",
                 engine="python",
-                **nl,
+                header=0,
+                **kwargs,
             )
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
@@ -329,9 +400,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
                 df[c] = df[c].str.strip()
             except AttributeError:
                 pass
-        return cls._convert(df)
+        return cls._convert_typed(df)
 
-    def to_flexwf(self, path_or_buff, sep: str = "|||", mode: str = "w") -> Optional[str]:
+    def to_flexwf(self, path_or_buff, sep: str = "|||", mode: str = "w", **kwargs) -> Optional[str]:
         """
         Writes a fixed-width formatter, optionally with a delimiter, which can be multiple characters.
 
@@ -341,26 +412,107 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             path_or_buff: Path or buffer
             sep: The delimiter, 0 or more characters
             mode: write or append (w/a)
+            kwargs: Passed to ``Utils.write``; may include 'encoding'
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
-        content = self._tabulate(_get_plain_table_format(sep))
+        fmt = Utils.plain_table_format(" " + sep + " ")
+        content = self._tabulate(fmt, disable_numparse=True)
         if path_or_buff is None:
             return content
-        with get_handle(path_or_buff, mode, encoding="utf8", compression="infer") as f:
-            f.handle.write(content)
+        Utils.write(path_or_buff, content, mode, **kwargs)
 
     @classmethod
-    def read_json(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+    def read_excel(cls, io, sheet_name: _SheetNamesOrIndices = 0, *args, **kwargs) -> __qualname__:
+        try:
+            df = pd.read_excel(io, sheet_name, *args, **kwargs)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        # This only applies for .xlsb -- the others don't have this problem
+        if "Unnamed: 0" in df.columns:
+            df = df.drop("Unnamed: 0", axis=1)
+        return cls._convert_typed(df)
+
+    # noinspection PyFinal,PyMethodOverriding
+    def to_excel(self, excel_writer, *args, **kwargs) -> Optional[str]:
+        kwargs = dict(kwargs)
+        df = self.vanilla_reset()
+        if isinstance(excel_writer, (str, PurePath)) and Path(excel_writer).suffix in [
+            ".xls",
+            ".ods",
+            ".odt",
+            ".odf",
+        ]:
+            # Pandas's defaults for XLS and ODS are so buggy that we should never use them
+            # that is, unless the user actually passes engine=
+            kwargs.setdefault("engine", "openpyxl")
+        return df.to_excel(excel_writer, *args, **kwargs)
+
+    @classmethod
+    def read_xlsx(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
+
+    def to_xlsx(self, excel_writer, *args, **kwargs) -> Optional[str]:
+        # ignore the deprecated option, for symmetry with read_
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return self.to_excel(excel_writer, *args, **kwargs)
+
+    @classmethod
+    def read_xls(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
+
+    def to_xls(self, excel_writer, *args, **kwargs) -> Optional[str]:
+        # ignore the deprecated option, for symmetry with read_
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return self.to_excel(excel_writer, *args, **kwargs, engine="openpyxl")
+
+    @classmethod
+    def read_xlsb(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
+
+    def to_xlsb(self, excel_writer, *args, **kwargs) -> Optional[str]:
+        # ignore the deprecated option, for symmetry with read_
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return self.to_excel(excel_writer, *args, **kwargs)
+
+    @classmethod
+    def read_ods(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
+
+    def to_ods(self, ods_writer, *args, **kwargs) -> Optional[str]:
+        # ignore the deprecated option, for symmetry with read_
+        kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
+        return self.to_excel(ods_writer, *args, **kwargs)
+
+    @classmethod
+    def read_pickle(cls, filepath_or_buffer, *args, **kwargs) -> __qualname__:
+        try:
+            df = pd.read_pickle(filepath_or_buffer, *args, **kwargs)
+        except pd.errors.EmptyDataError:
+            df = pd.DataFrame()
+        return cls._convert_typed(df)
+
+    # noinspection PyFinal
+    def to_pickle(self, path, *args, **kwargs) -> None:
+        """"""
+        df = self.vanilla()
+        return df.to_pickle(path, *args, **kwargs)
+
+    @classmethod
+    def read_json(cls, *args, **kwargs) -> __qualname__:
         try:
             df = pd.read_json(*args, **kwargs)
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
-        return cls._convert(df)
+        return cls._convert_typed(df)
 
     @classmethod
-    def read_xml(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+    def read_xml(cls, *args, **kwargs) -> __qualname__:
         try:
             df = pd.read_xml(*args, **kwargs)
         except pd.errors.EmptyDataError:
@@ -370,7 +522,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             df = pd.DataFrame()
         elif "__xml_index_" in df.columns:
             df = df.drop(columns={"__xml_index_"})
-        return cls._convert(df)
+        return cls._convert_typed(df)
 
     # noinspection PyFinal,PyMethodOverriding
     def to_xml(self, path_or_buf, *args, **kwargs) -> Optional[str]:
@@ -400,16 +552,18 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return df.to_json(path_or_buf, *args, **kwargs)
 
     @classmethod
-    def read_feather(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+    def read_feather(cls, *args, **kwargs) -> __qualname__:
         # feather does not support MultiIndex, so reset index and use convert()
         try:
             df = pd.read_feather(*args, **kwargs)
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
-        return cls._convert(df)
+        if "__feather_ignore_" in df.columns:
+            df = df.drop("__feather_ignore_", axis=1)
+        return cls._convert_typed(df)
 
     # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
-    def to_feather(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
+    def to_feather(self, path_or_buf, *args, **kwargs) -> Optional[str]:
         # feather does not support MultiIndex, so reset index and use convert()
         # if an error occurs you end up with a 0-byte file
         # this is fixed with exactly the same logic as for to_hdf -- see that method
@@ -418,6 +572,10 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         except BaseException:
             old_size = None
         df = self.vanilla_reset()
+        if len(df) == len(df.columns) == 0:
+            df = df.append(
+                pd.Series(dict(__feather_ignore_="__feather_ignore_")), ignore_index=True
+            )
         df.columns = df.columns.astype(str)
         try:
             return df.to_feather(path_or_buf, *args, **kwargs)
@@ -434,16 +592,16 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             raise
 
     @classmethod
-    def read_parquet(cls, *args, **kwargs) -> __qualname__:  # pragma: no cover
+    def read_parquet(cls, *args, **kwargs) -> __qualname__:
         # parquet does not support MultiIndex, so reset index and use convert()
         try:
             df = pd.read_parquet(*args, **kwargs)
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
-        return cls._convert(df)
+        return cls._convert_typed(df)
 
     # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
-    def to_parquet(self, path_or_buf, *args, **kwargs) -> Optional[str]:  # pragma: no cover
+    def to_parquet(self, path_or_buf, *args, **kwargs) -> Optional[str]:
         # parquet does not support MultiIndex, so reset index and use convert()
         # if an error occurs you end up with a 0-byte file
         # this is fixed with exactly the same logic as for to_hdf -- see that method
@@ -472,6 +630,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Reads tab-separated data.
         See ``read_csv`` for more info.
         """
+        kwargs = {k: v for k, v in kwargs.items() if k != "sep"}
         return cls.read_csv(*args, sep="\t", **kwargs)
 
     @classmethod
@@ -503,17 +662,17 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             df = pd.read_csv(*args, **kwargs)
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
-        return cls._convert(df)
+        return cls._convert_typed(df)
 
-    def to_tsv(self, *args, bom: bool = False, **kwargs) -> Optional[str]:
+    def to_tsv(self, *args, **kwargs) -> Optional[str]:
         """
         Writes tab-separated data.
         See ``to_csv`` for more info.
         """
-        return self.to_csv(*args, bom=bom, sep="\t", **kwargs)
+        return self.to_csv(*args, sep="\t", **kwargs)
 
     # noinspection PyFinal
-    def to_csv(self, *args, bom: bool = False, **kwargs) -> Optional[str]:
+    def to_csv(self, *args, **kwargs) -> Optional[str]:
         """
         Writes to CSV.
         Using to_csv() and read_csv() from BaseFrame, this property holds::
@@ -526,20 +685,10 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
         Args:
             args: Passed to ``pd.read_csv``; should start with a path or buffer
-            bom: Special flag to set the encoding to utf-8-sig on Windows but utf-8 otherwise.
-                 This is useful because Windows often assumes ANSI (CP1252),
-                 so many applications (esp. Excel) can't open it correctly without a BOM.
-                 Passing `encoding` explicitly will override this.
-
             kwargs: Passed to ``pd.read_csv``.
         """
         kwargs = dict(kwargs)
-        # same logic as for read_csv -- see that
-        if len(args) < 7:
-            kwargs.setdefault("index", False)
-        default_encoding = _get_default_encoding(bom)
-        if bom and len(args) < 10:
-            kwargs.setdefault("encoding", default_encoding)
+        kwargs.setdefault("index", False)
         df = self.vanilla_reset()
         return df.to_csv(*args, **kwargs)
 
@@ -564,7 +713,35 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             df = pd.read_hdf(*args, key=key, **kwargs)
         except pd.errors.EmptyDataError:
             df = pd.DataFrame()
-        return cls._convert(df)
+        return cls._convert_typed(df)
+
+    def to_html(self, *args, **kwargs) -> Optional[str]:
+        df = self.vanilla_reset()
+        return df.to_html(*args, **kwargs)
+
+    @classmethod
+    def read_html(cls, path: PathLike, *args, **kwargs) -> __qualname__:
+        """
+        Similar to ``pd.read_html``, but requires exactly 1 table and returns it.
+
+        Raises:
+
+            lxml.etree.XMLSyntaxError: If the HTML could not be parsed
+            NoValueError: If no tables are found
+            ValueNotUniqueError: If multiple tables are found
+        """
+        try:
+            dfs = pd.read_html(path, *args, **kwargs)
+        except ValueError as e:
+            if str(e) == "No tables found":
+                raise NoValueError(f"No tables in {path}") from None
+            raise
+        if len(dfs) > 1:
+            raise ValueNotUniqueError(f"{len(dfs)} tables in {path}")
+        df = dfs[0]
+        if "Unnamed: 0" in df:
+            df = df.drop("Unnamed: 0", axis=1)
+        return cls._convert_typed(df)
 
     # noinspection PyBroadException,PyFinal,DuplicatedCode
     def to_hdf(self, path: PathLike, key: str = "df", **kwargs) -> None:  # pragma: no cover
@@ -621,17 +798,56 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return tabulate(df.values.tolist(), list(df.columns), tablefmt=fmt, **kwargs)
 
     @classmethod
-    def _call_io(
+    def _call_read(
         cls,
         clazz,
-        writing: bool,
         path: Union[Path, str],
-    ) -> str:
-        fmt = FileFormat.from_path(path)
-        fn_name = "to_" + fmt.name if writing else "read_" + fmt.name
-        kwargs = (cls.write_kwargs() if writing else cls.read_kwargs()).get(fmt, {})
+    ) -> pd.DataFrame:
+        mp = FileFormat.suffix_map()
+        mp.update(cls.remap_suffixes())
+        fmt = FileFormat.from_path(path, format_map=mp)
+        fn_name = "read_" + fmt.name
+        kwargs = cls._get_read_kwargs(fmt)
         fn = getattr(clazz, fn_name)
         return fn(path, **kwargs)
+
+    def _call_write(
+        self,
+        path: Union[Path, str],
+    ) -> Optional[str]:
+        cls = self.__class__
+        mp = FileFormat.suffix_map()
+        mp.update(cls.remap_suffixes())
+        fmt = FileFormat.from_path(path, format_map=mp)
+        fn_name = "to_" + fmt.name
+        kwargs = cls._get_write_kwargs(fmt)
+        fn = getattr(self, fn_name)
+        return fn(path, **kwargs)
+
+    @classmethod
+    def _get_read_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
+        kwargs = (cls.read_kwargs()).get(fmt, {})
+        if fmt in [
+            FileFormat.csv,
+            FileFormat.csv,
+            FileFormat.lines,
+            FileFormat.flexwf,
+            FileFormat.fwf,
+        ]:
+            encoding = kwargs.get("encoding", cls.text_encoding())
+            kwargs["encoding"] = Utils.get_encoding(encoding)
+        return kwargs
+
+    @classmethod
+    def _get_write_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
+        kwargs = (cls.write_kwargs()).get(fmt, {})
+        if fmt is FileFormat.json:
+            # TODO: not perfect
+            kwargs["force_ascii"] = "utf" not in cls.text_encoding()
+        elif fmt.supports_encoding:
+            encoding = kwargs.get("encoding", cls.text_encoding())
+            kwargs["encoding"] = Utils.get_encoding(encoding)
+        return kwargs
 
     @classmethod
     def _lines_files_apply(cls) -> bool:
