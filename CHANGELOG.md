@@ -3,6 +3,26 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.9.0] - 2021-08-04
+
+### Added
+
+- `BaseDf.of` as an alias to `BaseDf.convert`
+- `empty_df` methods
+- `index_series_name` and `column_series_name`
+- `FileFormat.strip_compression`, `FileFormat.compression_from_path`, and related
+
+### Changed
+
+- Index series and column series names are set to None by default in `TypedDf`
+- String types are now required for column/index names in `MatrixDf`
+- `MatrixDf.strict` is True by default
+
+### Fixed
+
+- `Utils.table_formats`
+- Added tests for `symmetrize` and a few others
+
 ## [0.8.0] - 2021-08-03
 
 ### Added

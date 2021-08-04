@@ -14,6 +14,19 @@ class TestUntyped:
         assert list(df["abc"]) == ["xyz"]
         assert list(df["ind"]) == ["qqq"]
 
+    def test_new(self):
+        df = UntypedDf.new_df()
+        assert isinstance(df, UntypedDf)
+        assert len(df) == len(df.columns) == 0
+        df = UntypedDf.new_df(rows=2, cols=2)
+        assert isinstance(df, UntypedDf)
+        assert len(df) == len(df.columns) == 2
+        assert df.column_names() == ["0", "1"]
+        df = UntypedDf.new_df(rows=2, cols=["one", "two"])
+        assert isinstance(df, UntypedDf)
+        assert len(df) == len(df.columns) == 2
+        assert df.column_names() == ["one", "two"]
+
 
 if __name__ == "__main__":
     pytest.main()

@@ -3,7 +3,7 @@ import pandas as pd
 from pandas.errors import IntCastingNaNError
 import pytest
 from typeddfs.matrix_dfs import MatrixDf
-from typeddfs.df_errors import VerificationFailedError
+from typeddfs.df_errors import VerificationFailedError, InvalidDfError
 from typeddfs import AffinityMatrixDf
 from typeddfs.builders import MatrixDfBuilder, AffinityMatrixDfBuilder
 
@@ -36,11 +36,24 @@ class TestMatrixDfs:
         assert isinstance(df, MatrixDf)
         assert df.dtypes.tolist() == [np.float16, np.float16]
 
-    def test_matrix_bad_dtype(self):
+    def test_matrix_bad_nan(self):
         matrix_type = MatrixDfBuilder("T").dtype(np.int32).build()
         df = pd.DataFrame([[11, float("NaN")], [21, 22]], columns=["b", "a"], index=["b", "a"])
         matrix_type(df)
         with pytest.raises(IntCastingNaNError):
+            matrix_type.convert(df)
+
+    def test_matrix_bad_inf(self):
+        matrix_type = MatrixDfBuilder("T").dtype(np.int32).build()
+        df = pd.DataFrame([[11, float("inf")], [21, 22]], columns=["b", "a"], index=["b", "a"])
+        matrix_type(df)
+        with pytest.raises(IntCastingNaNError):
+            matrix_type.convert(df)
+
+    def test_matrix_bad_cols(self):
+        matrix_type = MatrixDfBuilder("T").dtype(np.int32).build()
+        df = pd.DataFrame([[11, 12], [21, 22]], columns=[1, 2], index=[1, 2])
+        with pytest.raises(InvalidDfError):
             matrix_type.convert(df)
 
     def test_condition_pass(self):
@@ -63,6 +76,22 @@ class TestMatrixDfs:
         assert isinstance(df, AffinityMatrixDf)
         assert isinstance(df.transpose(), AffinityMatrixDf)
         assert df.symmetrize().flatten().tolist() == [11, (12 + 21) / 2, (12 + 21) / 2, 22]
+
+    def test_new(self):
+        mx = MatrixDf.new_df(0, 0)
+        assert len(mx) == len(mx.columns) == 0
+        mx = MatrixDf.new_df(2, 2)
+        assert mx.flatten().tolist() == [0, 0, 0, 0]
+        mx = MatrixDf.new_df(2, 2, fill=3)
+        assert mx.flatten().tolist() == [3, 3, 3, 3]
+
+    def test_new_affinity_matrix(self):
+        mx = AffinityMatrixDf.new_df(0)
+        assert len(mx) == len(mx.columns) == 0
+        mx = AffinityMatrixDf.new_df(2)
+        assert mx.flatten().tolist() == [0, 0, 0, 0]
+        mx = AffinityMatrixDf.new_df(2, fill=3)
+        assert mx.flatten().tolist() == [3, 3, 3, 3]
 
 
 if __name__ == "__main__":

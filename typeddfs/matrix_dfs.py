@@ -3,6 +3,7 @@ DataFrames that are essentially n-by-m matrices.
 """
 from __future__ import annotations
 
+import abc
 from copy import deepcopy
 from functools import partial
 from inspect import cleandoc
@@ -31,11 +32,7 @@ class LongFormMatrixDf(TypedDf):
         return ["row", "column", "value"]
 
 
-class MatrixDf(BaseDf):
-    """
-    A dataframe that is best thought of as a simple matrix.
-    """
-
+class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
     @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:
         if not isinstance(df, pd.DataFrame):
@@ -57,15 +54,19 @@ class MatrixDf(BaseDf):
         return df
 
     @classmethod
+    def required_dtype(cls) -> Optional[Type[Any]]:
+        return np.float64
+
+    @classmethod
     def is_strict(cls) -> bool:
         return True
 
     @classmethod
-    def required_dtype(cls) -> Optional[Type[Any]]:
-        return None
-
-    @classmethod
     def _check(cls, df) -> None:
+        if [str(c) for c in df.index.names] != list(df.index.names):
+            raise InvalidDfError("Some index names are non-str")
+        if [str(c) for c in df.columns] != df.columns.tolist():
+            raise InvalidDfError("Some columns are non-str")
         for req in cls.verifications():
             value = req(df)
             if value is not None and value is not True:
@@ -168,14 +169,14 @@ class MatrixDf(BaseDf):
         return len(self.rows), len(self.columns)
 
     @property
-    def rows(self):
+    def rows(self) -> Sequence[str]:
         """
         Returns the row labels.
         """
         return self.index.tolist()
 
     @property
-    def cols(self):
+    def cols(self) -> Sequence[str]:
         """
         Returns the column labels.
         """
@@ -200,11 +201,74 @@ class MatrixDf(BaseDf):
         return f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)})"
 
 
-class AffinityMatrixDf(MatrixDf):
+class MatrixDf(_MatrixDf):
+    """
+    A dataframe that is best thought of as a simple matrix.
+    """
+
+    @classmethod
+    def new_df(
+        cls,
+        rows: Union[int, Sequence[str]],
+        cols: Union[int, Sequence[str]],
+        fill: Union[int, float, complex] = 0,
+    ) -> __qualname__:
+        """
+        Returns a DataFrame that is empty but valid.
+
+        Arguments:
+            rows: Either a number of rows or a sequence of labels.
+                  If a number is given, will choose (str-type) labels '0', '1', ...
+            cols: Either a number of columns or a sequence of labels.
+                  If a number is given, will choose (str-type) labels '0', '1', ...
+            fill: A value to fill in every cell.
+                  Should match ``self.required_dtype``.
+                  String values are
+
+        Raises:
+            InvalidDfError: If a function in ``verifications`` fails (returns False or a string).
+            IntCastingNaNError: If ``fill`` is NaN or inf and ``self.required_dtype`` does not support it.
+        """
+        if isinstance(rows, int):
+            rows = [str(r) for r in range(rows)]
+        if isinstance(cols, int):
+            cols = [str(c) for c in range(cols)]
+        a = np.ndarray(shape=(len(rows), len(cols)))
+        a.fill(fill)
+        df = pd.DataFrame(a, columns=cols)
+        return cls.convert(df)
+
+
+class AffinityMatrixDf(_MatrixDf):
     """
     A similarity or distance matrix.
     The rows and columns must match, and only 1 index is allowed.
     """
+
+    @classmethod
+    def new_df(
+        cls, n: Union[int, Sequence[str]], fill: Union[int, float, complex] = 0
+    ) -> __qualname__:
+        """
+        Returns a DataFrame that is empty but valid.
+
+        Arguments:
+            n:    Either a number of rows/columns or a sequence of labels.
+                  If a number is given, will choose (str-type) labels '0', '1', ...
+            fill: A value to fill in every cell.
+                  Should match ``self.required_dtype``.
+
+        Raises:
+            InvalidDfError: If a function in ``verifications`` fails (returns False or a string).
+            IntCastingNaNError: If ``fill`` is NaN or inf and ``self.required_dtype`` does not support it.
+        """
+        if isinstance(n, int):
+            n = [str(c) for c in range(n)]
+        a = np.ndarray(shape=(len(n), len(n)))
+        a.fill(fill)
+        df = pd.DataFrame(a, columns=n)
+        df[cls.index_series_name()] = n
+        return cls.convert(df)
 
     @classmethod
     def _check(cls, df: BaseDf):

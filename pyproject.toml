@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.8.1"
+version = "0.8.2"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]

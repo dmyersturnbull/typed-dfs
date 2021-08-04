@@ -9,6 +9,7 @@ from . import (
     Ind1Col1,
     Ind2,
     Ind2Col2,
+    Ind2Col2Reserved1,
     Trivial,
     sample_data,
     sample_data_str,
@@ -123,6 +124,19 @@ class TestTyped:
         assert not Ind2.is_valid(df)
         df = df.set_index(["abc", "xyz"])
         assert Ind2.is_valid(df)
+
+    def test_new(self):
+        df = Ind2.new_df()
+        assert isinstance(df, Ind2)
+        assert len(df) == 0
+        df = Ind2Col2Reserved1.new_df()
+        assert isinstance(df, Ind2Col2Reserved1)
+        assert df.index_names() == ["qqq", "rrr"]
+        assert df.column_names() == ["abc", "xyz"]
+        df = Ind2Col2Reserved1.new_df(reserved=True)
+        assert isinstance(df, Ind2Col2Reserved1)
+        assert df.index_names() == ["qqq", "rrr"]
+        assert df.column_names() == ["abc", "xyz", "res"]
 
 
 if __name__ == "__main__":

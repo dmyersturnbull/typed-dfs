@@ -118,12 +118,13 @@ def my_special_function(df: KeyValue) -> float:
 
 All of the normal DataFrame methods are available.
 Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce requirements.
-Use `.convert(df)` to convert a DataFrame to your type.
+Use `.of(df)` to convert a DataFrame to your type.
 
 ### 💔 Limitations
 
 - Multi-level columns are not yet supported.
-- Duplicate column names are not supported.
+- Columns and index levels cannot share names.
+- Duplicate column names are not supported. (These are strange anyway.)
 - A typed DF cannot have columns "level_0", "index", or "Unnamed: 0".
 - `inplace` is forbidden in some functions; avoid it or use `.vanilla()`.
 

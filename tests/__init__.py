@@ -137,3 +137,17 @@ class Ind2Col2(TypedDf):
     @classmethod
     def required_index_names(cls) -> Sequence[str]:
         return ["qqq", "rrr"]
+
+
+class Ind2Col2Reserved1(TypedDf):
+    @classmethod
+    def required_columns(cls) -> Sequence[str]:
+        return ["abc", "xyz"]
+
+    @classmethod
+    def reserved_columns(cls) -> Sequence[str]:
+        return ["res"]
+
+    @classmethod
+    def required_index_names(cls) -> Sequence[str]:
+        return ["qqq", "rrr"]

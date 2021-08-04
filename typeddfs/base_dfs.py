@@ -28,6 +28,20 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
             return super().__getitem__(item)
 
     @classmethod
+    def of(cls, df: pd.DataFrame) -> __qualname__:
+        """
+        Converts a vanilla Pandas DataFrame to cls.
+        See ``convert`` for more info.
+
+        This is normally an exact alias for ``convert``.
+        Occasionally, it may accept more values, as long as it always falls back to ``convert``.
+        This is intended to facilitate fast lookups.
+        For example, ``Customers.of("john")`` could return a DataFrame for a database customer,
+        or return the result of ``Customers.convert(...)`` if a DataFrame instance is provided.
+        """
+        return cls.convert(df)
+
+    @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:
         """
         Converts a vanilla Pandas DataFrame to cls.

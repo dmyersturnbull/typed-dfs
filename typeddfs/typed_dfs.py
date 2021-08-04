@@ -3,7 +3,7 @@ Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence, Type
+from typing import Any, Mapping, Sequence, Type, Union
 
 import pandas as pd
 
@@ -111,6 +111,18 @@ class TypedDf(BaseDf):
         for c in list(cls.required_columns()) + list(cls.reserved_columns()):
             if c not in new_columns and c in df.columns:
                 new_columns.append(c)
+        # set the index/column series name(s)
+        df: BaseDf = df
+        col_series = cls.column_series_name()
+        if col_series is not False:
+            if col_series is True:
+                col_series = None
+            df.columns.name = col_series
+        ind_series = cls.index_series_name()
+        if df.is_multindex() and ind_series is not False:
+            if ind_series is True:
+                ind_series = None
+            df.index.name = ind_series
         # this lets us keep whatever extra columns
         df = df.cfirst(new_columns)
         # call post-processing
@@ -121,6 +133,26 @@ class TypedDf(BaseDf):
         # now change the class
         df.__class__ = cls
         return df
+
+    @classmethod
+    def new_df(cls, *, reserved: Union[bool, Sequence[str]] = False) -> __qualname__:
+        """
+        Returns a DataFrame that is empty but has the correct columns and indices.
+
+        Arguments:
+            reserved: Include reserved index/column names as well as required.
+                      If True, adds all of ``cls.reserved_index_names()`` and ``cls.reserved_columns``.
+                      You can also specify the exact list of columns and index names.
+
+        Raises:
+            InvalidDfError: If a function in ``verifications`` fails (returns False or a string).
+        """
+        if reserved:
+            req = cls.known_names()
+        else:
+            req = [*cls.required_index_names(), *cls.required_columns()]
+        df = pd.DataFrame({r: [] for r in req})
+        return cls.convert(df)
 
     def untyped(self) -> UntypedDf:
         """
@@ -155,6 +187,25 @@ class TypedDf(BaseDf):
             return self.__class__.convert(df)
 
     @classmethod
+    def column_series_name(cls) -> Union[bool, None, str]:
+        """
+        Returns a value that will be forced into ``df.columns.name`` on calling ``convert``.
+        If ``None``, will set ``df.columns.name = None``.
+        If ``False``, will not set. (``True`` is treated the same as ``None``.)
+        """
+        return None
+
+    @classmethod
+    def index_series_name(cls) -> Union[bool, None, str]:
+        """
+        Returns a value that will be forced into ``df.index.name`` on calling ``convert``,
+        *only if* the DataFrame is multi-index.
+        If ``None``, will set ``df.index.name = None`` if ``df.index.names != [None]``.
+        If ``False``, will not set. (``True`` is treated the same as ``None``.)
+        """
+        return None
+
+    @classmethod
     def more_columns_allowed(cls) -> bool:
         """
         Returns whether the DataFrame allows columns that are not reserved or required.
@@ -164,7 +215,7 @@ class TypedDf(BaseDf):
     @classmethod
     def more_indices_allowed(cls) -> bool:
         """
-        Returns whether the DataFrame allows index names that are not reserved or required.
+        Returns whether the DataFrame allows index levels that are neither reserved nor required.
         """
         return True
 
@@ -192,7 +243,7 @@ class TypedDf(BaseDf):
     @classmethod
     def reserved_index_names(cls) -> Sequence[str]:
         """
-        Returns the list of reserved (optional) index names.
+        Returns the list of reserved (optional) index levels.
         """
         return []
 
@@ -207,7 +258,7 @@ class TypedDf(BaseDf):
     @classmethod
     def known_index_names(cls) -> Sequence[str]:
         """
-        Returns all index names that are required or reserved.
+        Returns all index levels that are required or reserved.
         The sort order positions required columns first.
         """
         return [*cls.required_index_names(), *cls.reserved_index_names()]

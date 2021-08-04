@@ -18,6 +18,24 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         # noinspection PyTypeChecker
         self.__class__._check_and_change(self)
 
+    @classmethod
+    def new_df(cls, *args, **kwargs) -> __qualname__:
+        """
+        Creates a new, somewhat arbitrary DataFrame of this type.
+
+        Arguments:
+            *args: These should be narrowed by the overriding method as needed.
+            **kwargs: These should be narrowed by the overriding method as needed.
+
+        Raises:
+            UnsupportedOperationError: Can be raised if a valid DataFrame is too difficult to create.
+            InvalidDfError: May be raised if the type requires specific constraints
+                            and did not overload this method to account for them.
+                            While programmers using the type should be aware of this possibility,
+                            consuming code, in general, should assume that ``new_df`` will always work.
+        """
+        raise NotImplementedError()
+
     def only(self, column: str, exclude_na: bool = False) -> Any:
         """
         Returns the single unique value in a column.
