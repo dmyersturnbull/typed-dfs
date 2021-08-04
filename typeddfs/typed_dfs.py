@@ -10,7 +10,6 @@ import pandas as pd
 from typeddfs._pretty_dfs import PrettyDf
 from typeddfs.base_dfs import BaseDf
 from typeddfs.df_errors import (
-    InvalidDfError,
     MissingColumnError,
     UnexpectedColumnError,
     UnexpectedIndexNameError,

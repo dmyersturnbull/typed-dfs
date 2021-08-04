@@ -14,7 +14,7 @@ import pandas as pd
 from typeddfs.base_dfs import BaseDf
 from typeddfs.df_errors import ClashError
 from typeddfs.file_formats import FileFormat
-from typeddfs.matrix_dfs import MatrixDf
+from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
 from typeddfs.typed_dfs import TypedDf
 
 logger = logging.getLogger(Path(__file__).parent.name)
@@ -113,9 +113,9 @@ class _GenericBuilder:
         return self
 
     def newline(self, char: str = os.sep) -> __qualname__:
-        """
+        r"""
         Set the newline character for line-based text formats.
-        Consider setting to ``\\n`` explicitly.
+        Consider setting to ``\n`` explicitly.
         """
         for fn in ["csv", "tsv", "flexwf", "lines"]:
             fn = FileFormat.of(fn)
@@ -206,7 +206,7 @@ class MatrixDfBuilder(_GenericBuilder):
 
     def __init__(self, name: str, doc: Optional[str] = None):
         super().__init__(name, doc)
-        self._strict = False
+        self._strict = True  # can't change, currently
         self._dtype = None
         self._clazz = MatrixDf
 
@@ -245,7 +245,7 @@ class AffinityMatrixDfBuilder(MatrixDfBuilder):
 
     def __init__(self, name: str, doc: Optional[str] = None):
         super().__init__(name, doc)
-        self._clazz = TypedDf
+        self._clazz = AffinityMatrixDf
 
 
 class TypedDfBuilder(_GenericBuilder):

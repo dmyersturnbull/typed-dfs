@@ -10,9 +10,8 @@ from pathlib import Path
 
 from typeddfs._entries import FinalDf, TypedDfs
 from typeddfs.base_dfs import BaseDf
-from typeddfs.builders import TypedDfBuilder
 from typeddfs.file_formats import FileFormat
-from typeddfs.matrix_dfs import AffinityMatrixDf
+from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 
@@ -36,4 +35,13 @@ except PackageNotFoundError:  # pragma: no cover
     logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
 
 
-__all__ = ["BaseDf", "UntypedDf", "TypedDf", "FinalDf", "AffinityMatrixDf", "TypedDfs"]
+__all__ = [
+    "BaseDf",
+    "UntypedDf",
+    "TypedDf",
+    "FinalDf",
+    "MatrixDf",
+    "AffinityMatrixDf",
+    "TypedDfs",
+    "FileFormat",
+]

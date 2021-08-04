@@ -1,3 +1,6 @@
+"""
+DataFrames that are essentially n-by-m matrices.
+"""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -43,6 +46,7 @@ class MatrixDf(BaseDf):
         if cls.index_series_name() in df.columns:
             df = df.set_index(cls.index_series_name())
         df.columns.name = cls.column_series_name()
+        df.index.name = cls.index_series_name()
         if cls.required_dtype() is not None:
             df = df.astype(cls.required_dtype())
         # now change the class
@@ -54,7 +58,7 @@ class MatrixDf(BaseDf):
 
     @classmethod
     def is_strict(cls) -> bool:
-        return False
+        return True
 
     @classmethod
     def required_dtype(cls) -> Optional[Type[Any]]:
@@ -64,8 +68,8 @@ class MatrixDf(BaseDf):
     def _check(cls, df) -> None:
         for req in cls.verifications():
             value = req(df)
-            if value is not None:
-                raise VerificationFailedError(value)
+            if value is not None and value is not True:
+                raise VerificationFailedError(str(value))
 
     def is_symmetric(self) -> bool:
         """
@@ -198,7 +202,7 @@ class MatrixDf(BaseDf):
 
 class AffinityMatrixDf(MatrixDf):
     """
-    A similarity or distance matrix.<strong>{}: {} {}</strong>\n{}
+    A similarity or distance matrix.
     The rows and columns must match, and only 1 index is allowed.
     """
 

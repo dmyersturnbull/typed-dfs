@@ -37,7 +37,20 @@ except ImportError:  # pragma: no cover
     pyxlsb = None
 
 
-compression_suffixes = {".gz", ".zip", ".bz2", ".xz", ""}
+class CompressionFormat(enum.Enum):
+    gz = enum.auto()
+    zip = enum.auto()
+    bz2 = enum.auto()
+    xz = enum.auto()
+    none = enum.auto()
+
+    @classmethod
+    def suffixes(cls) -> Set[str]:
+        return {c.suffix for c in cls}
+
+    @property
+    def suffix(self) -> str:
+        return "" if self is CompressionFormat.none else "." + self.name
 
 
 class _SuffixMap:
@@ -45,7 +58,7 @@ class _SuffixMap:
         self._map = defaultdict(set)
 
     def text(self, name: str, suffix: str):
-        self._map[name].update({suffix + c for c in compression_suffixes})
+        self._map[name].update({suffix + c for c in CompressionFormat.suffixes()})
         return self
 
     def other(self, name: str, suffix: str):
@@ -176,7 +189,7 @@ class FileFormat(enum.Enum):
         if format_map is None:
             format_map = _rev_valid_formats
         path = str(path)
-        for c in compression_suffixes:
+        for c in CompressionFormat.suffixes():
             path = path.replace(c, "")
         path = Path(path)
         return cls.from_suffix(path.suffix, format_map=format_map)
@@ -194,11 +207,46 @@ class FileFormat(enum.Enum):
             raise FilenameSuffixError(msg) from None
 
     @classmethod
+    def strip_compression(cls, path: PathLike) -> Path:
+        path = Path(path)
+        for c in CompressionFormat:
+            if path.name.endswith(c.suffix):
+                return path.parent / path.name[: -len(c.suffix)]
+        return path
+
+    @classmethod
+    def compression_from_path(cls, path: PathLike) -> CompressionFormat:
+        path = Path(path)
+        if path.name.startswith(".") and path.name.count(".") == 1:
+            suffix = path.name
+        else:
+            suffix = path.suffix
+        return cls.compression_from_suffix(suffix)
+
+    @classmethod
+    def compression_from_suffix(cls, suffix: str) -> CompressionFormat:
+        """
+        Returns a compression name
+        """
+        for c in CompressionFormat:
+            if suffix == c.suffix:
+                return c
+        return CompressionFormat.none
+
+    @classmethod
     def all_readable(cls) -> Set[FileFormat]:
+        """
+        Returns all formats that can be read on this system.
+        Note that the result may depend on whether supporting packages are installed.
+        """
         return {f for f in cls if f.can_read}
 
     @classmethod
     def all_writable(cls) -> Set[FileFormat]:
+        """
+        Returns all formats that can be written to on this system.
+        Note that the result may depend on whether supporting packages are installed.
+        """
         return {f for f in cls if f.can_write}
 
     @classmethod
@@ -206,9 +254,16 @@ class FileFormat(enum.Enum):
         return {k: v for k, v in _rev_valid_formats.items()}
 
     def compressed_variants(self, suffix: str) -> Set[str]:
+        """
+        Returns all allowed suffixes.
+
+        Example:
+            FileFormat.json.compressed_variants(".json")
+            # {".json", ".json.gz", ".json.zip", ...}
+        """
         # Pandas's fwf currently does not support compression
         if self.is_text and self is not FileFormat.fwf:
-            return {suffix + c for c in compression_suffixes}
+            return {suffix + c for c in CompressionFormat.suffixes()}
         else:
             return {suffix}
 
@@ -218,11 +273,19 @@ class FileFormat(enum.Enum):
 
     @property
     def can_read(self) -> bool:
+        """
+        Returns whether this format can be read.
+        Note that the result may depend on whether supporting packages are installed.
+        """
         return _support_map.get(self.name, True)
 
     @property
     def can_write(self) -> bool:
+        """
+        Returns whether this format can be written.
+        Note that the result may depend on whether supporting packages are installed.
+        """
         return _support_map.get(self.name, True)
 
 
-__all__ = ["FileFormat", "DfFormatSupport"]
+__all__ = ["FileFormat", "CompressionFormat", "DfFormatSupport"]

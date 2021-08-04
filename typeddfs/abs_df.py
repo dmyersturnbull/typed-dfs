@@ -725,7 +725,6 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Similar to ``pd.read_html``, but requires exactly 1 table and returns it.
 
         Raises:
-
             lxml.etree.XMLSyntaxError: If the HTML could not be parsed
             NoValueError: If no tables are found
             ValueNotUniqueError: If multiple tables are found
