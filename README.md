@@ -12,36 +12,46 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
-Pandas DataFrame subclasses that enforce structure, self-organize, and read/write correctly.
-`pip install typeddfs`
+Pandas DataFrame subclasses that self-organize and read/write correctly.
 
-Stop passing `index_cols=` and `header=` on read/write.
-Your types will remember how they’re supposed to be read.
-That means columns are used for the index, columns are given the correct types,
-and constraints are verified.
+```python
+Film = TypedDfs.typed("Film").require("name", "studio", index=True).require("year", dtype=int).build()
+df = Film.read_csv("file.csv")
+assert df.columns.tolist() == ["year"]
+assert df.index.names.tolist() == ["name", "studio"]
+```
 
-As a bonus, adds clear documentation and early failure to your code.
-As in, `def my_func(df: MyDataFrameType)`.
-Because your functions can’t exactly accept _any_ DataFrame.
+Your types will remember how they’re supposed to be read,
+including dtypes, columns for set_index, and custom requirements.
+Then you can stop passing  `index_cols=`, `header=`, `set_index`, and `astype` each time you read.
+Instead, calling `read_csv` will just work.
+Same with `read_excel`, `read_json`, ..., and the new `read_file` (which will read almost anything).
+
+You can also now document your functions clearly:
+
+```python
+def hello(df: Film): print("read!")
+df = Film.read_file("input file? [.csv/.tsv/.tab/.feather/.snappy/.json.gz/.h5/...]")
+hello(df)
+```
 
 ### 🎁️ Features
 
-Need to read a tab-delimited file? `read_file("myfile.tab")`.
-Feather? Parquet? HDF5? .json.zip? XML?
-Use `read_file`. Write a file? Use `write_file`.
-As in: `df.write_file(input("Output path?"))`.
-`read_file`/`write_file`, `read_csv`/`to_csv`, `read_json`/`to_json`, `read_xml`/`to_xml`,
-etc., are now inverses.
+Read files with `read_file`, and write files with `write_file`.
+These functions are exact inverses: `Film.read_file(df.write_file())` is just `df`.
+`read_csv`/`to_csv`, `read_json`/`to_json`, `read_xml`/`to_xml`, ...
+are now exact inverses too.
 
-Specific issues with Pandas functions fixed, too:
-
-- No more indices silently dropped when writing some DataFrames and formats.
-- No more columns silently renamed when reading some DataFrames and formats.
-- No more blank extra columns added when reading some DataFrames and formats.
-- You can read empty DataFrames, just like you can write them.
-- You can write an empty DataFrame to any format, not just some.
-- No more empty `.feather`/`.snappy`/`.h5` files written on error.
-- Have type-level defaults, instead of passing `encoding=`, `skip_blank_lines=`, etc., everywhere.
+More features and fixes:
+- Indices are never silently dropped, added, or modified on read/write. (In Pandas, some functions would in some cases.)
+- Blank columns are never added on read.
+- You can always read and write empty DataFrames. (In Pandas, some functions would fail on either read or write.)
+- File writes are effectively atomic. (In Pandas, a failed write would sometimes leave an empty .feather, .snappy, or .h5 file.)
+- Text encoding is defaulted to utf-8, configurable per type (`TypedDfs.typed("Df").encoding("utf-8").build()`).
+- Call `FileFormat.from_path(path)` to determine the file format regardless of compression.
+- Call `FileFormat.all_readable()` to see what you can currently read. (E.g. HDF5 is included only if [tables](https://pypi.org/project/tables/) is installed.
+- Convenient extra methods like `sort_natural`.
+- Matrix-style DataFrames `TypedDfs.matrix("MyMatrix").dtype(np.float64).build()` with useful functions.
 
 ### 🎨 Simple example
 
@@ -108,7 +118,6 @@ df = KeyValue.read_csv("example.csv")
 df.to_csv("remake.csv")
 df = KeyValue.read_csv("remake.csv")
 print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
-
 
 # And now, we can type a function to require a KeyValue,
 # and let it raise an `InvalidDfError` (here, a `MissingColumnError`):
