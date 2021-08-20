@@ -9,6 +9,9 @@ import numpy as np
 import pandas as pd
 
 from typeddfs.base_dfs import BaseDf
+from typeddfs.df_typing import IoTyping, DfTyping, FINAL_DF_TYPING
+
+_empty_io_typing = IoTyping()
 
 
 class UntypedDf(BaseDf):
@@ -17,6 +20,10 @@ class UntypedDf(BaseDf):
     Overrides a number of DataFrame methods that preserve the subclass.
     For example, calling ``df.reset_index()`` will return a ``UntypedDf`` of the same type as ``df``.
     """
+
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return FINAL_DF_TYPING
 
     @classmethod
     def new_df(

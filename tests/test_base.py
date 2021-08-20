@@ -20,6 +20,15 @@ class TestBase:
             .startswith("<strong>UntypedDf: 2 rows × 1 columns, 2 index columns</strong>")
         )
 
+    def test_of(self):
+        expected = [[1, 2, 3], [4, 5, 6]]
+        df = UntypedDf.convert(pd.DataFrame(sample_data()))
+        assert df.values.tolist() == expected
+        df = UntypedDf.of(pd.DataFrame(sample_data()))
+        assert df.values.tolist() == expected
+        df = UntypedDf.of(sample_data())
+        assert df.values.tolist() == expected
+
     def test_st(self):
         df = UntypedDf().convert(pd.DataFrame(sample_data()))
         assert len(df[df["xyz"] == 6]) == 1
@@ -95,11 +104,16 @@ class TestBase:
         assert isinstance(df.rename(columns=dict(abc="twotwentytwo")), Trivial)
 
     def test_set_index(self):
-        df = UntypedDf().convert(pd.DataFrame(sample_data()).set_index("abc"))
+        df = UntypedDf.convert(pd.DataFrame(sample_data()).set_index("abc"))
         assert df.set_index([]).index_names() == []
         assert df.set_index([], append=True).index_names() == ["abc"]
         with pytest.raises(UnsupportedOperationError):
             df.set_index([], inplace=True)
+
+    def test_iter_rc(self):
+        df = UntypedDf.convert(pd.DataFrame(sample_data()))
+        expected = [((0, 0), 1), ((0, 1), 2), ((0, 2), 3), ((1, 0), 4), ((1, 1), 5), ((1, 2), 6)]
+        assert list(df.iter_row_col()) == expected
 
 
 if __name__ == "__main__":

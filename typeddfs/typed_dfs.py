@@ -3,7 +3,8 @@ Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence, Type, Union
+import abc
+from typing import Sequence, Union
 
 import pandas as pd
 
@@ -15,6 +16,7 @@ from typeddfs.df_errors import (
     UnexpectedIndexNameError,
     VerificationFailedError,
 )
+from typeddfs.df_typing import DfTyping, FINAL_DF_TYPING
 from typeddfs.untyped_dfs import UntypedDf
 
 
@@ -24,7 +26,7 @@ class Df(UntypedDf):
     """
 
 
-class TypedDf(BaseDf):
+class TypedDf(BaseDf, metaclass=abc.ABCMeta):
     """
     A concrete BaseFrame that enforces conditions.
     Each subclass has required and reserved (optional) columns and index names.
@@ -45,6 +47,10 @@ class TypedDf(BaseDf):
 
     To summarize: Call ``untyped()`` before calling something that would result in anything invalid.
     """
+
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return FINAL_DF_TYPING  # just a default -- should be overridden
 
     @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:
@@ -87,38 +93,39 @@ class TypedDf(BaseDf):
         df = df.reset_index()
         # remove trash columns
         df.__class__ = cls
+        t = cls.get_typing()
         df = df.drop_cols(["index", "level_0", "Unnamed: 0"])  # these MUST be dropped
-        df = df.drop_cols(cls.columns_to_drop())
+        df = df.drop_cols(t.columns_to_drop)
         # now let's convert the dtypes
-        for c, dt in cls.auto_dtypes().items():
+        for c, dt in t.auto_dtypes.items():
             if c in df.columns:
                 df[c] = df[c].astype(dt)
         # set index columns and used preferred order
         new_index_names = []
         # here we keep the order of reserved
-        for c in list(cls.required_index_names()) + list(cls.reserved_index_names()):
+        for c in list(t.required_index_names) + list(t.reserved_index_names):
             if c not in new_index_names and c in df.columns:
                 new_index_names.append(c)
         # if the original index names are reserved columns, add them to the columns
         # otherwise, stick them at the end of the index
-        all_reserved = cls.known_names()
+        all_reserved = t.known_names
         # if it doesn't get added in here, it just stays in the columns -- which will be kept
         new_index_names.extend([s for s in original_index_names if s not in all_reserved])
         if len(new_index_names) > 0:  # raises an error otherwise
             df = df.set_index(new_index_names)
         # now set the regular column order
         new_columns = []  # re-use the same variable name
-        for c in list(cls.required_columns()) + list(cls.reserved_columns()):
+        for c in list(t.required_columns) + list(t.reserved_columns):
             if c not in new_columns and c in df.columns:
                 new_columns.append(c)
         # set the index/column series name(s)
         df: BaseDf = df
-        col_series = cls.column_series_name()
+        col_series = t.column_series_name
         if col_series is not False:
             if col_series is True:
                 col_series = None
             df.columns.name = col_series
-        ind_series = cls.index_series_name()
+        ind_series = t.index_series_name
         if df.is_multindex() and ind_series is not False:
             if ind_series is True:
                 ind_series = None
@@ -126,8 +133,8 @@ class TypedDf(BaseDf):
         # this lets us keep whatever extra columns
         df = df.cfirst(new_columns)
         # call post-processing
-        if cls.post_processing() is not None:
-            df = cls.post_processing()(df)
+        if t.post_processing is not None:
+            df = t.post_processing(df)
         # check that it has every required column and index name
         cls._check(df)
         # now change the class
@@ -141,16 +148,17 @@ class TypedDf(BaseDf):
 
         Arguments:
             reserved: Include reserved index/column names as well as required.
-                      If True, adds all of ``cls.reserved_index_names()`` and ``cls.reserved_columns``.
+                      If True, adds all reserved index levels and columns;
                       You can also specify the exact list of columns and index names.
 
         Raises:
             InvalidDfError: If a function in ``verifications`` fails (returns False or a string).
         """
+        t = cls.get_typing()
         if reserved:
-            req = cls.known_names()
+            req = t.known_names
         else:
-            req = [*cls.required_index_names(), *cls.required_columns()]
+            req = [*t.required_index_names, *t.required_columns]
         df = pd.DataFrame({r: [] for r in req})
         return cls.convert(df)
 
@@ -163,7 +171,7 @@ class TypedDf(BaseDf):
             A shallow copy with its __class__ set to an UntypedDf
 
         See:
-            ``vanilla``
+            :py.meth:`vanilla`
         """
         df = self.copy()
         df.__class__ = Df
@@ -187,132 +195,23 @@ class TypedDf(BaseDf):
             return self.__class__.convert(df)
 
     @classmethod
-    def column_series_name(cls) -> Union[bool, None, str]:
-        """
-        Returns a value that will be forced into ``df.columns.name`` on calling ``convert``.
-        If ``None``, will set ``df.columns.name = None``.
-        If ``False``, will not set. (``True`` is treated the same as ``None``.)
-        """
-        return None
-
-    @classmethod
-    def index_series_name(cls) -> Union[bool, None, str]:
-        """
-        Returns a value that will be forced into ``df.index.name`` on calling ``convert``,
-        *only if* the DataFrame is multi-index.
-        If ``None``, will set ``df.index.name = None`` if ``df.index.names != [None]``.
-        If ``False``, will not set. (``True`` is treated the same as ``None``.)
-        """
-        return None
-
-    @classmethod
-    def more_columns_allowed(cls) -> bool:
-        """
-        Returns whether the DataFrame allows columns that are not reserved or required.
-        """
-        return True
-
-    @classmethod
-    def more_indices_allowed(cls) -> bool:
-        """
-        Returns whether the DataFrame allows index levels that are neither reserved nor required.
-        """
-        return True
-
-    @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        """
-        Returns the list of required column names.
-        """
-        return []
-
-    @classmethod
-    def reserved_columns(cls) -> Sequence[str]:
-        """
-        Returns the list of reserved (optional) column names.
-        """
-        return []
-
-    @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        """
-        Returns the list of required column names.
-        """
-        return []
-
-    @classmethod
-    def reserved_index_names(cls) -> Sequence[str]:
-        """
-        Returns the list of reserved (optional) index levels.
-        """
-        return []
-
-    @classmethod
-    def known_column_names(cls) -> Sequence[str]:
-        """
-        Returns all columns that are required or reserved.
-        The sort order positions required columns first.
-        """
-        return [*cls.required_columns(), *cls.reserved_columns()]
-
-    @classmethod
-    def known_index_names(cls) -> Sequence[str]:
-        """
-        Returns all index levels that are required or reserved.
-        The sort order positions required columns first.
-        """
-        return [*cls.required_index_names(), *cls.reserved_index_names()]
-
-    @classmethod
-    def known_names(cls) -> Sequence[str]:
-        """
-        Returns all index and column names that are required or reserved.
-        The sort order is: required index, reserved index, required columns, reserved columns.
-        """
-        return [
-            *cls.required_index_names(),
-            *cls.reserved_index_names(),
-            *cls.required_columns(),
-            *cls.reserved_columns(),
-        ]
-
-    @classmethod
-    def auto_dtypes(cls) -> Mapping[str, Type[Any]]:
-        """
-        Returns a mapping from column/index names to the expected dtype.
-        These are used via ``pd.Series.as_type`` for automatic conversion.
-        An error will be raised if a ``as_type`` call fails.
-        Note that Pandas frequently just does not perform the conversion,
-        rather than raising an error.
-        The keys should be contained in ``known_names``, but this is not strictly required.
-        """
-        return {}
-
-    @classmethod
-    def columns_to_drop(cls) -> Sequence[str]:
-        """
-        Returns the list of columns that are automatically dropped by ``convert``.
-        This does NOT include "level_0" and "index, which are ALWAYS dropped.
-        """
-        return []
-
-    @classmethod
     def _check(cls, df) -> None:
         cls._check_has_required(df)
         cls._check_has_unexpected(df)
-        for req in cls.verifications():
+        for req in cls.get_typing().verifications:
             value = req(df)
             if value is not None:
                 raise VerificationFailedError(value)
 
     @classmethod
     def _check_has_required(cls, df: pd.DataFrame) -> None:
-        for c in set(cls.required_index_names()):
+        t = cls.get_typing()
+        for c in set(t.required_index_names):
             if c not in set(df.index.names):
                 raise MissingColumnError(
                     f"Missing index name {c} (indices are: {set(df.index.names)}; cols are: {set(df.columns.names)}))"
                 )
-        for c in set(cls.required_columns()):
+        for c in set(t.required_columns):
             if c not in set(df.columns):
                 raise MissingColumnError(
                     f"Missing column {c} (cols are: {set(df.columns.names)}; indices are: {set(df.index.names)})"
@@ -321,18 +220,15 @@ class TypedDf(BaseDf):
     @classmethod
     def _check_has_unexpected(cls, df: pd.DataFrame) -> None:
         df = PrettyDf(df)
-        if not cls.more_columns_allowed():
+        t = cls.get_typing()
+        if not t.more_columns_allowed:
             for c in df.column_names():
-                if c not in cls.required_columns() and c not in cls.reserved_columns():
+                if c not in t.required_columns and c not in t.reserved_columns:
                     raise UnexpectedColumnError(f"Unexpected column {c}")
-        if not cls.more_indices_allowed():
+        if not t.more_indices_allowed:
             for c in df.index_names():
-                if c not in cls.required_index_names() and c not in cls.reserved_index_names():
+                if c not in t.required_index_names and c not in t.reserved_index_names:
                     raise UnexpectedIndexNameError(f"Unexpected index name {c}")
-
-    @classmethod
-    def _lines_files_apply(cls) -> bool:
-        return len(cls.known_names()) == 1
 
 
 __all__ = ["TypedDf"]

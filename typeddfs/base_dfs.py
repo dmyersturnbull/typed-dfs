@@ -4,51 +4,73 @@ Defines the superclasses of the types ``TypedDf`` and ``UntypedDf``.
 from __future__ import annotations
 
 import abc
-from typing import Callable, Optional, Sequence, Union
 
 import pandas as pd
 
-from typeddfs.abs_df import AbsDf
-from typeddfs.df_errors import InvalidDfError, VerificationFailedError
+from typeddfs.abs_dfs import AbsDf
 
 
 class BaseDf(AbsDf, metaclass=abc.ABCMeta):
     """
-    A subclass of ``AbsDf`` with ``convert()`` and ``vanilla()`` methods.
-    This is an abstract version of ``TypedDf`` that has no declaration of what "typed" means,
-    only a method ``BaseDf.convert`` to be overridden.
-    Note that ``UntypedDf`` also inherits from this class; it simply does not override ``convert``.
-    You can add your own implementation if ``TypedDf`` is missing a feature you need.
+    An abstract DataFrame type that has a way to convert and de-convert.
+    A subclass of :py.class:`typeddfs.abs_dfs.AbsDf`,
+    it has methods :py.meth:`convert` and :py.meth:`vanilla`.
+    but no implementation or enforcement of typing.
     """
 
-    def __getitem__(self, item) -> __qualname__:
+    def __getitem__(self, item):
+        """
+        Finds an index level or or column, returning the Series, DataFrame, or value.
+        Note that typeddfs forbids duplicate column names, as well as column names and
+        index levels sharing names.
+        """
         if isinstance(item, str) and item in self.index.names:
             return self.index.get_level_values(item)
         else:
             return super().__getitem__(item)
 
     @classmethod
-    def of(cls, df: pd.DataFrame) -> __qualname__:
+    def of(cls, df, *args, **kwargs) -> __qualname__:
         """
-        Converts a vanilla Pandas DataFrame to cls.
-        See ``convert`` for more info.
+        Construct or convert a DataFrame, returning this type.
+        Delegates to :py.meth:`convert` for DataFrames,
+        or tries first constructing a DataFrame by calling ``pd.DataFrame(df)``.
 
-        This is normally an exact alias for ``convert``.
-        Occasionally, it may accept more values, as long as it always falls back to ``convert``.
-        This is intended to facilitate fast lookups.
+        May be overridden to accept more types, such as a string for database lookup.
         For example, ``Customers.of("john")`` could return a DataFrame for a database customer,
         or return the result of ``Customers.convert(...)`` if a DataFrame instance is provided.
+
+        Returns:
+            A new DataFrame; see :py.meth:`convert` for more info.
         """
+        if not isinstance(df, pd.DataFrame):
+            df = pd.DataFrame(df, *args, **kwargs)
         return cls.convert(df)
+
+    def retype(self) -> __qualname__:
+        """
+        Calls ``self.__class__.convert`` on this DataFrame.
+        This is useful to call at the end of a chain of DataFrame functions, where the type
+        is preserved but the DataFrame may no longer be valid under this type's rules.
+        This can occur because, for performance, typeddfs does not call ``convert`` on most calls.
+
+        Example:
+            df = MyDf(data).apply(my_fn, axis=1).retype()  # make sure it's still valid
+            df = MyDf(data).groupby(...).retype()  # we maybe changed the index; fix it
+
+        Returns:
+            A copy
+        """
 
     @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:
         """
         Converts a vanilla Pandas DataFrame to cls.
-        Sets the index.
 
-        Args:
-            df: The Pandas DataFrame or member of cls; will have its __class_ change but will otherwise not be affected
+        .. note::
+
+            The argument ``df`` will have its ``__class__`` changed to ``cls``
+            but will otherwise be unaffected.
 
         Returns:
             A copy
@@ -56,53 +78,6 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
         df = df.copy()
         df.__class__ = cls
         # noinspection PyTypeChecker
-        df = cls._post_process(df)
-        return df
-
-    @classmethod
-    def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
-        """
-        A function to be called at the final stage of ``convert``.
-        It is called immediately before ``verifications`` are checked.
-        The function takes a copy of the input ``BaseDf`` and returns a new copy.
-
-        Note:
-            Although a copy is passed as input, the function should not modify it.
-            Technically, doing so will cause problems only if the DataFrame's internal values
-            are modified. The value passed is a *shallow* copy (see ``pd.DataFrame.copy``).
-        """
-        return None
-
-    @classmethod
-    def verifications(cls) -> Sequence[Callable[[BaseDf], Union[None, bool, str]]]:
-        """
-        Additional requirements for the DataFrame to be conformant.
-
-        Returns:
-            A sequence of conditions that map the DF to None or True if the condition passes,
-            or False or the string of an error message if it fails
-        """
-        return []
-
-    @classmethod
-    def is_valid(cls, df: pd.DataFrame) -> bool:
-        try:
-            cls._check(df)
-        except InvalidDfError:
-            return False
-        return True
-
-    @classmethod
-    def _check(cls, df) -> None:
-        for req in cls.verifications():
-            value = req(df)
-            if value is not None and value is not True:
-                raise VerificationFailedError(str(value))
-
-    @classmethod
-    def _post_process(cls, df) -> pd.DataFrame:
-        if cls.post_processing() is not None:
-            df = cls.post_processing()(df)
         return df
 
 

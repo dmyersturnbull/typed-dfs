@@ -5,13 +5,15 @@ import pytest
 # noinspection PyProtectedMember
 from typeddfs._pretty_dfs import PrettyDf
 from typeddfs.base_dfs import BaseDf
-from typeddfs.builders import TypedDfBuilder
+from typeddfs.builders import TypedDfBuilder, MatrixDfBuilder
 from typeddfs.df_errors import (
     ClashError,
     UnexpectedColumnError,
     UnexpectedIndexNameError,
     VerificationFailedError,
+    FormatInsecureError,
 )
+from typeddfs.df_typing import DfTyping
 from typeddfs.typed_dfs import TypedDf
 
 
@@ -24,11 +26,24 @@ def always_fail(x):
 
 
 class TestBuilders:
+    def test_typed_subclass(self):
+        t1 = TypedDfBuilder("t1").build()
+        t2 = TypedDfBuilder("t2").subclass(t1).build()
+        assert issubclass(t2, t1)
+        assert not issubclass(t1, t2)
+
+    def test_matrix_subclass(self):
+        t1 = MatrixDfBuilder("t1").build()
+        t2 = MatrixDfBuilder("t2").subclass(t1).build()
+        assert issubclass(t2, t1)
+        assert not issubclass(t1, t2)
+
     def test_condition(self):
         t = TypedDfBuilder("a").verify(always_ok).build()
-        assert t.required_columns() == []
-        assert t.required_index_names() == []
-        assert t.verifications() == [always_ok]
+        typ: DfTyping = t.get_typing()
+        assert typ.required_columns == []
+        assert typ.required_index_names == []
+        assert typ.verifications == [always_ok]
         TypedDf(pd.DataFrame())
         t = TypedDfBuilder("a").verify(always_fail).build()
         with pytest.raises(VerificationFailedError):
@@ -36,31 +51,31 @@ class TestBuilders:
 
     def test_require_and_reserve_col(self):
         t = TypedDfBuilder("a").require("column").reserve("reserved").build()
-        assert t.required_columns() == ["column"]
-        assert t.reserved_columns() == ["reserved"]
-        assert t.required_index_names() == []
-        assert t.reserved_index_names() == []
-        assert t.verifications() == []
+        typ: DfTyping = t.get_typing()
+        assert typ.required_columns == ["column"]
+        assert typ.reserved_columns == ["reserved"]
+        assert typ.required_index_names == []
+        assert typ.reserved_index_names == []
+        assert typ.verifications == []
 
     def test_require_and_reserve_index(self):
         t = (
-            TypedDfBuilder("a")
-            .require("column", index=True)
-            .reserve("reserved", index=True)
-            .build()
-        )
-        assert t.required_columns() == []
-        assert t.reserved_columns() == []
-        assert t.required_index_names() == ["column"]
-        assert t.reserved_index_names() == ["reserved"]
-        assert t.known_index_names() == ["column", "reserved"]
-        assert t.known_column_names() == []
-        assert t.known_names() == ["column", "reserved"]
-        assert t.verifications() == []
+            TypedDfBuilder("a").require("column", index=True).reserve("reserved", index=True)
+        ).build()
+        typ: DfTyping = t.get_typing()
+        assert typ.required_columns == []
+        assert typ.reserved_columns == []
+        assert typ.required_index_names == ["column"]
+        assert typ.reserved_index_names == ["reserved"]
+        assert typ.known_index_names == ["column", "reserved"]
+        assert typ.known_column_names == []
+        assert typ.known_names == ["column", "reserved"]
+        assert typ.verifications == []
 
     def test_drop(self):
         t = TypedDfBuilder("a").reserve("column").drop("trash").build()
-        assert t.columns_to_drop() == ["trash"]
+        typ: DfTyping = t.get_typing()
+        assert typ.columns_to_drop == {"trash"}
         df = t.convert(pd.DataFrame([pd.Series(dict(x="x", zz="y"))]))
         assert df.column_names() == ["x", "zz"]
         df = t.convert(pd.DataFrame([pd.Series(dict(x="x", trash="y"))]))
@@ -70,6 +85,12 @@ class TestBuilders:
         t = TypedDfBuilder("a").reserve("trash").drop("trash")
         with pytest.raises(ClashError):
             t.build()
+
+    def test_secure(self):
+        TypedDfBuilder("a").secure().hash(alg="sha256").build()
+        TypedDfBuilder("a").hash(alg="sha1").build()
+        with pytest.raises(FormatInsecureError):
+            TypedDfBuilder("a").secure().hash(alg="sha1").build()
 
     def test_bad_type(self):
         with pytest.raises(TypeError):
@@ -103,28 +124,30 @@ class TestBuilders:
                 for colb in [True, False]:
                     for indexb in [True, False]:
                         builder = TypedDfBuilder("a")
-                        builder = (
-                            builder.require("a", index=indexa)
-                            if cola
-                            else builder.reserve("a", index=indexa)
-                        )
+                        if cola:
+                            builder = builder.require("a", index=indexa)
+                        else:
+                            cola = builder.reserve("a", index=indexa)
                         with pytest.raises(ValueError):
-                            builder.require("a", index=indexb) if colb else builder.reserve(
-                                "a", index=indexb
-                            )
+                            if colb:
+                                builder.require("a", index=indexb)
+                            else:
+                                builder.reserve("a", index=indexb)
 
     def test_strict(self):
         # strict columns but not index
-        t = TypedDfBuilder("a").strict(False, True).build()
-        assert not t.more_columns_allowed()
-        assert t.more_indices_allowed()
+        t = TypedDfBuilder("a").strict(index=False, cols=True).build()
+        typ: DfTyping = t.get_typing()
+        assert typ.more_indices_allowed
+        assert not typ.more_columns_allowed
         t.convert(pd.DataFrame([pd.Series(dict(x="x"))]).set_index("x"))
         with pytest.raises(UnexpectedColumnError):
             t.convert(pd.DataFrame([pd.Series(dict(x="x"))]))
         # strict index but not columns
         t = TypedDfBuilder("a").strict(True, False).build()
-        assert t.more_columns_allowed()
-        assert not t.more_indices_allowed()
+        typ: DfTyping = t.get_typing()
+        assert typ.more_columns_allowed
+        assert not typ.more_indices_allowed
         t.convert(pd.DataFrame([pd.Series(dict(x="x"))]))
         with pytest.raises(UnexpectedIndexNameError):
             df = PrettyDf(pd.DataFrame([pd.Series(dict(x="x"))]).set_index("x"))

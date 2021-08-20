@@ -1,7 +1,8 @@
 import abc
-from typing import Any, Iterable, Mapping, Sequence, Union
+from typing import Any, Iterable, Mapping, Sequence, Union, Generator, Tuple
 
 import pandas as pd
+from pandas.core.frame import DataFrame as _InternalDataFrame
 from natsort import natsorted, ns
 
 from typeddfs._pretty_dfs import PrettyDf
@@ -16,7 +17,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
     def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False):
         super().__init__(data=data, index=index, columns=columns, dtype=dtype, copy=copy)
         # noinspection PyTypeChecker
-        self.__class__._check_and_change(self)
+        self.__class__._change(self)
 
     @classmethod
     def new_df(cls, *args, **kwargs) -> __qualname__:
@@ -36,6 +37,15 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
+    def iter_row_col(self) -> Generator[Tuple[Tuple[int, int], Any], None, None]:
+        """
+        Iterates over ``((row, col), value)`` tuples.
+        The row and column are the row and column numbers, 1-indexed.
+        """
+        for row in range(len(self)):
+            for col in range(len(self.columns)):
+                yield (row, col), self.iat[row, col]
+
     def only(self, column: str, exclude_na: bool = False) -> Any:
         """
         Returns the single unique value in a column.
@@ -44,9 +54,6 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         Args:
             column: The name of the column
             exclude_na: Exclude null values
-
-        Returns:
-            The value
         """
         x = set(self[column].unique())
         if exclude_na:
@@ -64,16 +71,11 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         Returns a new DataFrame with the specified columns appearing first.
 
         Args:
-            cols: A list of columns
-
-        Returns:
-            A non-copy
+            cols: A list of columns, or a single column or column index
         """
         if isinstance(cols, str) or isinstance(cols, int):
             cols = [cols]
-        return self.__class__._check_and_change(
-            self[cols + [c for c in self.columns if c not in cols]]
-        )
+        return self.__class__._change(self[cols + [c for c in self.columns if c not in cols]])
 
     def sort_natural(self, column: str, alg: int = ns.INT) -> __qualname__:
         """
@@ -88,7 +90,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         df["__sort"] = df[column].map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
         df = df.sort_values("__sort").drop_cols(["__sort"])
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def sort_natural_index(self, alg: int = ns.INT) -> __qualname__:
         """
@@ -102,17 +104,14 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         df["__sort"] = df.index.map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
         df = df.sort_values("__sort").drop_cols(["__sort"])
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def drop_cols(self, cols: Union[str, Iterable[str]]) -> __qualname__:
         """
         Drops columns, ignoring those that are not present.
 
         Args:
-            A single column name or a list of column names
-
-        Returns:
-            The new dataframe, which has the same class
+            cols: A single column name or a list of column names
         """
         df = self.copy()
         if isinstance(cols, str):
@@ -120,13 +119,13 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         for c in cols:
             if c in self.columns:
                 df = df.drop(c, axis=1)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def vanilla_reset(self) -> pd.DataFrame:
         """
-        Same as ``vanilla``, but resets the index -- but dropping the index if it has no name.
+        Same as :py.meth:`vanilla`, but resets the index -- but dropping the index if it has no name.
         This means that an effectively index-less dataframe will not end up with an extra column
-        called 'index'.
+        called "index".
         """
         if len(self.index_names()) > 0:
             return self.vanilla().reset_index()
@@ -144,23 +143,79 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         df.__class__ = pd.DataFrame
         return df
 
+    def __add__(self, other):
+        x = super().__add__(other)
+        return self._change_if_df(x)
+
+    def __radd__(self, other):
+        x = super().__radd__(other)
+        return self._change_if_df(x)
+
+    def __sub__(self, other):
+        x = super().__sub__(other)
+        return self._change_if_df(x)
+
+    def __rsub__(self, other):
+        x = super().__rsub__(other)
+        return self._change_if_df(x)
+
+    def __mul__(self, other):
+        x = super().__mul__(other)
+        return self._change_if_df(x)
+
+    def __rmul__(self, other):
+        x = super().__rmul__(other)
+        return self._change_if_df(x)
+
+    def __truediv__(self, other):
+        x = super().__truediv__(other)
+        return self._change_if_df(x)
+
+    def __rtruediv__(self, other):
+        x = super().__rtruediv__(other)
+        return self._change_if_df(x)
+
+    def __divmod__(self, other):
+        x = super().__divmod__(other)
+        return self._change_if_df(x)
+
+    def __rdivmod__(self, other):
+        x = super().__rdivmod__(other)
+        return self._change_if_df(x)
+
+    def __mod__(self, other):
+        x = super().__mod__(other)
+        return self._change_if_df(x)
+
+    def __rmod__(self, other):
+        x = super().__rmod__(other)
+        return self._change_if_df(x)
+
+    def __pow__(self, other):
+        x = super().__pow__(other)
+        return self._change_if_df(x)
+
+    def __rpow__(self, other):
+        x = super().__rpow__(other)
+        return self._change_if_df(x)
+
     def drop_duplicates(self, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
-        return self.__class__._check_and_change(super().drop_duplicates(**kwargs))
+        return self.__class__._change(super().drop_duplicates(**kwargs))
 
     def reindex(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
-        return self.__class__._check_and_change(super().reindex(*args, **kwargs))
+        return self.__class__._change(super().reindex(*args, **kwargs))
 
     def sort_values(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().sort_values(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def reset_index(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().reset_index(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def set_index(
         self, keys, drop=True, append=False, inplace=False, verify_integrity=False
@@ -169,7 +224,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         if len(keys) == 0 and append:
             return self
         elif len(keys) == 0:
-            return self.__class__._check_and_change(super().reset_index(drop=drop))
+            return self.__class__._change(super().reset_index(drop=drop))
         df = super().set_index(
             keys=keys,
             drop=drop,
@@ -177,75 +232,75 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
             inplace=inplace,
             verify_integrity=verify_integrity,
         )
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def dropna(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().dropna(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def fillna(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().fillna(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     # noinspection PyFinal
     def copy(self, deep: bool = False) -> __qualname__:
         df = super().copy(deep=deep)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def assign(self, **kwargs) -> __qualname__:
         df = self.vanilla_reset()
         df = df.assign(**kwargs)
-        return self.__class__._convert_typed(df)
+        return self.__class__._change(df)
 
     def append(self, *args, **kwargs) -> __qualname__:
         df = super().append(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def transpose(self, *args, copy: bool = False) -> __qualname__:
         df = super().transpose(*args, copy=copy)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     # noinspection PyFinal
     def ffill(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().ffill(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     # noinspection PyFinal
     def bfill(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().bfill(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     # noinspection PyFinal
     def abs(self) -> __qualname__:
-        return self.__class__._check_and_change(super().abs())
+        return self.__class__._change(super().abs())
 
     def rename(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().rename(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def replace(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().replace(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def applymap(self, *args, **kwargs) -> __qualname__:
         df = super().applymap(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def astype(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().astype(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def drop(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().drop(*args, **kwargs)
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     def st(
         self, *array_conditions: Sequence[bool], **dict_conditions: Mapping[str, Any]
@@ -265,7 +320,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
             df = df.loc[condition]
         for key, value in dict_conditions.items():
             df = df.loc[df[key] == value]
-        return self.__class__._check_and_change(df)
+        return self.__class__._change(df)
 
     @classmethod
     def _convert_typed(cls, df: pd.DataFrame):
@@ -275,11 +330,12 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         if hasattr(cls, "convert"):
             return cls.convert(df)
         else:
-            return cls._check_and_change(df)
+            return cls._change(df)
 
     @classmethod
-    def _check_and_change(cls, df) -> __qualname__:
-        df.__class__ = cls
+    def _change_if_df(cls, df):
+        if isinstance(df, _InternalDataFrame):
+            df.__class__ = cls
         return df
 
     @classmethod

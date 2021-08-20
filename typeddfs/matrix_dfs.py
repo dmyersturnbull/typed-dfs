@@ -7,7 +7,7 @@ import abc
 from copy import deepcopy
 from functools import partial
 from inspect import cleandoc
-from typing import Any, Optional, Sequence, Set, Tuple, Type, Union
+from typing import Sequence, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -19,6 +19,7 @@ from typeddfs.df_errors import (
     RowColumnMismatchError,
     VerificationFailedError,
 )
+from typeddfs.df_typing import DfTyping, FINAL_DF_TYPING
 from typeddfs.typed_dfs import TypedDf
 
 
@@ -28,8 +29,8 @@ class LongFormMatrixDf(TypedDf):
     """
 
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["row", "column", "value"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["row", "column", "value"])
 
 
 class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
@@ -40,34 +41,30 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         # first always reset the index so we can manage what's in the index vs columns
         # index_names() will return [] if no named indices are found
         df.__class__ = cls
-        if cls.index_series_name() in df.columns:
-            df = df.set_index(cls.index_series_name())
-        df.columns.name = cls.column_series_name()
-        df.index.name = cls.index_series_name()
-        if cls.required_dtype() is not None:
-            df = df.astype(cls.required_dtype())
+        t = cls.get_typing()
+        # df = df.vanilla_reset()
+        # df = df.set_index(t.required_index_names[0])
+        if df.index.names == [None] and "row" in df.columns:
+            df = df.set_index("row")
+        df.columns.name = "column"
+        df.index.name = "row"
+        if t.value_dtype is not None:
+            df = df.astype(t.value_dtype)
         # now change the class
         df.__class__ = cls
-        if cls.is_strict():
-            # noinspection PyProtectedMember
-            cls._check(df)
+        # noinspection PyProtectedMember
+        cls._check(df)
         return df
 
     @classmethod
-    def required_dtype(cls) -> Optional[Type[Any]]:
-        return np.float64
-
-    @classmethod
-    def is_strict(cls) -> bool:
-        return True
-
-    @classmethod
     def _check(cls, df) -> None:
+        t = cls.get_typing()
+        # TODO: Why doesn't .dtype work?
         if [str(c) for c in df.index.names] != list(df.index.names):
             raise InvalidDfError("Some index names are non-str")
         if [str(c) for c in df.columns] != df.columns.tolist():
             raise InvalidDfError("Some columns are non-str")
-        for req in cls.verifications():
+        for req in t.verifications:
             value = req(df)
             if value is not None and value is not True:
                 raise VerificationFailedError(str(value))
@@ -77,14 +74,6 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         Returns True if the matrix is fully symmetric with exact equality.
         """
         return self.rows == self.cols and np.array_equal(self.values, self.T.values)
-
-    @classmethod
-    def column_series_name(cls) -> str:
-        return "column"
-
-    @classmethod
-    def index_series_name(cls) -> str:
-        return "row"
 
     def sub_matrix(self, rows: Set[str], cols: Set[str]) -> __qualname__:
         """
@@ -204,7 +193,13 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
 class MatrixDf(_MatrixDf):
     """
     A dataframe that is best thought of as a simple matrix.
+    Contains a single index level and a list of columns,
+    with numerical values of a single dtype.
     """
+
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return FINAL_DF_TYPING  # default only -- should be overridden
 
     @classmethod
     def new_df(
@@ -246,6 +241,10 @@ class AffinityMatrixDf(_MatrixDf):
     """
 
     @classmethod
+    def get_typing(cls) -> DfTyping:
+        return FINAL_DF_TYPING  # default only -- should be overridden
+
+    @classmethod
     def new_df(
         cls, n: Union[int, Sequence[str]], fill: Union[int, float, complex] = 0
     ) -> __qualname__:
@@ -267,22 +266,17 @@ class AffinityMatrixDf(_MatrixDf):
         a = np.ndarray(shape=(len(n), len(n)))
         a.fill(fill)
         df = pd.DataFrame(a, columns=n)
-        df[cls.index_series_name()] = n
+        df["row"] = n
         return cls.convert(df)
 
     @classmethod
     def _check(cls, df: BaseDf):
         rows = df.index.tolist()
         cols = df.columns.tolist()
+        t = cls.get_typing()
         if df.rows != df.cols:
             raise RowColumnMismatchError(f"Rows {rows} but columns {cols}")
-        if df.index.name != df.__class__.index_series_name():
-            raise InvalidDfError(f"Index name {df.index.name} should be {df.index_series_name()}")
-        if df.columns.name != df.__class__.column_series_name():
-            raise InvalidDfError(
-                f"Column name {df.columns.name} should be {df.column_series_name()}"
-            )
-        for req in cls.verifications():
+        for req in t.verifications:
             value = req(df)
             if value is not None:
                 raise VerificationFailedError(value)

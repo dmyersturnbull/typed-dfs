@@ -3,6 +3,21 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.10.0] - 2021-08-20
+
+### Added
+
+- Hash utils in `Utils`
+- `file_hash`, `dir_hash`, and `mkdirs` to `write_file`
+- `to_rst`
+
+### Changed
+
+- Moved DF classmethods to `DfTyping`
+- DF operators now attempt to keep typing
+- All MatrixDfs are now strict
+- MatrixDF row and column names now must always be "row" and "column"
+
 ## [0.9.0] - 2021-08-04
 
 ### Added

@@ -1,17 +1,36 @@
 import contextlib
 import logging
 import random
+import shutil
 from pathlib import Path
-from typing import Sequence
+from typing import Union
 
 import pandas as pd
 
+from typeddfs.df_typing import DfTyping
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 
 # Separate logging in the main package vs. inside test functions
 logger_name = Path(__file__).parent.parent.name.upper() + ".TEST"
 logger = logging.getLogger(logger_name)
+
+
+def get_resource(*nodes: Union[str, Path]) -> Path:
+    path = Path(Path(__file__).parent, "resources", *nodes)
+    if not path.is_file():
+        raise FileNotFoundError(str(path))
+    return path
+
+
+@contextlib.contextmanager
+def tmpdir() -> Path:
+    bit1 = str(random.randint(1, 100000))  # nosec
+    bit2 = str(random.randint(1, 100000))  # nosec
+    path = Path(__file__).parent / "resources" / "tmp" / bit1 / bit2
+    yield path
+    if path.exists():
+        shutil.rmtree(str(path))
 
 
 @contextlib.contextmanager
@@ -77,77 +96,57 @@ class ActuallyEmpty(TypedDf):
 
 class Col1(TypedDf):
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["abc"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc"])
 
 
 class Ind1(TypedDf):
     @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["abc"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_index_names=["abc"])
 
 
 class Col2(TypedDf):
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["abc", "xyz"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc", "xyz"])
 
 
 class Ind2(TypedDf):
     @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["abc", "xyz"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_index_names=["abc", "xyz"])
 
 
 class Ind1Col1(TypedDf):
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["abc"]
-
-    @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["qqq"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc"], _required_index_names=["qqq"])
 
 
 class Ind1Col2(TypedDf):
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["abc", "xyz"]
-
-    @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["qqq"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc", "xyz"], _required_index_names=["qqq"])
 
 
 class Ind2Col1(TypedDf):
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["abc"]
-
-    @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["qqq", "rrr"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc"], _required_index_names=["qqq", "rrr"])
 
 
 class Ind2Col2(TypedDf):
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["abc", "xyz"]
-
-    @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["qqq", "rrr"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc", "xyz"], _required_index_names=["qqq", "rrr"])
 
 
 class Ind2Col2Reserved1(TypedDf):
     @classmethod
-    def required_columns(cls) -> Sequence[str]:
-        return ["abc", "xyz"]
-
-    @classmethod
-    def reserved_columns(cls) -> Sequence[str]:
-        return ["res"]
-
-    @classmethod
-    def required_index_names(cls) -> Sequence[str]:
-        return ["qqq", "rrr"]
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(
+            _required_columns=["abc", "xyz"],
+            _reserved_columns=["res"],
+            _required_index_names=["qqq", "rrr"],
+        )

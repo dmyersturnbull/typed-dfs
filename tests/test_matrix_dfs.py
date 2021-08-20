@@ -2,10 +2,11 @@ import numpy as np
 import pandas as pd
 from pandas.errors import IntCastingNaNError
 import pytest
-from typeddfs.matrix_dfs import MatrixDf
+from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
 from typeddfs.df_errors import VerificationFailedError, InvalidDfError
-from typeddfs import AffinityMatrixDf
 from typeddfs.builders import MatrixDfBuilder, AffinityMatrixDfBuilder
+
+from . import get_resource, tmpfile
 
 
 class TestMatrixDfs:
@@ -58,24 +59,39 @@ class TestMatrixDfs:
 
     def test_condition_pass(self):
         matrix_type = MatrixDfBuilder("T").verify(lambda d: len(d) == 2).build()
-        assert matrix_type.is_strict()
         df = pd.DataFrame([[11, float("NaN")], [21, 22]], columns=["b", "a"], index=["b", "a"])
         matrix_type.convert(df)
 
     def test_condition_fail(self):
         matrix_type = MatrixDfBuilder("T").verify(lambda d: len(d) == 4).build()
-        assert matrix_type.is_strict()
         df = pd.DataFrame([[11, float("NaN")], [21, 22]], columns=["b", "a"], index=["b", "a"])
         with pytest.raises(VerificationFailedError):
             matrix_type.convert(df)
+
+    def test_read_plain(self):
+        matrix = AffinityMatrixDf.read_csv(get_resource("matrix.csv"))
+        assert matrix.rows == ["a", "b", "c"]
+        s = matrix.to_csv()
+        assert len(s.splitlines()) == 4
 
     def test_affinity_matrix(self):
         matrix_type = AffinityMatrixDfBuilder("T").build()
         df = pd.DataFrame([[11, 12], [21, 22]], columns=["b", "a"], index=["b", "a"])
         df = matrix_type.convert(df)
         assert isinstance(df, AffinityMatrixDf)
+        assert isinstance(df, matrix_type)
         assert isinstance(df.transpose(), AffinityMatrixDf)
         assert df.symmetrize().flatten().tolist() == [11, (12 + 21) / 2, (12 + 21) / 2, 22]
+
+    def test_affinity_matrix_new_methods(self):
+        matrix_type = (
+            AffinityMatrixDfBuilder("T").add_methods(fix=lambda dx: dx.convert(dx + 0.5))
+        ).build()
+        df = pd.DataFrame([[11, 12], [21, 22]], columns=["b", "a"], index=["b", "a"])
+        df = matrix_type.convert(df)
+        assert isinstance(df, AffinityMatrixDf)
+        assert isinstance(df, matrix_type)
+        assert df.fix().flatten().tolist() == [11.5, 12.5, 21.5, 22.5]
 
     def test_new(self):
         mx = MatrixDf.new_df(0, 0)
@@ -92,6 +108,27 @@ class TestMatrixDfs:
         assert mx.flatten().tolist() == [0, 0, 0, 0]
         mx = AffinityMatrixDf.new_df(2, fill=3)
         assert mx.flatten().tolist() == [3, 3, 3, 3]
+
+    def test_io(self):
+        matrix_type = MatrixDfBuilder("T").build()
+        df = pd.DataFrame([[11, 12], [21, 22]], columns=["b", "a"], index=["b", "a"])
+        df = matrix_type.convert(df)
+        for s in [".feather", ".snappy", ".csv.gz", ".tsv"]:
+            with tmpfile(s) as path:
+                df.write_file(path)
+                df2 = matrix_type.read_file(path)
+            assert df2.flatten().tolist() == [11, 12, 21, 22]
+
+    def test_shuffle(self):
+        matrix_type = MatrixDfBuilder("T").build()
+        df: MatrixDf = matrix_type.of([[11, 12], [21, 22]], columns=["b", "a"], index=["b", "a"])
+        for _ in range(10):
+            df2 = df.shuffle(rand=0)
+            assert df2.values.tolist() == [[21, 22], [12, 11]]
+        df2 = df.shuffle(rand=1)
+        assert df2.values.tolist() == [[22, 21], [11, 12]]
+        df2 = df.shuffle(rand=None)
+        assert len(df2.values.tolist()) == 2
 
 
 if __name__ == "__main__":

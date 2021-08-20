@@ -4,10 +4,18 @@ from typing import Set, Type
 
 import pandas as pd
 import pytest
+from typeddfs.utils import Utils
+
+from typeddfs.abs_dfs import AbsDf
 
 from typeddfs import BaseDf, TypedDf
 from typeddfs.builders import TypedDfBuilder
-from typeddfs.df_errors import FilenameSuffixError, NonStrColumnError, NotSingleColumnError
+from typeddfs.df_errors import (
+    FilenameSuffixError,
+    NonStrColumnError,
+    NotSingleColumnError,
+    FormatInsecureError,
+)
 from typeddfs.file_formats import DfFormatSupport, FileFormat
 
 from . import (
@@ -25,6 +33,7 @@ from . import (
     UntypedEmpty,
     logger,
     tmpfile,
+    tmpdir,
 )
 
 gen = random.SystemRandom()
@@ -64,7 +73,7 @@ def get_req_ext(txt: bool) -> Set[str]:
     return ne
 
 
-def get_actual_ext(cls) -> Set[str]:
+def get_actual_ext(cls: AbsDf) -> Set[str]:
     known_fmts = cls.can_read().intersection(cls.can_write())
     exclude_for_now = {".hdf", ".h5", ".hdf5"}
     known = set()
@@ -80,7 +89,7 @@ def rand_vals():
 
 def rand_df(t):
     if issubclass(t, TypedDf):
-        cols = set(t.required_index_names()).union(set(t.required_columns()))
+        cols = set(t.get_typing().required_index_names).union(set(t.get_typing().required_columns))
     else:
         cols = ["column"]
     if len(cols) == 0 and t != ActuallyEmpty and t != UntypedEmpty:
@@ -111,7 +120,7 @@ class TestReadWrite:
         self._test_great(Trivial)
 
     def test_actually_empty(self):
-        self._test_great(ActuallyEmpty)
+        self._test_great(ActuallyEmpty, lines_fail=True)
 
     def test_col1(self):
         self._test_great(Col1)
@@ -131,11 +140,15 @@ class TestReadWrite:
     def test_ind2_col2(self):
         self._test_great(Ind2Col2)
 
-    def _test_great(self, t: Type[BaseDf]):
+    def _test_great(self, t: Type[BaseDf], lines_fail: bool = False):
         for ext in get_actual_ext(t):
             try:
                 with tmpfile(ext) as path:
                     df = rand_df(t)
+                    if lines_fail and (".lines" in ext or ".txt" in ext or ".list" in ext):
+                        with pytest.raises(NotSingleColumnError):
+                            df.write_file(path)
+                        continue
                     df.write_file(path)
                     if path.suffix in [
                         ".xml",
@@ -272,6 +285,70 @@ class TestReadWrite:
             df.write_file(path)
             lines = path.read_text(encoding="utf8").splitlines()
             assert lines == ["x&y", "cat&dog"]
+
+    def test_no_overwrite(self):
+        t = TypedDfBuilder("a").reserve("x", "y").build()
+        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        with tmpfile(".csv") as path:
+            df.write_file(path, overwrite=False)
+            with pytest.raises(FileExistsError):
+                df.write_file(path, overwrite=False)
+
+    def test_mkdir(self):
+        t = TypedDfBuilder("a").reserve("x", "y").build()
+        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        with tmpdir() as path:
+            df.write_file(path / "a.csv", mkdirs=True)
+        with tmpdir() as path:
+            with pytest.raises(FileNotFoundError):
+                df.write_file(path / "b.csv")
+
+    def test_read_write_insecure(self):
+        t = TypedDfBuilder("a").secure().build()
+        df = t.new_df()
+        insecure = [f for f in FileFormat.list() if not f.is_secure]
+        for fmt in insecure:
+            for suffix in fmt.suffixes:
+                try:
+                    with tmpfile(suffix) as path:
+                        with pytest.raises(FormatInsecureError):
+                            t.read_file(path)
+                        with pytest.raises(FormatInsecureError):
+                            df.write_file(path)
+                except Exception:
+                    logger.error(f"Failed on suffix {suffix}")
+                    raise
+
+    def test_file_hash(self):
+        t = TypedDfBuilder("a").reserve("x", "y").build()
+        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        with tmpfile(".csv") as path:
+            df.write_file(path, file_hash=True)
+            hash_file = Utils.get_hash_file(path)
+            assert hash_file.exists()
+            got = Utils.parse_hash_file(hash_file)
+            assert list(got.keys()) == [path.resolve()]
+            expected = "7dc23a2d13ad8b8f41c5a49b6527015fe1f70e50067341b3e06991532aa85cdd"
+            assert got[path.resolve()] == expected
+            t.read_file(path, check_hash="file")
+            t.read_file(path, check_hash=expected)
+            t.read_file(path, check_hash=Utils.get_hash_file(path))
+
+    def test_dir_hash(self):
+        t = TypedDfBuilder("a").reserve("x", "y").build()
+        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
+        with tmpfile(".csv") as path:
+            hash_dir = Utils.get_hash_dir(path)
+            hash_dir.unlink(missing_ok=True)
+            df.write_file(path, dir_hash=True)
+            assert hash_dir.exists()
+            got = Utils.parse_hash_file(hash_dir)
+            assert list(got.keys()) == [path.resolve()]
+            expected = "e8669ac5eb6cfd83eb10349ddab2ec1aaffc45f9ede3d433fc4680e66c56772a"
+            assert got[path.resolve()] == expected
+            t.read_file(path, check_hash="dir")
+            t.read_file(path, check_hash=expected)
+            t.read_file(path, check_hash=Utils.get_hash_dir(path))
 
 
 if __name__ == "__main__":

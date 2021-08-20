@@ -8,7 +8,7 @@ import abc
 import csv
 import os
 from pathlib import Path, PurePath
-from typing import Any, Generator, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import pandas as pd
 
@@ -22,7 +22,9 @@ from typeddfs.df_errors import (
     NotSingleColumnError,
     ValueNotUniqueError,
     NoValueError,
+    FormatInsecureError,
 )
+from typeddfs.df_typing import DfTyping
 from typeddfs.file_formats import FileFormat
 from typeddfs.utils import Utils
 
@@ -31,116 +33,35 @@ _SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
 
 class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     """
-    A subclass of ``CoreDf`` that has new and overridden IO methods.
-    This includes:
-      - fixes to ``read_feather``, ``read_parquet``, and ``read_hdf``
-      - support for auto-conversion of columns/index frames, for ``TypedDf``
-        (which is a subclass of this class)
-      - new methods ``read_file``, ``write_file``, and ``pretty_print``.
+    An abstract DataFrame type with typing rules and IO methods.
+    The method :py.meth:`get_typing` contains a plethora of typing rules
+    that the type can choose how to (and whether to) enforce.
     """
 
     @classmethod
-    def remap_suffixes(cls) -> Mapping[str, FileFormat]:
+    def get_typing(cls) -> DfTyping:
         """
-        Returns filename formats that have been re-mapped to file formats.
-        These are used in ``read_file`` and ``write_file``.
-
-        Note:
-            This should rarely be needed.
-            An exception might be ``.txt`` to tsv rather than lines; Excel uses this.
+        Returns the info about how this DataFrame should be typed.
+        Note that not all info is necessarily applicable, or even enforced by this subclass.
         """
-        return {}
-
-    @classmethod
-    def text_encoding(cls) -> str:
-        """
-        Can be an exact encoding like utf-8, "platform", "utf8(bom)" or "utf16(bom)".
-        See the docs in ``TypedDfs.typed().encoding`` for details.
-        """
-        return "utf-8"
-
-    @classmethod
-    def read_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
-        """
-        Passes kwargs into read functions from ``read_file``.
-        These are keyword arguments that are automatically added into
-        specific ``read_`` methods when called by ``read_file``.
-
-        Note:
-            This should rarely be needed
-        """
-        return {}
-
-    @classmethod
-    def write_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
-        """
-        Passes kwargs into write functions from ``to_file``.
-        These are keyword arguments that are automatically added into
-        specific ``to_`` methods when called by ``write_file``.
-
-        Note:
-            This should rarely be needed
-        """
-        return {}
-
-    def write_file(self, path: Union[Path, str]):
-        """
-        Writes to a file (or possibly URL), guessing the format from the filename extension.
-        Delegates to the ``to_*`` functions of this class (e.g. ``to_csv``).
-        Only includes file formats that can be read back in with corresponding ``to`` methods,
-        and excludes pickle.
-
-        Supports:
-            - .csv, .tsv, or .tab (optionally with .gz, .zip, .bz2, or .xz)
-            - .json  (optionally with .gz, .zip, .bz2, or .xz)
-            - .feather
-            - .parquet or .snappy
-            - .h5 or .hdf
-            - .xlsx or .xls
-            - .txt, .lines, or .list (optionally with .gz, .zip, .bz2, or .xz);
-              see ``to_lines()``
-
-        Args:
-            path: Only path-like strings or pathlib objects are supported, not buffers
-                  (because we need a filename).
-
-        Returns:
-            Whatever the corresponding method on ``pd.to_*`` returns.
-            This is usually either str or None
-
-        Raises:
-            InvalidDfError: If the DataFrame is not valid for this type
-            ValueError: If the type of a column or index name is non-str
-        """
-        self._check(self)
-        types = set(self.column_names()).union(self.index_names())
-        if any((not isinstance(c, str) for c in types)):
-            raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
-        return self._call_write(path)
+        raise NotImplementedError()
 
     @classmethod
     def _check(cls, df) -> None:
         """
-        Should raise an ``InvalidDfError`` or subclass for issues.
+        Should raise an :py.class:`typeddfs.df_errors.InvalidDfError` or subclass for issues.
         """
-
-    def iter_row_col(self) -> Generator[Tuple[Tuple[int, int], Any], None, None]:
-        """
-        Iterates over ``((row, col), value)`` tuples.
-        The row and column are the row and column numbers, 1-indexed.
-        """
-        for row in range(len(self)):
-            for col in range(len(self.columns)):
-                yield (row, col), self.iat[row, col]
 
     def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
         """
-        Outputs a pretty table using the ``tabulate`` package.
+        Outputs a pretty table using the `tabulate <https://pypi.org/project/tabulate/>`_ package.
         """
         return self._tabulate(fmt, **kwargs)
 
     @classmethod
-    def read_file(cls, path: Union[Path, str]) -> __qualname__:
+    def read_file(
+        cls, path: Union[Path, str], check_hash: Union[None, bool, str, PurePath] = False
+    ) -> __qualname__:
         """
         Reads from a file (or possibly URL), guessing the format from the filename extension.
         Delegates to the ``read_*`` functions of this class.
@@ -166,21 +87,98 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
                   (because we need a filename).
+            check_hash: Require a hash file for the file or directory and make sure it matches.
+                        Must be one of these:
+                          - False / "no" -- do not check
+                          - True / "yes" -- check either a file hash or a dir hash
+                          - None -- Treat as "yes" if dictated by ``self.get_typing().io``
+                          - "file" -- check a file hash (ignoring the filename in the hash file)
+                          - "dir" -- check a dir hash (looking up the filename in the hash file)
+                          - str or Path (extant); a path to the hash file (does not check the filename)
+                          - str matching [A-Ha-h0-9]+; a hex-encoded digest
 
         Returns:
             An instance of this class
         """
+        path = Path(path)
+        cls._check_hash(path, check_hash)
         df = cls._call_read(cls, path)
         return cls._convert_typed(df)
+
+    def write_file(
+        self,
+        path: Union[Path, str],
+        overwrite: bool = True,
+        mkdirs: bool = False,
+        file_hash: Optional[bool] = None,
+        dir_hash: Optional[bool] = None,
+    ) -> Optional[str]:
+        """
+        Writes to a file (or possibly URL), guessing the format from the filename extension.
+        Delegates to the ``to_*`` functions of this class (e.g. ``to_csv``).
+        Only includes file formats that can be read back in with corresponding ``to`` methods,
+        and excludes pickle.
+
+        Supports:
+            - .csv, .tsv, or .tab (optionally with .gz, .zip, .bz2, or .xz)
+            - .json  (optionally with .gz, .zip, .bz2, or .xz)
+            - .feather
+            - .parquet or .snappy
+            - .h5 or .hdf
+            - .xlsx or .xls
+            - .txt, .lines, or .list (optionally with .gz, .zip, .bz2, or .xz);
+              see ``to_lines()``
+
+        Args:
+            path: Only path-like strings or pathlib objects are supported, not buffers
+                  (because we need a filename).
+            overwrite: If False, complain if the file already exists
+            mkdirs: Make the directory and parents if they do not exist
+            file_hash: Write a hash for this file.
+                       The filename will be path+"."+algorithm.
+                       If None, chooses according to ``self.get_typing().io.hash_file``.
+            dir_hash: Append a hash for this file into a list.
+                       The filename will be the directory name suffixed by the algorithm;
+                       (i.e. path.parent/(path.parent.name+"."+algorithm) ).
+                       If None, chooses according to ``self.get_typing().io.hash_dir``.
+
+        Returns:
+            Whatever the corresponding method on ``pd.to_*`` returns.
+            This is usually either str or None
+
+        Raises:
+            InvalidDfError: If the DataFrame is not valid for this type
+            ValueError: If the type of a column or index name is non-str
+        """
+        path = Path(path)
+        if path.exists() and not overwrite:
+            raise FileExistsError(f"File {path} already exists")
+        self._check(self)
+        types = set(self.column_names()).union(self.index_names())
+        if any((not isinstance(c, str) for c in types)):
+            raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
+        if mkdirs:
+            path.parent.mkdir(exist_ok=True, parents=True)
+        z = self._call_write(path)
+        file_hash = file_hash is True or file_hash is None and self.get_typing().io.file_hash
+        dir_hash = dir_hash is True or dir_hash is None and self.get_typing().io.dir_hash
+        Utils.add_any_hashes(
+            path,
+            to_file=file_hash,
+            to_dir=dir_hash,
+            algorithm=self.get_typing().io.hash_algorithm,
+            overwrite=overwrite,
+        )
+        return z
 
     @classmethod
     def can_read(cls) -> Set[FileFormat]:
         """
         Returns all formats that can be read using ``read_file``.
-        Some, such as hdf and Parquet (Snappy), are only included if their respective libraries
-        were imported (when typeddfs was imported).
+        Some depend on the availability of optional packages.
         The lines format (``.txt``, ``.lines``, etc.) is only included if
         this DataFrame *can* support only 1 column+index.
+        See :py.meth:`typeddfs.file_formats.FileFormat.can_read`.
         """
         return {
             f
@@ -192,10 +190,10 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def can_write(cls) -> Set[FileFormat]:
         """
         Returns all formats that can be written to using ``write_file``.
-        Some, such as hdf5 and Parquet are only included if their respective libraries
-        were imported (when typeddfs was imported).
+        Some depend on the availability of optional packages.
         The lines format (``.txt``, ``.lines``, etc.) is only included if
         this DataFrame type *can* support only 1 column+index.
+        See :py.meth:`typeddfs.file_formats.FileFormat.can_write`.
         """
         return {
             f
@@ -451,40 +449,74 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
     @classmethod
     def read_xlsx(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        """
+        Reads XLSX Excel files.
+        Prefer this method over :py.meth:`read_excel`.
+        """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
     def to_xlsx(self, excel_writer, *args, **kwargs) -> Optional[str]:
+        """
+        Writes XLSX Excel files.
+        Prefer this method over :py.meth:`write_excel`.
+        """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return self.to_excel(excel_writer, *args, **kwargs)
 
     @classmethod
     def read_xls(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        """
+        Reads legacy XLS Excel files.
+        Prefer this method over :py.meth:`read_excel`.
+        """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
     def to_xls(self, excel_writer, *args, **kwargs) -> Optional[str]:
+        """
+        Reads legacy XLS Excel files.
+        Prefer this method over :py.meth:`write_excel`.
+        """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return self.to_excel(excel_writer, *args, **kwargs, engine="openpyxl")
 
     @classmethod
     def read_xlsb(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        """
+        Reads XLSB Excel files.
+        This is a relatively uncommon format.
+        Prefer this method over :py.meth:`read_excel`.
+        """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
     def to_xlsb(self, excel_writer, *args, **kwargs) -> Optional[str]:
+        """
+        Writes XLSB Excel files.
+        This is a relatively uncommon format.
+        Prefer this method over :py.meth:`write_excel`.
+        """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return self.to_excel(excel_writer, *args, **kwargs)
 
     @classmethod
     def read_ods(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
+        """
+        Reads OpenDocument ODS/ODT files.
+        Prefer this method over :py.meth:`read_excel`.
+        """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
     def to_ods(self, ods_writer, *args, **kwargs) -> Optional[str]:
+        """
+        Writes OpenDocument ODS/ODT files.
+        Prefer this method over :py.meth:`write_excel`.
+        """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return self.to_excel(ods_writer, *args, **kwargs)
@@ -499,7 +531,6 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
     # noinspection PyFinal
     def to_pickle(self, path, *args, **kwargs) -> None:
-        """"""
         df = self.vanilla()
         return df.to_pickle(path, *args, **kwargs)
 
@@ -628,7 +659,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def read_tsv(cls, *args, **kwargs) -> __qualname__:
         """
         Reads tab-separated data.
-        See ``read_csv`` for more info.
+        See  :py.meth:`read_csv` for more info.
         """
         kwargs = {k: v for k, v in kwargs.items() if k != "sep"}
         return cls.read_csv(*args, sep="\t", **kwargs)
@@ -667,48 +698,23 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def to_tsv(self, *args, **kwargs) -> Optional[str]:
         """
         Writes tab-separated data.
-        See ``to_csv`` for more info.
+        See :py.meth:`to_csv` for more info.
         """
         return self.to_csv(*args, sep="\t", **kwargs)
 
     # noinspection PyFinal
     def to_csv(self, *args, **kwargs) -> Optional[str]:
-        """
-        Writes to CSV.
-        Using to_csv() and read_csv() from BaseFrame, this property holds::
-
-            df.to_csv(path)
-            df.__class__.read_csv(path) == df
-
-        Passing ``index`` on ``to_csv`` or ``index_col`` on ``read_csv``
-        explicitly will break this invariant.
-
-        Args:
-            args: Passed to ``pd.read_csv``; should start with a path or buffer
-            kwargs: Passed to ``pd.read_csv``.
-        """
         kwargs = dict(kwargs)
         kwargs.setdefault("index", False)
         df = self.vanilla_reset()
         return df.to_csv(*args, **kwargs)
 
     @classmethod
-    def read_hdf(cls, *args, key: str = "df", **kwargs) -> __qualname__:  # pragma: no cover
-        """
-        Reads from HDF with ``key`` as the default, converting to this type.
-
-        Args:
-            args: Passed; especially use ``path_or_buf``
-            key: The HDF store key
-            **kwargs: Passed to ``pd.DataFrame.to_hdf``
-
-        Returns:
-            A new instance of this class
-
-        Raises:
-            ImportError: If the ``tables`` package (pytables) is not available
-            OSError: Likely for some HDF5 configurations
-        """
+    def read_hdf(
+        cls, *args, key: Optional[str] = None, **kwargs
+    ) -> __qualname__:  # pragma: no cover
+        if key is None:
+            key = cls.get_typing().io.hdf_key
         try:
             df = pd.read_hdf(*args, key=key, **kwargs)
         except pd.errors.EmptyDataError:
@@ -718,6 +724,22 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def to_html(self, *args, **kwargs) -> Optional[str]:
         df = self.vanilla_reset()
         return df.to_html(*args, **kwargs)
+
+    def to_rst(
+        self, path_or_none: Optional[PathLike], style: str = "simple", mode: str = "w"
+    ) -> Optional[str]:
+        """
+        Writes a reStructuredText table.
+        Args:
+            path_or_none: Either a file path or ``None`` to return the string
+            style: The type of table; currently only "simple" is supported
+            mode: Write mode
+        """
+        txt = self._tabulate(fmt="rst") + "\n"
+        return Utils.write(path_or_none, txt, mode=mode)
+
+    def to_markdown(self, *args, **kwargs) -> Optional[str]:
+        return super().to_markdown(*args, **kwargs)
 
     @classmethod
     def read_html(cls, path: PathLike, *args, **kwargs) -> __qualname__:
@@ -743,24 +765,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return cls._convert_typed(df)
 
     # noinspection PyBroadException,PyFinal,DuplicatedCode
-    def to_hdf(self, path: PathLike, key: str = "df", **kwargs) -> None:  # pragma: no cover
-        """
-        Writes to HDF with ``key`` as the default. Calling pd.to_hdf on this would error.
-
-        Note:
-            This handles an edge case in vanilla ``pd.DataFrame.to_hdf``
-            that results in 0-byte files being written on error.
-            Those empty files are deleted if they're created and didn't already exist.
-
-        Args:
-            path: A ``pathlib.Path`` or str value
-            key: The HDF store key
-            **kwargs: Passed to ``pd.DataFrame.to_hdf``
-
-        Raises:
-            ImportError: If the ``tables`` package (pytables) is not available
-            OSError: Likely for some HDF5 configurations
-        """
+    def to_hdf(
+        self, path: PathLike, key: Optional[str] = None, **kwargs
+    ) -> None:  # pragma: no cover
         path = Path(path)
         # if an error occurs you end up with a 0-byte file
         # delete it if and only if we CREATED an empty file --
@@ -772,6 +779,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         # if it isn't readable now but becomes readable (and writable) by the time
         # we try to write, then we delete it anyway
         # that's a super unlikely bug and shouldn't matter anyway
+        if key is None:
+            key = self.__class__.get_typing().io.hdf_key
         try:
             old_size = os.path.getsize(path)
         except BaseException:
@@ -802,9 +811,12 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         clazz,
         path: Union[Path, str],
     ) -> pd.DataFrame:
+        t = cls.get_typing().io
         mp = FileFormat.suffix_map()
-        mp.update(cls.remap_suffixes())
+        mp.update(t.remap_suffixes)
         fmt = FileFormat.from_path(path, format_map=mp)
+        if t.secure and not fmt.is_secure:
+            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
         fn_name = "read_" + fmt.name
         kwargs = cls._get_read_kwargs(fmt)
         fn = getattr(clazz, fn_name)
@@ -815,9 +827,12 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         path: Union[Path, str],
     ) -> Optional[str]:
         cls = self.__class__
+        t = cls.get_typing().io
         mp = FileFormat.suffix_map()
-        mp.update(cls.remap_suffixes())
+        mp.update(t.remap_suffixes)
         fmt = FileFormat.from_path(path, format_map=mp)
+        if t.secure and not fmt.is_secure:
+            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
         fn_name = "to_" + fmt.name
         kwargs = cls._get_write_kwargs(fmt)
         fn = getattr(self, fn_name)
@@ -825,7 +840,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
     @classmethod
     def _get_read_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
-        kwargs = (cls.read_kwargs()).get(fmt, {})
+        t = cls.get_typing().io
+        kwargs = t.read_kwargs.get(fmt, {})
         if fmt in [
             FileFormat.csv,
             FileFormat.csv,
@@ -833,24 +849,36 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             FileFormat.flexwf,
             FileFormat.fwf,
         ]:
-            encoding = kwargs.get("encoding", cls.text_encoding())
+            encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
 
     @classmethod
+    def _check_hash(cls, path: Path, check_hash: Union[None, bool, str, PurePath]):
+        t = cls.get_typing().io
+        if check_hash is None and t.file_hash:
+            check_hash = "file"
+        elif check_hash is None and t.dir_hash:
+            check_hash = "dir"
+        elif check_hash is None:
+            check_hash = "no"
+        Utils.verify_any_hash(path, check_hash, algorithm=t.hash_algorithm)
+
+    @classmethod
     def _get_write_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
-        kwargs = (cls.write_kwargs()).get(fmt, {})
+        t = cls.get_typing().io
+        kwargs = t.write_kwargs.get(fmt, {})
         if fmt is FileFormat.json:
             # TODO: not perfect
-            kwargs["force_ascii"] = "utf" not in cls.text_encoding()
+            kwargs["force_ascii"] = False  # "utf" not in t.text_encoding
         elif fmt.supports_encoding:
-            encoding = kwargs.get("encoding", cls.text_encoding())
+            encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
 
     @classmethod
     def _lines_files_apply(cls) -> bool:
-        return True
+        return len(cls.get_typing().required_names) <= 1
 
 
 __all__ = ["AbsDf"]

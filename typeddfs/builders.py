@@ -6,19 +6,20 @@ from __future__ import annotations
 import logging
 import os
 from collections import defaultdict
-from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Sequence, Type, Union
 
 import pandas as pd
+from typeddfs.utils import Utils
 
 from typeddfs.base_dfs import BaseDf
-from typeddfs.df_errors import ClashError
+from typeddfs.df_errors import ClashError, FormatInsecureError
+from typeddfs.df_typing import DfTyping, IoTyping
 from typeddfs.file_formats import FileFormat
 from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
 from typeddfs.typed_dfs import TypedDf
+from typeddfs._utils import _AUTO_DROPPED_NAMES, _FORBIDDEN_NAMES, _DEFAULT_HASH_ALG
 
-logger = logging.getLogger(Path(__file__).parent.name)
-T = TypeVar("T", bound=MatrixDf, covariant=True)
+logger = logging.getLogger("typeddfs")
 
 
 class _GenericBuilder:
@@ -43,6 +44,21 @@ class _GenericBuilder:
         self._classmethods = {}
         self._post_processing = None
         self._verifications = []
+        self._req_meta = []
+        self._res_meta = []
+        self._req_cols = []
+        self._res_cols = []
+        self._dtypes = {}
+        self._value_dtype = None
+        self._drop = []
+        self._strict_meta = False
+        self._strict_cols = False
+        self._hash_alg = _DEFAULT_HASH_ALG
+        self._hash_file = False
+        self._hash_dir = False
+        self._index_series_name = False
+        self._column_series_name = False
+        self._secure = False
         # use utf-8 by default
         self.encoding()
         # make these use an explicit version
@@ -50,17 +66,38 @@ class _GenericBuilder:
         self.add_read_kwargs("pickle", protocol=5)
         self.add_write_kwargs("pickle", protocol=5)
 
-    def subclass(self, clazz: T) -> __qualname__:
-        self._clazz = clazz
+    def series_names(
+        self, index: Union[None, bool, str] = False, columns: Union[None, bool, str] = False
+    ) -> __qualname__:
+        """
+        Sets ``pd.DataFrame.index.name`` and/or ``pd.DataFrame.columns.name``.
+        Valid values are ``False`` to not set (default), ``None`` to set to ``None``,
+        or a string to set to.
+
+        Returns:
+            This builder for chaining
+        """
+        self._index_series_name = index
+        self._column_series_name = columns
         return self
 
-    def add_methods(self, **kwargs: Callable[[BaseDf, ...], Any]) -> __qualname__:
+    def add_methods(
+        self, *args: Callable[[BaseDf, ...], Any], **kwargs: Callable[[BaseDf, ...], Any]
+    ) -> __qualname__:
         """
         Attaches methods to the class.
 
+        Args:
+            args: Functions whose names are used directly
+            kwargs: Mapping from function names to functions (the keys will be the method names)
+
         Example:
             add_methods(summary=lambda df: f"{len(df) rows")
+
+        Returns:
+            This builder for chaining
         """
+        self._methods.update({m.__name__: m for m in args})
         self._methods.update(**kwargs)
         return self
 
@@ -71,8 +108,39 @@ class _GenericBuilder:
 
         Example:
             add_classmethods(flat_instance=lambda t, value: MyClass(value))
+
+        Returns:
+            This builder for chaining
         """
         self._classmethods.update(**kwargs)
+        return self
+
+    def post(self, fn: Callable[[BaseDf], BaseDf]) -> __qualname__:
+        """
+        Adds a method that is called on the converted DataFrame.
+        It is called immediately before final optional conditions (``verify``) are checked.
+        The function must return a new DataFrame.
+
+        Returns:
+            This builder for chaining
+        """
+        self._post_processing = fn
+        return self
+
+    def verify(self, *conditions: Callable[[pd.DataFrame], Optional[str, bool]]) -> __qualname__:
+        """
+        Adds additional requirement(s) for the DataFrames.
+
+        Returns:
+            this builder for chaining
+
+        Args:
+            conditions: Functions of the DataFrame that return None if the condition is met, or an error message
+
+        Returns:
+            This builder for chaining
+        """
+        self._verifications.extend(conditions)
         return self
 
     def remap_suffixes(self, **kwargs) -> __qualname__:
@@ -84,11 +152,53 @@ class _GenericBuilder:
             kwargs: Pairs of (suffix, format); e.g. remap_suffixes(commas="csv")
                     These must be names recognized in ``FileFormat``;
                     See that enum for the list of formats.
+
+        Returns:
+            This builder for chaining
         """
         for suffix, fmt in kwargs.items():
             fmt = FileFormat.of(fmt)
             for s in fmt.compressed_variants(suffix):
                 self._remapped_suffixes[s] = fmt
+        return self
+
+    def hash(self, alg: str = "sha256", file: bool = True, directory: bool = False) -> __qualname__:
+        """
+        Write a hash file (e.g. .sha256) alongside files.
+        Performed when calling :py.meth:`typeddfs.abs_dfs.AbsDf.write_file`.
+        The hash files will be in the `sha1sum <https://en.wikipedia.org/wiki/Sha1sum>`_ format,
+        with a the filename, followed by ``" *"``, followed by the filename.
+
+        Note that this affects the default behavior of :py.meth:`typeddfs.abs_dfs.AbsDf.write_file`,
+        which can be called with ``file_hash=False`` and/or ``dir_hash=False``.
+
+        Args:
+            alg: The name of the algorithm in :py:mod:`hashlib`;
+                 The final name will ignore any hyphens and be converted to lowercase,
+                 and the suffix will be ``"." + alg``.
+            file: Alongside a file ``"my_file.csv.gz"``,
+                  write a file ``"my_file.csv.gz."+alg`` alongside.
+            directory: Alongside a file ``"my_file.csv.gz"`` in ``"my_dir"``,
+                       append to a file ``"my_dir/my_dir"+alg``,
+                       which presumably should contain hashes for files in that directory.
+
+        Returns:
+            This builder for chaining
+        """
+        self._hash_alg = Utils.get_algorithm(alg)
+        self._hash_file = file
+        self._hash_dir = directory
+        return self
+
+    def secure(self) -> __qualname__:
+        """
+        Bans IO with insecure formats.
+        This includes Pickle and Excel formats that support macros.
+
+        Returns:
+            This builder for chaining
+        """
+        self._secure = True
         return self
 
     def encoding(self, encoding: str = "utf8") -> __qualname__:
@@ -107,6 +217,9 @@ class _GenericBuilder:
                       If ``utf8(bom)``, will use utf-8-sig if the platform is Windows ('nt').
                       Some applications will otherwise assume the default encoding (and break).
                       (Note: ``utf16(bom)`` will also work.)
+
+        Returns:
+            This builder for chaining
         """
         encoding = encoding.lower().replace("-", "")
         self._encoding = encoding
@@ -116,6 +229,9 @@ class _GenericBuilder:
         r"""
         Set the newline character for line-based text formats.
         Consider setting to ``\n`` explicitly.
+
+        Returns:
+            This builder for chaining
         """
         for fn in ["csv", "tsv", "flexwf", "lines"]:
             fn = FileFormat.of(fn)
@@ -133,7 +249,7 @@ class _GenericBuilder:
             kwargs: key-value pairs that are used for the specified format
 
         Returns:
-            this builder for chaining
+            This builder for chaining
         """
         fmt = FileFormat.of(fmt)
         for k, v in kwargs.items():
@@ -155,102 +271,166 @@ class _GenericBuilder:
             kwargs: key-value pairs that are used for the specified format
 
         Returns:
-            this builder for chaining
+            This builder for chaining
         """
         fmt = FileFormat.of(fmt)
         for k, v in kwargs.items():
             self._write_kwargs[fmt][k] = v
         return self
 
-    def post(self, fn: Callable[[BaseDf], BaseDf]) -> __qualname__:
-        """
-        Adds a method that is called on the converted DataFrame.
-        It is called immediately before final optional conditions (``verify``) are checked.
-        The function must return a new DataFrame.
+    def _build(self) -> Type[BaseDf]:
+        if self._secure and self._hash_alg in Utils.insecure_hash_functions():
+            raise FormatInsecureError(f"Hash algorithm {self._hash_alg} forbidden by .secure()")
+        self._check_final()
 
-        Returns:
-            this builder for chaining
-        """
-        self._post_processing = fn
-        return self
+        _io_typing = IoTyping(
+            _remap_suffixes=dict(self._remapped_suffixes),
+            _text_encoding=self._encoding,
+            _read_kwargs=dict(self._read_kwargs),
+            _write_kwargs=dict(self._write_kwargs),
+            _hash_alg=self._hash_alg,
+            _save_hash_file=self._hash_file,
+            _save_hash_dir=self._hash_dir,
+            _secure=self._secure,
+        )
 
-    def verify(self, *conditions: Callable[[pd.DataFrame], Optional[str, bool]]) -> __qualname__:
-        """
-        Adds additional requirement(s) for the DataFrames.
+        _typing = DfTyping(
+            _io_typing=_io_typing,
+            _auto_dtypes=dict(self._dtypes),
+            _post_processing=self._post_processing,
+            _verifications=self._verifications,
+            _more_index_names_allowed=not self._strict_meta,
+            _more_columns_allowed=not self._strict_cols,
+            _required_columns=list(self._req_cols),
+            _required_index_names=list(self._req_meta),
+            _reserved_columns=list(self._res_cols),
+            _reserved_index_names=list(self._res_meta),
+            _columns_to_drop=set(self._drop),
+            _index_series_name=self._index_series_name,
+            _column_series_name=self._column_series_name,
+            _value_dtype=self._value_dtype,
+        )
 
-        Returns:
-            this builder for chaining
+        class New(self._clazz):
+            @classmethod
+            def get_typing(cls) -> DfTyping:
+                return _typing
 
-        Args:
-            conditions: Functions of the DataFrame that return None if the condition is met, or an error message
-        """
-        self._verifications.extend(conditions)
-        return self
-
-    def build(self) -> Type[T]:
-        new = self._generate()
-        new.__name__ = self._name
-        new.__doc__ = self._doc
+        New.__name__ = self._name
+        New.__doc__ = self._doc
         for k, v in self._methods.items():
-            setattr(new, k, v)
+            setattr(New, k, v)
         for k, v in self._classmethods.items():
-            setattr(new, k, classmethod(v))
-        return new
+            setattr(New, k, classmethod(v))
+        return New
 
-    def _generate(self) -> Type[T]:
+    def _check_final(self) -> None:
         raise NotImplementedError()
 
 
 class MatrixDfBuilder(_GenericBuilder):
-    """"""
+    """
+    A builder pattern for :py.class:`typeddfs.matrix_dfs.MatrixDf`.
+    """
 
     def __init__(self, name: str, doc: Optional[str] = None):
         super().__init__(name, doc)
-        self._strict = True  # can't change, currently
-        self._dtype = None
         self._clazz = MatrixDf
+        self._index_series_name = "row"
+        self._column_series_name = "column"
+        self._req_meta.append("row")
 
-    def dtype(self, dt: Type[Any]) -> __qualname__:
-        self._dtype = dt
+    def build(self) -> Type[MatrixDf]:
+        """
+        Builds this type.
+
+        Returns:
+            A newly created subclass of :py.class:`typeddfs.matrix_dfs.MatrixDf`.
+
+        Raises:
+            ClashError: If there is a contradiction in the specification
+            FormatInsecureError: If :py.meth:`hash` set an insecure
+                                 hash format and :py.meth:`secure` was set.
+
+        .. note ::
+
+            Copies, so this builder can be used to create more types without interference.
+        """
+        # self.add_read_kwargs(FileFormat.csv, index_col=0)
+        # self.add_read_kwargs(FileFormat.tsv, index_col=0)
+        # noinspection PyTypeChecker
+        return self._build()
+
+    def subclass(self, clazz: Type[MatrixDf]) -> __qualname__:
+        """
+        Make the type subclass some subclass of :py.class:`typeddfs.matrix_dfs.MatrixDf`.
+
+        Returns:
+            This builder for chaining
+
+        Raises:
+            ValueError: If ``clazz`` is not a subclass of ``MatrixDf``.
+        """
+        if not issubclass(clazz, MatrixDf):
+            raise ValueError(f"{clazz.__name__} is not a subclass of {MatrixDf.__name__}")
+        self._clazz = clazz
         return self
 
-    def _generate(self) -> T:
-        class New(self._clazz):
-            @classmethod
-            def text_encoding(cls) -> str:
-                return self._encoding
+    def dtype(self, dt: Type[Any]) -> __qualname__:
+        self._value_dtype = dt
+        return self
 
-            @classmethod
-            def is_strict(cls) -> bool:
-                return self._strict
-
-            @classmethod
-            def required_dtype(cls) -> bool:
-                return self._dtype
-
-            @classmethod
-            def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
-                return self._post_processing
-
-            @classmethod
-            def verifications(cls) -> Sequence[Callable[[pd.DataFrame], Optional[str]]]:
-                return list(self._verifications)
-
-        # noinspection PyTypeChecker
-        return New
+    def _check_final(self) -> None:
+        pass
 
 
 class AffinityMatrixDfBuilder(MatrixDfBuilder):
-    """"""
+    """
+    A builder pattern for :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
+    """
 
     def __init__(self, name: str, doc: Optional[str] = None):
         super().__init__(name, doc)
         self._clazz = AffinityMatrixDf
 
+    def build(self) -> Type[AffinityMatrixDf]:
+        """
+        Builds this type.
+
+        Returns:
+            A newly created subclass of :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
+
+        Raises:
+            typeddfs.df_errors.ClashError: If there is a contradiction in the specification
+            typeddfs.df_errors.FormatInsecureError: If :py.meth:`hash` set an insecure
+                                                    hash format and :py.meth:`secure` was set.
+
+        .. note ::
+
+            Copies, so this builder can be used to create more types without interference.
+        """
+        # noinspection PyTypeChecker
+        return self._build()
+
+    def subclass(self, clazz: Type[AffinityMatrixDf]) -> __qualname__:
+        """
+        Make the type subclass some subclass of :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
+
+        Returns:
+            This builder for chaining
+
+        Raises:
+            ValueError: If ``clazz`` is not a subclass of ``AffinityMatrixDf``.
+        """
+        if not issubclass(clazz, AffinityMatrixDf):
+            raise ValueError(f"{clazz.__name__} is not a subclass of {AffinityMatrixDf.__name__}")
+        self._clazz = clazz
+        return self
+
 
 class TypedDfBuilder(_GenericBuilder):
     """
-    A builder pattern for ``TypedDf``.
+    A builder pattern for :py.class:`typeddfs.typed_dfs.TypedDf`.
 
     Example:
         TypedDfBuilder.typed().require("name").build()
@@ -259,14 +439,40 @@ class TypedDfBuilder(_GenericBuilder):
     def __init__(self, name: str, doc: Optional[str] = None):
         super().__init__(name, doc)
         self._clazz = TypedDf
-        self._req_meta = []
-        self._res_meta = []
-        self._req_cols = []
-        self._res_cols = []
-        self._dtypes = {}
-        self._drop = []
-        self._strict_meta = False
-        self._strict_cols = False
+
+    def build(self) -> Type[TypedDf]:
+        """
+        Builds this type.
+
+        Returns:
+            A newly created subclass of :py.class:`typeddfs.typed_dfs.TypedDf`.
+
+        Raises:
+            ClashError: If there is a contradiction in the specification
+            FormatInsecureError: If :py.meth:`hash` set an insecure
+                                 hash format and :py.meth:`secure` was set.
+
+        .. note ::
+
+            Copies, so this builder can be used to create more types without interference.
+        """
+        # noinspection PyTypeChecker
+        return self._build()
+
+    def subclass(self, clazz: Type[TypedDf]) -> __qualname__:
+        """
+        Make the type subclass some subclass of :py.class:`typeddfs.typed_dfs.TypedDf`.
+
+        Returns:
+            This builder for chaining
+
+        Raises:
+            ValueError: If ``clazz`` is not a subclass of ``TypedDf``.
+        """
+        if not issubclass(clazz, TypedDf):
+            raise ValueError(f"{clazz.__name__} is not a subclass of {TypedDf.__name__}")
+        self._clazz = clazz
+        return self
 
     def require(
         self, *names: str, dtype: Optional[Type] = None, index: bool = False
@@ -281,10 +487,10 @@ class TypedDfBuilder(_GenericBuilder):
             index: If True, put these in the index
 
         Returns:
-            this builder for chaining
+            This builder for chaining
 
         Raises:
-            ValueError: If a name was already added, or is "level_0" or "index"
+            typeddfs.df_errors.ClashError: If a name was already added or is forbidden
         """
         self._check(names)
         if index:
@@ -308,14 +514,13 @@ class TypedDfBuilder(_GenericBuilder):
         Args:
             names: A varargs list of columns or index names
             dtype: An automatically applied transformation of the column values using ``.astype``
-                   THIS PARAMETER IS **NOT IMPLEMENTED YET**
             index: If True, put these in the index
 
         Returns:
-            this builder for chaining
+            This builder for chaining
 
         Raises:
-            ValueError: If a name was already added, or is "level_0" or "index"
+            typeddfs.df_errors.ClashError: If a name was already added or is forbidden
         """
         self._check(names)
         if index:
@@ -329,13 +534,13 @@ class TypedDfBuilder(_GenericBuilder):
 
     def drop(self, *names: str) -> __qualname__:
         """
-        Adds columns (and index names) that should be automatically dropped when calling ``convert``.
+        Adds columns (and index names) that should be automatically dropped.
 
         Args:
             names: Varargs list of names
 
         Returns:
-            this builder for chaining
+            This builder for chaining
         """
         self._drop.extend(names)
         return self
@@ -349,13 +554,13 @@ class TypedDfBuilder(_GenericBuilder):
             cols: Disallow additional columns
 
         Returns:
-            this builder for chaining
+            This builder for chaining
         """
         self._strict_meta = index
         self._strict_cols = cols
         return self
 
-    def _generate(self) -> Type[TypedDf]:
+    def _check_final(self) -> None:
         """
         Final method in the chain.
         Creates a new subclass of ``TypedDf``.
@@ -364,7 +569,7 @@ class TypedDfBuilder(_GenericBuilder):
             The new class
 
         Raises:
-            ClashError: If there is a contradiction in the specification
+            typeddfs.df_errors.ClashError: If there is a contradiction in the specification
         """
         all_names = [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]
         problem_names = [name for name in all_names if name in self._drop]
@@ -373,74 +578,11 @@ class TypedDfBuilder(_GenericBuilder):
                 f"Required/reserved column/index names {problem_names} are auto-dropped"
             )
 
-        class New(TypedDf):
-            @classmethod
-            def auto_dtypes(cls) -> Mapping[str, Type[Any]]:
-                return dict(self._dtypes)
-
-            @classmethod
-            def post_processing(cls) -> Optional[Callable[[BaseDf], Optional[BaseDf]]]:
-                return self._post_processing
-
-            @classmethod
-            def verifications(cls) -> Sequence[Callable[[pd.DataFrame], Optional[str]]]:
-                return list(self._verifications)
-
-            @classmethod
-            def more_indices_allowed(cls) -> bool:
-                return not self._strict_meta
-
-            @classmethod
-            def more_columns_allowed(cls) -> bool:
-                return not self._strict_cols
-
-            @classmethod
-            def required_columns(cls) -> Sequence[str]:
-                return self._req_cols
-
-            @classmethod
-            def reserved_columns(cls) -> Sequence[str]:
-                return list(self._res_cols)
-
-            @classmethod
-            def reserved_index_names(cls) -> Sequence[str]:
-                return list(self._res_meta)
-
-            @classmethod
-            def required_index_names(cls) -> Sequence[str]:
-                return list(self._req_meta)
-
-            @classmethod
-            def columns_to_drop(cls) -> Sequence[str]:
-                return list(self._drop)
-
-            @classmethod
-            def remap_suffixes(cls) -> Mapping[str, FileFormat]:
-                return dict(self._remapped_suffixes)
-
-            @classmethod
-            def text_encoding(cls) -> str:
-                return self._encoding
-
-            @classmethod
-            def read_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
-                return {k: dict(v) for k, v in self._read_kwargs.items()}
-
-            @classmethod
-            def write_kwargs(cls) -> Mapping[FileFormat, Mapping[str, Any]]:
-                return {k: dict(v) for k, v in self._write_kwargs.items()}
-
-        return New
-
     def _check(self, names: Sequence[str]) -> None:
-        if any([name in {"index", "level_0", "Unnamed: 0"} for name in names]):
-            raise ClashError("Columns 'index', 'level_0', and 'Unnamed: 0' are auto-dropped")
-        if any(
-            [name in {"__xml_is_empty_", "__xml_index_", "__feather_ignore_"} for name in names]
-        ):
-            raise ClashError(
-                "__xml_is_empty_, __xml_index_, and __feather_ignore_ are forbidden names"
-            )
+        if any([name in _AUTO_DROPPED_NAMES for name in names]):
+            raise ClashError(f"Columns {','.join(_AUTO_DROPPED_NAMES)} are auto-dropped")
+        if any([name in _FORBIDDEN_NAMES for name in names]):
+            raise ClashError(f"{','.join(_FORBIDDEN_NAMES)} are forbidden names")
         for name in names:
             if name in [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]:
                 raise ClashError(f"Column {name} for {self._name} already exists")

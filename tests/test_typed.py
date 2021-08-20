@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from typeddfs.abs_df import AbsDf
+from typeddfs.abs_dfs import AbsDf
 from typeddfs.untyped_dfs import UntypedDf
 
 from . import (
@@ -110,20 +110,14 @@ class TestTyped:
         assert df.index_names() == []
 
     def test_known_names(self):
-        assert Ind1Col1.known_names() == ["qqq", "abc"]
-        assert Ind2Col2.known_names() == ["qqq", "rrr", "abc", "xyz"]
+        assert Ind1Col1.get_typing().known_names == ["qqq", "abc"]
+        assert Ind2Col2.get_typing().known_names == ["qqq", "rrr", "abc", "xyz"]
 
     def test_column_names(self):
         df = Trivial(sample_data())
         # df.columns == [...] would fail because it would resolve to array==array, which is ambiguous
         assert isinstance(df.column_names(), list)
         assert df.column_names() == ["abc", "123", "xyz"]
-
-    def test_isvalid(self):
-        df = pd.DataFrame(sample_data())
-        assert not Ind2.is_valid(df)
-        df = df.set_index(["abc", "xyz"])
-        assert Ind2.is_valid(df)
 
     def test_new(self):
         df = Ind2.new_df()

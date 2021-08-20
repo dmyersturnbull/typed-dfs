@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from typeddfs.utils import Utils
+from typeddfs.utils import Utils, TableFormat
 
 
 class TestUtils:
@@ -17,6 +17,12 @@ class TestUtils:
         formats = list(Utils.table_formats())
         assert len(formats) > 10
         assert "simple" in formats
+        x = Utils.table_format("simple")
+        assert isinstance(x, TableFormat)
+
+    def test_basic(self):
+        assert "sha1" in Utils.insecure_hash_functions()
+        assert "__xml_index_" in Utils.banned_names()
 
 
 if __name__ == "__main__":

@@ -37,8 +37,13 @@ class TypedDfs:
     """
     The only thing you need to import from ``typeddfs``.
 
-    Contains the ``typed()`` and ``untyped()`` static functions, which build new classes.
-    Also contains specific exception types used by typeddfs, such as ``InvalidDfError`` and ``MissingColumnError``.
+    Contains static factory methods to build new DataFrame subclasses.
+    In particular, see::
+
+      - :py.meth:`typed`
+      - :py.meth:`untyped`
+      - :py.meth:`matrix`
+      - :py.meth:`affinity_matrix`
     """
 
     NoValueError = NoValueError
@@ -95,15 +100,15 @@ class TypedDfs:
     @classmethod
     def typed(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
         """
-        Creates a new builder (builder pattern) for a ``TypedDf``.
-        The final class will enforce constraints.
+        Creates a new type with flexible requirements.
+        The class will enforce contstraints and subclass :py.class:`typeddfs.typed_dfs.TypedDf`.
 
         Args:
             name: The name that will be used for the new class
             doc: The docstring for the new class
 
         Returns:
-            A builder pattern, to be used with chained calls
+            A builder instance (builder pattern) to be used with chained calls
 
         Example:
             TypedDfs.typed("MyClass").require("name", index=True).build()
@@ -113,22 +118,28 @@ class TypedDfs:
     @classmethod
     def matrix(cls, name: str, doc: Optional[str] = None) -> MatrixDfBuilder:
         """
-        Creates a new subclass of an ``MatrixDf``.
+        Creates a new subclass of an :py.class:`typeddfs.matrix_dfs.MatrixDf`.
 
         Args:
             name: The name that will be used for the new class
             doc: The docstring for the new class
+
+        Returns:
+            A builder instance (builder pattern) to be used with chained calls
         """
         return MatrixDfBuilder(name, doc)
 
     @classmethod
     def affinity_matrix(cls, name: str, doc: Optional[str] = None) -> AffinityMatrixDfBuilder:
         """
-        Creates a new subclass of an ``AffinityMatrixDf``.
+        Creates a new subclass of an :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
 
         Args:
             name: The name that will be used for the new class
             doc: The docstring for the new class
+
+        Returns:
+            A builder instance (builder pattern) to be used with chained calls
         """
         return AffinityMatrixDfBuilder(name, doc)
 
@@ -136,10 +147,9 @@ class TypedDfs:
     def untyped(cls, name: str, doc: Optional[str] = None) -> Type[UntypedDf]:
         """
         Creates a new subclass of ``UntypedDf``.
-        The returned class will NOT enforce any constraints,
-        but it will have some convenient methods.
-        In general ``typed`` should be preferred because it has more consistent behavior,
-        especially for reading and writing.
+        The returned class will not enforce constraints but will have some extra methods.
+        In general :py.meth:`typed` should be preferred because it has more consistent behavior,
+        especially for IO.
 
         Args:
             name: The name that will be used for the new class
