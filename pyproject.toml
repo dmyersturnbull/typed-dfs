@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.10.1"
+version = "0.10.2"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -94,7 +94,7 @@ tabulate                 = "^0.8"
 wcwidth                  = ">=0.2"
 pyarrow                  = {version=">=4", optional=true}
 #fastparquet              = {version="^0.6", optional=true}
-tables                   = {version=">=3", optional=true}
+#tables                   = {version=">=3", optional=true}
 lxml                     = {version=">=4", optional=true}
 openpyxl                 = {version=">=3", optional=true}
 pyxlsb                   = {version=">=1", optional=true}
