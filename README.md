@@ -159,12 +159,14 @@ to ensure that those packages are installed with compatible versions.
 - To install with [Feather](https://arrow.apache.org/docs/python/feather.html) support,
   use `pip install typeddfs[feather]`.
 - To install with support for all formats,
-  use `pip install typeddfs[feather,fwf,xml,xlsx,xls,ods,xlsb` and `pip install tables`.
+  use `pip install typeddfs[all]`.
 
 Feather offers massively better performance over CSV, gzipped CSV, and HDF5
 in read speed, write speed, memory overhead, and compression ratios.
 Parquet typically results in smaller file sizes than Feather at some cost in speed.
 Feather is the preferred format for most cases.
+
+### 📊 Serialization in-depth
 
 **⚠ Note:** The `hdf5` extra is currently disabled.
 
@@ -212,7 +214,7 @@ Refer to the [security policy](https://github.com/dmyersturnbull/typed-dfs/blob/
 
 Dependencies in the extras are only restricted to minimum version numbers;
 libraries that use them can set their own version ranges.
-For example, typed-dfs only requires pyarrow >= 0.4, but Pandas can further restrict it.
+For example, typed-dfs only requires tables >= 0.4, but Pandas can further restrict it.
 [natsort](https://github.com/SethMMorton/natsort) is also only assigned a minimum version number;
 this is because it receives frequent major version bumps.
 This means that the result of typed-df’s `sort_natural` could change.

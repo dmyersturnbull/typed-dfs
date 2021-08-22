@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.10.0"
+version = "0.10.1"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -94,11 +94,9 @@ tabulate                 = "^0.8"
 wcwidth                  = ">=0.2"
 pyarrow                  = {version=">=4", optional=true}
 #fastparquet              = {version="^0.6", optional=true}
-#tables                   = {version=">=3", optional=true}
+tables                   = {version=">=3", optional=true}
 lxml                     = {version=">=4", optional=true}
-odfpy                    = {version=">=1", optional=true}
 openpyxl                 = {version=">=3", optional=true}
-xlrd                     = {version=">=2", optional=true}
 pyxlsb                   = {version=">=1", optional=true}
 html5lib                 = {version=">=1", optional=true}
 beautifulsoup4           = {version=">=4", optional=true}
@@ -106,7 +104,7 @@ beautifulsoup4           = {version=">=4", optional=true}
 
 [tool.poetry.dev-dependencies]
 black                    = "==21.7b0"
-pre-commit               = "^2.13"
+pre-commit               = "^2.14"
 pre-commit-hooks         = "^4.0"
 bandit                   = "^1.7"
 pytest                   = ">=6.2"
@@ -130,6 +128,7 @@ excel = ["openpyxl", "defusedxml"]
 xlsb = ["pyxlsb"]
 #hdf5    = ["tables"]
 html = ["html5lib", "beautifulsoup4"]
+main = ["pyarrow", "lxml", "openpyxl", "defusedxml"]
 all = ["pyarrow", "lxml", "openpyxl", "defusedxml", "pyxlsb", "html5lib", "beautifulsoup4"]
 
 

@@ -862,11 +862,25 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         kwargs = t.read_kwargs.get(fmt, {})
         if fmt in [
             FileFormat.csv,
-            FileFormat.csv,
+            FileFormat.tsv,
             FileFormat.lines,
             FileFormat.flexwf,
             FileFormat.fwf,
+            FileFormat.json,
         ]:
+            encoding = kwargs.get("encoding", t.text_encoding)
+            kwargs["encoding"] = Utils.get_encoding(encoding)
+        return kwargs
+
+    @classmethod
+    def _get_write_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
+        t = cls.get_typing().io
+        kwargs = t.write_kwargs.get(fmt, {})
+        if fmt is FileFormat.json:
+            # not perfect, but much better than the alternative of failing
+            # I don't see a better solution anyway
+            kwargs["force_ascii"] = False
+        elif fmt.supports_encoding:  # and IS NOT JSON -- it doesn't use "encoding="
             encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
@@ -881,18 +895,6 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         elif check_hash is None:
             check_hash = "no"
         Utils.verify_any_hash(path, check_hash, algorithm=t.hash_algorithm)
-
-    @classmethod
-    def _get_write_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
-        t = cls.get_typing().io
-        kwargs = t.write_kwargs.get(fmt, {})
-        if fmt is FileFormat.json:
-            # TODO: not perfect
-            kwargs["force_ascii"] = False  # "utf" not in t.text_encoding
-        elif fmt.supports_encoding:
-            encoding = kwargs.get("encoding", t.text_encoding)
-            kwargs["encoding"] = Utils.get_encoding(encoding)
-        return kwargs
 
     @classmethod
     def _lines_files_apply(cls) -> bool:
