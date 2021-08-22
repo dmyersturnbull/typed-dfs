@@ -3,7 +3,7 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.10.0] - 2021-08-20
+## [0.10.0] - 2021-08-21
 
 ### Added
 
@@ -17,6 +17,10 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - DF operators now attempt to keep typing
 - All MatrixDfs are now strict
 - MatrixDF row and column names now must always be "row" and "column"
+
+### Removed
+
+- `.newline` in builder
 
 ## [0.9.0] - 2021-08-04
 

@@ -225,20 +225,6 @@ class _GenericBuilder:
         self._encoding = encoding
         return self
 
-    def newline(self, char: str = os.sep) -> __qualname__:
-        r"""
-        Set the newline character for line-based text formats.
-        Consider setting to ``\n`` explicitly.
-
-        Returns:
-            This builder for chaining
-        """
-        for fn in ["csv", "tsv", "flexwf", "lines"]:
-            fn = FileFormat.of(fn)
-            self.add_write_kwargs(fn, newline_separator=char)
-            self.add_read_kwargs(fn, newline_separator=char)
-        return self
-
     def add_read_kwargs(self, fmt: Union[FileFormat, str], **kwargs) -> __qualname__:
         """
         Adds keyword arguments that are passed to ``read_`` methods when called from ``read_file``.
