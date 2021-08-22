@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python version compatibility](https://img.shields.io/pypi/pyversions/typeddfs?label=Python)](https://pypi.org/project/typeddfs)
 [![Version on Github](https://img.shields.io/github/v/release/dmyersturnbull/typed-dfs?include_prereleases&label=GitHub)](https://github.com/dmyersturnbull/typed-dfs/releases)
-[![Version on PyPi](https://img.shields.io/pypi/v/typeddfs?label=PyPi)](https://pypi.org/project/typeddfs)
+[![Version on PyPi](https://img.shields.io/pypi/v/typeddfs?label=PyPi)](https://pypi.org/project/typeddfs)  
 [![Build (Actions)](https://img.shields.io/github/workflow/status/dmyersturnbull/typed-dfs/Build%20&%20test?label=Tests)](https://github.com/dmyersturnbull/typed-dfs/actions)
 [![Coverage (coveralls)](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=main&service=github)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=main)
 [![Documentation status](https://readthedocs.org/projects/typed-dfs/badge)](https://typed-dfs.readthedocs.io/en/stable/)
@@ -12,37 +12,50 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
-Pandas DataFrame subclasses that enforce structure, self-organize, and read/write correctly.
-`pip install typeddfs`
+Pandas DataFrame subclasses that self-organize and read/write correctly.
 
-Stop passing `index_cols=` and `header=` on read/write.
-Your types will remember how they’re supposed to be read.
-That means columns are used for the index, columns are given the correct types,
-and constraints are verified.
+```python
+Film = TypedDfs.typed("Film").require("name", "studio", "year").build()
+df = Film.read_csv("file.csv")
+assert df.columns.tolist() == ["name", "studio", "year"]
+```
 
-As a bonus, adds clear documentation and early failure to your code.
-As in, `def my_func(df: MyDataFrameType)`.
-Because your functions can’t exactly accept _any_ DataFrame.
+Your types will remember how they’re supposed to be read,
+including dtypes, columns for set_index, and custom requirements.
+Then you can stop passing index_cols=, header=, set_index, and astype each time you read.
+Instead, `read_csv`, `read_parquet`, ..., will just work.
 
-### 🎁️ Features
+You can also document your functions clearly,
+and read and write _any_ format in a single file.
 
-Need to read a tab-delimited file? `read_file("myfile.tab")`.
-Feather? Parquet? HDF5? .json.zip? XML?
-Use `read_file`. Write a file? Use `write_file`.
-As in: `df.write_file(input("Output path?"))`.
-`read_file`/`write_file`, `read_csv`/`to_csv`, `read_json`/`to_json`, `read_xml`/`to_xml`,
-etc., are now inverses.
+```python
+def hello(df: Film):
+    print("read!")
 
-Specific issues with Pandas functions fixed, too:
 
-- You can Feather-serialize DataFrames with indices.
-- No more indices silently dropped when writing some DataFrames and formats.
-- No more columns silently renamed when reading some DataFrames and formats.
-- No more blank extra columns added when reading some DataFrames and formats.
-- You can read empty DataFrames, just like you can write them.
-- You can write an empty DataFrame to any format, not just some.
-- No more empty `.feather`/`.snappy`/`.h5` files written on error.
-- Have type-level defaults, instead of passing `encoding=`, `skip_blank_lines=`, etc., everywhere.
+df = Film.read_file("input file? [.csv/.tsv/.tab/.feather/.snappy/.json.gz/.h5/...]")
+hello(df)
+```
+
+### 🐛 Pandas serialization bugs fixed
+
+Pandas has several issues with serialization.
+Depending on the format and columns, these issues occur:
+
+- columns being silently added or dropped,
+- errors on either read or write of empty DataFrames,
+- the inability to use DataFrames with indices in Feather,
+- writing to Parquet failing with half-precision,
+- lingering partially written files on error,
+- the buggy xlrd being preferred by read_excel,
+- the buggy odfpy also being preferred,
+- writing a file and reading it back results in a different DataFrame,
+- you can’t write fixed-width format,
+- and the platform text encoding being used rather than utf-8.
+
+### 🎁️ New methods, etc.
+
+Docs coming soon...
 
 ### 🎨 Simple example
 
@@ -57,12 +70,8 @@ MyDfType = (
     .verify(lambda ddf: len(ddf) == 12)  # require exactly 12 rows
 ).build()
 
-# need of the info about this type?
-print(MyDfType.get_typing())
-
 df = MyDfType.read_file(input("filename? [.feather/.csv.gz/.tsv.xz/etc.]"))
-# file_hash=True will add a .sha256 file alongside (the algorithm is included in the typing)
-df.sort_natural().write_file("myfile.feather", mkdirs=True, file_hash=True)
+df.sort_natural().write_file("myfile.feather", mkdirs=True)
 ```
 
 ### 📉 A matrix-style DataFrame
@@ -113,7 +122,6 @@ df = KeyValue.read_csv("example.csv")
 df.to_csv("remake.csv")
 df = KeyValue.read_csv("remake.csv")
 print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
-
 
 # And now, we can type a function to require a KeyValue,
 # and let it raise an `InvalidDfError` (here, a `MissingColumnError`):
@@ -195,6 +203,10 @@ Feather is the preferred format for most cases.
 - XLSB is not fully supported in Pandas.
 - HDF may not work on all platforms yet due to a
   [tables issue](https://github.com/PyTables/PyTables/issues/854).
+
+### 🔒 Security
+
+Refer to the [security policy](https://github.com/dmyersturnbull/typed-dfs/blob/main/SECURITY.md).
 
 ### 📝 Extra notes
 
