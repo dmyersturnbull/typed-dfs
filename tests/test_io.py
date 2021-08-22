@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pytest
 from lxml.etree import XMLSyntaxError  # nosec
 from typeddfs.utils import Utils
@@ -7,7 +8,17 @@ from typeddfs.df_errors import NoValueError
 
 from typeddfs.untyped_dfs import UntypedDf
 
-from . import Ind1, Ind2, Trivial, sample_data, tmpfile, logger, Ind2Col2, sample_data_ind2_col2
+from . import (
+    Ind1,
+    Ind2,
+    Trivial,
+    sample_data,
+    tmpfile,
+    logger,
+    Ind2Col2,
+    sample_data_ind2_col2,
+    sample_data_ind2_col2_pd_na,
+)
 
 
 class TestReadWrite:
@@ -89,9 +100,8 @@ class TestReadWrite:
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
 
-    def test_parquet_feather_dtypes(self):
+    def test_numeric_dtypes(self):
         dtypes = [
-            str,
             bool,
             np.byte,
             np.ubyte,
@@ -104,12 +114,122 @@ class TestReadWrite:
             np.float16,
             np.double,
             np.float64,
+            pd.StringDtype(),
+            pd.Int64Dtype(),
+            pd.UInt64Dtype(),
+            pd.Int32Dtype(),
+            pd.UInt32Dtype(),
+            pd.Int16Dtype(),
+            pd.UInt16Dtype(),
+            pd.Int8Dtype(),
+            pd.UInt8Dtype(),
         ]
-        for suffix, fn in [(".snappy", "parquet"), (".feather", "feather")]:
+        for suffix, fn in [
+            (".snappy", "parquet"),
+            (".feather", "feather"),
+            (".xml", "xml"),
+            (".csv", "csv"),
+            (".tsv", "tsv"),
+            (".json", "json"),
+            (".xlsx", "xlsx"),
+            (".xls", "xls"),
+            (".xlsb", "xlsb"),
+            (".ods", "ods"),
+            (".pickle", "pickle"),
+        ]:
             with tmpfile(suffix) as path:
                 for dtype in dtypes:
                     logger.info(dtype)
                     df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2())).astype(dtype)
+                    assert list(df.index.names) == ["qqq", "rrr"]
+                    assert list(df.columns) == ["abc", "xyz"]
+                    getattr(df, "to_" + fn)(path)
+                    df2 = getattr(Ind2Col2, "read_" + fn)(path)
+                    assert list(df2.index.names) == ["qqq", "rrr"]
+                    assert list(df2.columns) == ["abc", "xyz"]
+
+    def test_numeric_dtypes(self):
+        dtypes = [
+            bool,
+            np.byte,
+            np.ubyte,
+            np.short,
+            np.ushort,
+            np.single,
+            np.int32,
+            np.intc,
+            np.half,
+            np.float16,
+            np.double,
+            np.float64,
+            pd.StringDtype(),
+            pd.Int64Dtype(),
+            pd.UInt64Dtype(),
+            pd.Int32Dtype(),
+            pd.UInt32Dtype(),
+            pd.Int16Dtype(),
+            pd.UInt16Dtype(),
+            pd.Int8Dtype(),
+            pd.UInt8Dtype(),
+        ]
+        for suffix, fn in [
+            (".snappy", "parquet"),
+            (".feather", "feather"),
+            (".xml", "xml"),
+            (".csv", "csv"),
+            (".tsv", "tsv"),
+            (".json", "json"),
+            (".xlsx", "xlsx"),
+            (".xls", "xls"),
+            (".xlsb", "xlsb"),
+            (".ods", "ods"),
+            (".pickle", "pickle"),
+        ]:
+            with tmpfile(suffix) as path:
+                for dtype in dtypes:
+                    logger.info(dtype)
+                    df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2())).astype(dtype)
+                    assert list(df.index.names) == ["qqq", "rrr"]
+                    assert list(df.columns) == ["abc", "xyz"]
+                    getattr(df, "to_" + fn)(path)
+                    df2 = getattr(Ind2Col2, "read_" + fn)(path)
+                    assert list(df2.index.names) == ["qqq", "rrr"]
+                    assert list(df2.columns) == ["abc", "xyz"]
+
+    def test_numeric_nullable_dtypes(self):
+        dtypes = [
+            pd.StringDtype(),
+            pd.BooleanDtype(),
+            pd.Float64Dtype(),
+            pd.Float32Dtype(),
+            pd.Int64Dtype(),
+            pd.UInt64Dtype(),
+            pd.Int32Dtype(),
+            pd.UInt32Dtype(),
+            pd.Int16Dtype(),
+            pd.UInt16Dtype(),
+            pd.Int8Dtype(),
+            pd.UInt8Dtype(),
+            pd.StringDtype(),
+        ]
+        # TODO: Re-add (".xml", "xml"),
+        # TODO: See https://github.com/dmyersturnbull/typed-dfs/issues/46
+        for suffix, fn in [
+            (".snappy", "parquet"),
+            (".feather", "feather"),
+            (".csv", "csv"),
+            (".tsv", "tsv"),
+            (".json", "json"),
+            (".xlsx", "xlsx"),
+            (".xls", "xls"),
+            (".xlsb", "xlsb"),
+            (".ods", "ods"),
+            (".pickle", "pickle"),
+        ]:
+            with tmpfile(suffix) as path:
+                for dtype in dtypes:
+                    logger.info(dtype)
+                    df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2_pd_na())).astype(dtype)
                     assert list(df.index.names) == ["qqq", "rrr"]
                     assert list(df.columns) == ["abc", "xyz"]
                     getattr(df, "to_" + fn)(path)

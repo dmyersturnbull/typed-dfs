@@ -149,6 +149,13 @@ def sample_data_ind2_col2():
     ]
 
 
+def sample_data_ind2_col2_pd_na():
+    return [
+        pd.Series({"abc": 1, "xyz": pd.NA, "qqq": "hi", "rrr": "hello"}),
+        pd.Series({"abc": pd.NA, "xyz": 0, "qqq": "hi", "rrr": "hello"}),
+    ]
+
+
 class Ind2Col2Reserved1(TypedDf):
     @classmethod
     def get_typing(cls) -> DfTyping:
