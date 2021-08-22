@@ -10,6 +10,7 @@ import os
 from pathlib import Path, PurePath
 from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union
 
+import numpy as np
 import pandas as pd
 
 # noinspection PyProtectedMember
@@ -641,6 +642,23 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         except BaseException:
             old_size = None
         reset = self.vanilla_reset()
+        for c in reset.columns:
+            if reset[c].dtype in [
+                np.byte,
+                np.ubyte,
+                np.short,
+                np.ushort,
+                np.single,
+                np.int32,
+                np.intc,
+            ]:
+                reset[c] = reset[c].astype(np.intc)
+            elif reset[c].dtype in [np.intc, np.uintc]:
+                reset[c] = reset[c].astype(np.long)
+            elif reset[c].dtype in [np.half, np.float16, np.single, np.float32]:
+                reset[c] = reset[c].astype(np.float32)
+            elif reset[c].dtype in [np.double, np.float64]:
+                reset[c] = reset[c].astype(np.float64)
         try:
             return reset.to_parquet(path_or_buf, *args, **kwargs)
         except BaseException:

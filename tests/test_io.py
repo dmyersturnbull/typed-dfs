@@ -1,10 +1,13 @@
+import numpy as np
 import pytest
 from lxml.etree import XMLSyntaxError  # nosec
+from typeddfs.utils import Utils
+
 from typeddfs.df_errors import NoValueError
 
 from typeddfs.untyped_dfs import UntypedDf
 
-from . import Ind1, Ind2, Trivial, sample_data, tmpfile
+from . import Ind1, Ind2, Trivial, sample_data, tmpfile, logger, Ind2Col2, sample_data_ind2_col2
 
 
 class TestReadWrite:
@@ -85,6 +88,34 @@ class TestReadWrite:
             df2 = UntypedDf.read_parquet(path)
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
+
+    def test_parquet_feather_dtypes(self):
+        dtypes = [
+            str,
+            bool,
+            np.byte,
+            np.ubyte,
+            np.short,
+            np.ushort,
+            np.single,
+            np.int32,
+            np.intc,
+            np.half,
+            np.float16,
+            np.double,
+            np.float64,
+        ]
+        for suffix, fn in [(".snappy", "parquet"), (".feather", "feather")]:
+            with tmpfile(suffix) as path:
+                for dtype in dtypes:
+                    logger.info(dtype)
+                    df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2())).astype(dtype)
+                    assert list(df.index.names) == ["qqq", "rrr"]
+                    assert list(df.columns) == ["abc", "xyz"]
+                    getattr(df, "to_" + fn)(path)
+                    df2 = getattr(Ind2Col2, "read_" + fn)(path)
+                    assert list(df2.index.names) == ["qqq", "rrr"]
+                    assert list(df2.columns) == ["abc", "xyz"]
 
     def test_xml(self):
         with tmpfile(".xml.gz") as path:

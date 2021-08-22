@@ -142,6 +142,13 @@ class Ind2Col2(TypedDf):
         return DfTyping(_required_columns=["abc", "xyz"], _required_index_names=["qqq", "rrr"])
 
 
+def sample_data_ind2_col2():
+    return [
+        pd.Series({"abc": 1, "xyz": 3, "qqq": "hi", "rrr": "hello"}),
+        pd.Series({"abc": 4, "xyz": 6, "qqq": "hi", "rrr": "hello"}),
+    ]
+
+
 class Ind2Col2Reserved1(TypedDf):
     @classmethod
     def get_typing(cls) -> DfTyping:
