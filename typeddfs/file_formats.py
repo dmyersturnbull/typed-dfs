@@ -6,7 +6,7 @@ from __future__ import annotations
 import enum
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Mapping, Optional, Set, Union
+from typing import MutableMapping, Mapping, Optional, Set, Union
 
 from typeddfs._utils import PathLike
 from typeddfs.df_errors import FilenameSuffixError
@@ -405,7 +405,7 @@ class FileFormat(enum.Enum):
         return {f for f in cls if f.can_write}
 
     @classmethod
-    def suffix_map(cls) -> Dict[str, FileFormat]:
+    def suffix_map(cls) -> MutableMapping[str, FileFormat]:
         """
         Returns a mapping from all suffixes to their respective formats.
         See :meth:`suffixes`.

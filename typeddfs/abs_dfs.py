@@ -5,10 +5,18 @@ It overrides a lot of methods to auto-change the type back to ``cls``.
 from __future__ import annotations
 
 import abc
+import collections
 import csv
 import os
+from dataclasses import (
+    Field,
+    dataclass,
+    make_dataclass,
+    fields as dataclass_fields,
+    asdict as dataclass_asdict,
+)
 from pathlib import Path, PurePath
-from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union, Type, AbstractSet
 
 import numpy as np
 import pandas as pd
@@ -32,6 +40,25 @@ from typeddfs.utils import Utils
 _SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
 
 
+@dataclass(
+    frozen=True,
+)
+class TypedDfDataclass:
+    @classmethod
+    def get_fields(cls) -> Sequence[Field]:
+        """
+        Finds the list of fields in this class by reflection
+        """
+        return [t for t in dataclass_fields(cls) if not t.name.startswith("__")]
+
+    @classmethod
+    def get_df_type(cls) -> Type[AbsDf]:
+        raise NotImplementedError()
+
+    def get_as_dict(self) -> Mapping[str, Any]:
+        return dataclass_asdict(self)
+
+
 class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     """
     An abstract DataFrame type with typing rules and IO methods.
@@ -46,6 +73,85 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Note that not all info is necessarily applicable, or even enforced by this subclass.
         """
         raise NotImplementedError()
+
+    @classmethod
+    def from_dataclass_instances(cls, instances: Sequence[TypedDfDataclass]) -> __qualname__:
+        fields = cls.create_dataclass().get_fields()
+        if len(instances) > 0:
+            _types = {i.__class__.__name__ for i in instances}
+            if len(_types) != 1:
+                raise TypeError(f"{len(_types)} dataclasses: {_types}")
+            fields = instances[0].get_fields()
+        return cls.of(
+            [[getattr(instance, field.name) for instance in instances] for field in fields],
+            columns=fields,
+        )
+
+    def to_dataclass_instances(self) -> Sequence[TypedDfDataclass]:
+        df = self.convert(self)
+        fix = {
+            list: Sequence,
+            set: AbstractSet,
+            dict: Mapping,
+        }
+        clazz = self.__class__._create_dataclass(
+            {c: fix.get(df[c].dtype, df[c].dtype) for c in df.column_names()}
+        )
+        instances = []
+        orderable_flag = [True]
+        for row in df.itertuples():
+            # ignore extra columns
+            # if cols are missing, let it fail on clazz.__init__
+            data = {
+                field.name: Utils.freeze(getattr(row, field.name), orderable_flag)
+                for field in clazz.get_fields()
+            }
+            # noinspection PyArgumentList
+            instances.append(clazz(**data))
+        if not orderable_flag[0]:
+            clazz.__lt__ = None
+            clazz.__gt__ = None
+            clazz.__le__ = None
+            clazz.__ge__ = None
+        return instances
+
+    @classmethod
+    def create_dataclass(cls, reserved: bool = True) -> Type[TypedDfDataclass]:
+        fields = [
+            (field, cls.get_typing().auto_dtypes.get(field, Any))
+            for field in cls.get_typing().required_names
+        ]
+        if reserved:
+            fields += [
+                (field, Optional[cls.get_typing().auto_dtypes.get(field, Any)])
+                for field in [
+                    *cls.get_typing().reserved_columns,
+                    *cls.get_typing().reserved_index_names,
+                ]
+            ]
+        fix = {
+            list: Sequence,
+            set: AbstractSet,
+            dict: Mapping,
+        }
+        fields = [(x0, fix.get(x1, x1)) for x0, x1 in fields]
+        return cls._create_dataclass(fields)
+
+    @classmethod
+    def _create_dataclass(cls, fields: Sequence[Tuple[str, Type[Any]]]) -> Type[TypedDfDataclass]:
+        clazz = make_dataclass(
+            cls.__name__,
+            fields,
+            bases=(TypedDfDataclass,),
+            frozen=True,
+            repr=True,
+            unsafe_hash=True,
+            order=True,
+        )
+        _get_type = lambda: cls.__class__
+        _get_type.__name__ = "get_df_type"
+        clazz.get_df_type = _get_type
+        return clazz
 
     @classmethod
     def _check(cls, df) -> None:
@@ -901,4 +1007,4 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return len(cls.get_typing().required_names) <= 1
 
 
-__all__ = ["AbsDf"]
+__all__ = ["AbsDf", "TypedDfDataclass"]

@@ -37,6 +37,13 @@ df = Film.read_file("input file? [.csv/.tsv/.tab/.feather/.snappy/.json.gz/.h5/.
 hello(df)
 ```
 
+Need dataclasses?
+
+```python
+instances = df.to_dataclass_instances()
+Film.from_dataclass_instances(instances)
+```
+
 ### 🐛 Pandas serialization bugs fixed
 
 Pandas has several issues with serialization.

@@ -3,13 +3,30 @@ Tools that could possibly be used outside of typed-dfs.
 """
 from __future__ import annotations
 
+import collections
+import functools
 import hashlib
 import os
 import re
 import sys
 from pathlib import Path, PurePath
-from typing import Optional, Sequence, Mapping, Set, Union
+from typing import (
+    Optional,
+    Sequence,
+    Mapping,
+    Set,
+    Union,
+    FrozenSet,
+    Any,
+    ValuesView,
+    TypeVar,
+    List,
+    Generic,
+    Iterator,
+    AbstractSet,
+)
 
+import numpy as np
 from pandas.io.common import get_handle
 
 # noinspection PyProtectedMember
@@ -29,9 +46,122 @@ from typeddfs.df_errors import (
 
 _hex_pattern = re.compile(r"[A-Ha-h0-9]+")
 _hashsum_file_sep = re.compile(r" [ *]")
+T = TypeVar("T", covariant=True)
+K = TypeVar("K", contravariant=True)
+V = TypeVar("V", covariant=True)
+
+
+@functools.total_ordering
+class FrozenList(Generic[T]):
+    def __init__(self, lst: Sequence[T]):
+        self.__lst = lst
+        try:
+            self.__hash = hash(tuple(lst))
+        except AttributeError:
+            self.__hash = 0
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self.__lst)
+
+    def __getitem__(self, item):
+        return self.__lst[item]
+
+    def __hash__(self) -> int:
+        return self.__hash
+
+    def __eq__(self, other: FrozenList[T]) -> bool:
+        return self.__hash == other.__lst
+
+    def __lt__(self, other: FrozenList[T]):
+        return self.__lst < other.__lst
+
+    def __len__(self) -> int:
+        return len(self.__lst)
+
+    def to_list(self) -> List[T]:
+        return list(self.__lst)
+
+
+@functools.total_ordering
+class FrozenDict(Generic[K, V]):
+    def __init__(self, dct: Mapping[K, V]):
+        self.__dct = dct
+        self.__hash = hash(tuple(dct.items()))
+
+    def __iter__(self):
+        return iter(self.__dct)
+
+    def items(self) -> AbstractSet[tuple[K, V]]:
+        return self.__dct.items()
+
+    def keys(self) -> AbstractSet[K]:
+        return self.__dct.keys()
+
+    def values(self) -> ValuesView[V]:
+        return self.__dct.values()
+
+    def __getitem__(self, item) -> V:
+        return self.__dct[item]
+
+    def __hash__(self) -> int:
+        return self.__hash
+
+    def __eq__(self, other: FrozenDict[K, V]) -> bool:
+        return self.__hash == other.__dct
+
+    def __lt__(self, other: FrozenDict[K, V]) -> bool:
+        return self.__dct < other.__dct
+
+    def __len__(self) -> int:
+        return len(self.__dct)
+
+    def to_dict(self) -> Mapping[K, V]:
+        return dict(self.__dct)
 
 
 class Utils:
+    @classmethod
+    def freeze(cls, v: Any, orderable_flag: List[bool]) -> Any:
+        """
+        Returns either ``v`` or a frozen view of ``v``.
+
+        Args:
+            v: Any value
+            orderable_flag: Item 0 will be set to ``True`` if the value is not orderable
+
+        Returns:
+            Either ``v`` itself,
+            a :py.type:`typing.FrozenSet` (subclass of :py.type:`typing.AbstractSet`),
+            a :py.type:`typeddfs.utils.FrozenList` (subclass of :py.type:`typing.Sequence`),
+            or a :py.type:`typeddfs.utils.FrozenDict` (subclass of :py.type:`typing.Mapping`).
+            int, float, str, np.generic, tuple, and FrozenSet are always returned as-is.
+
+        Raises:
+            AttributeError: If ``v`` is not hashable and could not converted to
+                            a FrozenSet, FrozenList, or FrozenDict, *or* if one of the elements for
+                            one of the above types is not hashable.
+            TypeError: If ``v`` is a :py.type:`iterator.Iterator` or :py.type:`collections.deque`
+        """
+        if isinstance(v, (int, float, str, np.generic, tuple, frozenset)):
+            return v  # short-circuit
+        if isinstance(v, Iterator):  # let's not ruin their iterator by traversing
+            raise TypeError(f"Type is an iterator")
+        if isinstance(v, collections.deque):  # the only other major built-in type we won't accept
+            raise TypeError(f"Type is a deque")
+        if isinstance(v, Sequence):
+            return FrozenList(v)
+        if isinstance(v, AbstractSet):
+            return frozenset(v)
+        if isinstance(v, Mapping):
+            return FrozenDict(v)
+        hash(v)  # let it raise an AttributeError
+        if not orderable_flag[0]:
+            try:
+                sorted([v])
+            except AttributeError:
+                orderable_flag[0] = False
+        return v
+
     @classmethod
     def default_hash_algorithm(cls) -> str:
         return _DEFAULT_HASH_ALG
@@ -440,4 +570,4 @@ class Utils:
             )
 
 
-__all__ = ["Utils", "TableFormat"]
+__all__ = ["Utils", "TableFormat", "FrozenList", "FrozenDict", "FrozenSet"]

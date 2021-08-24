@@ -33,7 +33,13 @@ class NotSingleColumnError(UnsupportedOperationError):
     """
 
 
-class ClashError(ValueError):
+class DfTypeConstructionError(Exception):
+    """
+    An inconsistency prevents creating the DataFrame type.
+    """
+
+
+class ClashError(DfTypeConstructionError):
     """
     Duplicate columns or other keys were added.
     """

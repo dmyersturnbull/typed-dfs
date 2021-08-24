@@ -4,7 +4,6 @@ Defines a builder pattern for ``TypedDf``.
 from __future__ import annotations
 
 import logging
-import os
 from collections import defaultdict
 from typing import Any, Callable, Optional, Sequence, Type, Union
 
@@ -12,7 +11,7 @@ import pandas as pd
 from typeddfs.utils import Utils
 
 from typeddfs.base_dfs import BaseDf
-from typeddfs.df_errors import ClashError, FormatInsecureError
+from typeddfs.df_errors import ClashError, DfTypeConstructionError
 from typeddfs.df_typing import DfTyping, IoTyping
 from typeddfs.file_formats import FileFormat
 from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
@@ -30,9 +29,12 @@ class _GenericBuilder:
         Args:
             name: The name of the resulting class
             doc: The docstring of the resulting class
+
+        Raises:
+            DfTypeConstructionError for some errors
         """
         if not isinstance(name, str):
-            raise TypeError(f"Class name {name} is a {type(name)}, not str")
+            raise DfTypeConstructionError(f"Class name {name} is a {type(name)}, not str")
         self._name = name
         self._doc = doc
         self._clazz = None
@@ -59,6 +61,8 @@ class _GenericBuilder:
         self._index_series_name = False
         self._column_series_name = False
         self._secure = False
+        self._req_hash: Optional = False
+        self._req_order: Optional = False
         # use utf-8 by default
         self.encoding()
         # make these use an explicit version
@@ -266,7 +270,7 @@ class _GenericBuilder:
 
     def _build(self) -> Type[BaseDf]:
         if self._secure and self._hash_alg in Utils.insecure_hash_functions():
-            raise FormatInsecureError(f"Hash algorithm {self._hash_alg} forbidden by .secure()")
+            raise DfTypeConstructionError(f"Hash algorithm {self._hash_alg} forbidden by .secure()")
         self._check_final()
 
         _io_typing = IoTyping(
@@ -341,6 +345,9 @@ class MatrixDfBuilder(_GenericBuilder):
         .. note ::
 
             Copies, so this builder can be used to create more types without interference.
+
+        Raises:
+            DfTypeConstructionError for some errors
         """
         # self.add_read_kwargs(FileFormat.csv, index_col=0)
         # self.add_read_kwargs(FileFormat.tsv, index_col=0)
@@ -355,15 +362,31 @@ class MatrixDfBuilder(_GenericBuilder):
             This builder for chaining
 
         Raises:
-            ValueError: If ``clazz`` is not a subclass of ``MatrixDf``.
+            DfTypeConstructionError: If ``clazz`` is not a subclass of ``MatrixDf``.
         """
         if not issubclass(clazz, MatrixDf):
-            raise ValueError(f"{clazz.__name__} is not a subclass of {MatrixDf.__name__}")
+            raise DfTypeConstructionError(
+                f"{clazz.__name__} is not a subclass of {MatrixDf.__name__}"
+            )
         self._clazz = clazz
         return self
 
     def dtype(self, dt: Type[Any]) -> __qualname__:
+        """
+        Sets the type of value for all matrix elements.
+        This should almost certainly be a numeric type,
+        and it must be ordered.
+
+        .. caution:
+            Never use a mutable type for ``dt``.
+            Doing so can result in hard-to-detect and potentially serious bugs.
+
+        Returns:
+            This builder for chaining
+        """
         self._value_dtype = dt
+        if not hasattr(dt, "__lt__"):
+            raise DfTypeConstructionError(f"Dtype {dt} is unordered")
         return self
 
     def _check_final(self) -> None:
@@ -406,10 +429,12 @@ class AffinityMatrixDfBuilder(MatrixDfBuilder):
             This builder for chaining
 
         Raises:
-            ValueError: If ``clazz`` is not a subclass of ``AffinityMatrixDf``.
+            DfTypeConstructionError: If ``clazz`` is not a subclass of ``AffinityMatrixDf``.
         """
         if not issubclass(clazz, AffinityMatrixDf):
-            raise ValueError(f"{clazz.__name__} is not a subclass of {AffinityMatrixDf.__name__}")
+            raise DfTypeConstructionError(
+                f"{clazz.__name__} is not a subclass of {AffinityMatrixDf.__name__}"
+            )
         self._clazz = clazz
         return self
 
@@ -453,10 +478,12 @@ class TypedDfBuilder(_GenericBuilder):
             This builder for chaining
 
         Raises:
-            ValueError: If ``clazz`` is not a subclass of ``TypedDf``.
+            DfTypeConstructionError: If ``clazz`` is not a subclass of ``TypedDf``.
         """
         if not issubclass(clazz, TypedDf):
-            raise ValueError(f"{clazz.__name__} is not a subclass of {TypedDf.__name__}")
+            raise DfTypeConstructionError(
+                f"{clazz.__name__} is not a subclass of {TypedDf.__name__}"
+            )
         self._clazz = clazz
         return self
 
