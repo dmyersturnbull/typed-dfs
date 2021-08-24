@@ -2,10 +2,12 @@ import contextlib
 import io
 from typing import Optional
 
+import pandas as pd
 import pytest
 
 from typeddfs.builders import TypedDfBuilder
 from typeddfs.abs_dfs import AbsDf, TypedDfDataclass
+from typeddfs.utils import FrozeList
 
 
 class _UnhashableUnorderable:
@@ -42,7 +44,37 @@ class TestDataclasses:
         t = TypedDfBuilder("T").require("hi", dtype=list).reserve("val", dtype=int).build()
         dc = t.create_dataclass()
         assert issubclass(dc, TypedDfDataclass)
+        # assert dc.get_df_type() is t  # TODO
+        # noinspection PyArgumentList
+        x = dc(hi="cat", val=1)
+        assert isinstance(x, TypedDfDataclass)
+        # noinspection PyUnresolvedReferences
+        assert x.hi == "cat"
+        # noinspection PyUnresolvedReferences
+        assert x.val == 1
         assert hasattr(dc, "__lt__") and dc.__lt__ is not None
+
+    def test_to_instances(self):
+        t = TypedDfBuilder("T").require("hi", dtype=str).reserve("val", dtype=int).build()
+        df: t = t.of([pd.Series(dict(hi="dog", val=111))])
+        dc = t.create_dataclass()
+        inst = df.to_dataclass_instances()
+        assert len(inst) == 1
+        assert inst[0].hi == "dog"
+        assert inst[0].val == 111
+        assert inst[0] == dc(hi="dog", val=111)
+
+    def test_to_instances_frozen(self):
+        t = TypedDfBuilder("T").require("hi", dtype=str).require("vals").build()
+        df: t = t.of([pd.Series(dict(hi="dog", vals=[1, 2]))])
+        dc = t.create_dataclass()
+        inst = df.to_dataclass_instances()
+        assert len(inst) == 1
+        assert inst[0].hi == "dog"
+        assert inst[0].vals == FrozeList([1, 2])
+        assert inst[0].vals == [1, 2]
+        assert inst[0] == dc(hi="dog", vals=FrozeList([1, 2]))
+        assert inst[0] == dc(hi="dog", vals=[1, 2])  # technically works
 
 
 if __name__ == "__main__":

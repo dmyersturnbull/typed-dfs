@@ -25,6 +25,7 @@ from typeddfs.df_errors import (
 from typeddfs.file_formats import FileFormat
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
+from typeddfs.utils import Utils, FrozeSet, FrozeList, FrozeDict
 
 logger = logging.getLogger(Path(__file__).parent.name)
 
@@ -60,6 +61,10 @@ class TypedDfs:
     ClashError = ClashError
     FileFormat = FileFormat
     FinalDf = FinalDf
+    Utils = Utils
+    FrozeList = FrozeList
+    FrozeSet = FrozeSet
+    FrozeDict = FrozeDict
 
     _logger = logger
 

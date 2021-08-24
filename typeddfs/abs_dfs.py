@@ -5,7 +5,6 @@ It overrides a lot of methods to auto-change the type back to ``cls``.
 from __future__ import annotations
 
 import abc
-import collections
 import csv
 import os
 from dataclasses import (
@@ -40,9 +39,7 @@ from typeddfs.utils import Utils
 _SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
 
 
-@dataclass(
-    frozen=True,
-)
+@dataclass(frozen=True)
 class TypedDfDataclass:
     @classmethod
     def get_fields(cls) -> Sequence[Field]:
@@ -54,6 +51,9 @@ class TypedDfDataclass:
     @classmethod
     def get_df_type(cls) -> Type[AbsDf]:
         raise NotImplementedError()
+
+    def get_as_tuple(self) -> Tuple[Any]:
+        return tuple(dataclass_asdict(self).values())
 
     def get_as_dict(self) -> Mapping[str, Any]:
         return dataclass_asdict(self)
@@ -94,9 +94,13 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             set: AbstractSet,
             dict: Mapping,
         }
-        clazz = self.__class__._create_dataclass(
-            {c: fix.get(df[c].dtype, df[c].dtype) for c in df.column_names()}
-        )
+        origin = self.__class__.create_dataclass()
+        if [*df.index_names(), *df.column_names()] == [f.name for f in origin.get_fields()]:
+            clazz = origin
+        else:
+            clazz = self.__class__._create_dataclass(
+                {c: fix.get(df[c].dtype, df[c].dtype) for c in df.column_names()}, origin=origin
+            )
         instances = []
         orderable_flag = [True]
         for row in df.itertuples():
@@ -135,14 +139,24 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             dict: Mapping,
         }
         fields = [(x0, fix.get(x1, x1)) for x0, x1 in fields]
-        return cls._create_dataclass(fields)
+        clazz = cls._create_dataclass(fields, TypedDfDataclass)
+
+        # If we don't do this, then, because we create a new type each call,
+        # instances will never be equal under dataclass's built-in __eq__
+        def eq(self_: TypedDfDataclass, other_: TypedDfDataclass) -> bool:
+            return self_.get_as_dict() == other_.get_as_dict()
+
+        clazz.__eq__ = eq
+        return clazz
 
     @classmethod
-    def _create_dataclass(cls, fields: Sequence[Tuple[str, Type[Any]]]) -> Type[TypedDfDataclass]:
+    def _create_dataclass(
+        cls, fields: Sequence[Tuple[str, Type[Any]]], origin: Type[TypedDfDataclass]
+    ) -> Type[TypedDfDataclass]:
         clazz = make_dataclass(
             cls.__name__,
             fields,
-            bases=(TypedDfDataclass,),
+            bases=(origin,),
             frozen=True,
             repr=True,
             unsafe_hash=True,

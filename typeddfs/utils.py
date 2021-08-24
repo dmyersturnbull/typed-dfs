@@ -52,9 +52,9 @@ V = TypeVar("V", covariant=True)
 
 
 @functools.total_ordering
-class FrozenList(Generic[T]):
+class FrozeList(Generic[T]):
     def __init__(self, lst: Sequence[T]):
-        self.__lst = lst
+        self.__lst = lst if isinstance(lst, list) else list(lst)
         try:
             self.__hash = hash(tuple(lst))
         except AttributeError:
@@ -69,23 +69,76 @@ class FrozenList(Generic[T]):
     def __hash__(self) -> int:
         return self.__hash
 
-    def __eq__(self, other: FrozenList[T]) -> bool:
-        return self.__hash == other.__lst
+    def __eq__(self, other: FrozeList[T]) -> bool:
+        if isinstance(other, FrozeList):
+            return self.__lst == list(other.__lst)
+        elif isinstance(other, list):
+            return self.__lst == other
+        elif isinstance(other, Sequence):
+            return self.__lst == list(other)
+        raise TypeError(f"Cannot compare to {type(other)}")
 
-    def __lt__(self, other: FrozenList[T]):
-        return self.__lst < other.__lst
+    def __lt__(self, other: FrozeList[T]):
+        if isinstance(other, FrozeList):
+            return self.__lst < list(other.__lst)
+        elif isinstance(other, list):
+            return self.__lst < other
+        elif isinstance(other, Sequence):
+            return self.__lst < list(other)
+        raise TypeError(f"Cannot compare to {type(other)}")
 
     def __len__(self) -> int:
         return len(self.__lst)
+
+    def __str__(self) -> str:
+        return str(self.__lst)
+
+    def __repr__(self) -> str:
+        return repr(self.__lst)
 
     def to_list(self) -> List[T]:
         return list(self.__lst)
 
 
-@functools.total_ordering
-class FrozenDict(Generic[K, V]):
+class FrozeSet(Generic[T]):
+    def __init__(self, lst: AbstractSet[T]):
+        self.__lst = lst if isinstance(lst, set) else set(lst)
+        try:
+            self.__hash = hash(tuple(lst))
+        except AttributeError:
+            self.__hash = 0
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self.__lst)
+
+    def __hash__(self) -> int:
+        return self.__hash
+
+    def __eq__(self, other: FrozeSet[T]) -> bool:
+        if isinstance(other, FrozeSet):
+            return self.__lst == set(other.__lst)
+        elif isinstance(other, set):
+            return self.__lst == other
+        elif isinstance(other, AbstractSet):
+            return self.__lst == set(other)
+        raise TypeError(f"Cannot compare to {type(other)}")
+
+    def __len__(self) -> int:
+        return len(self.__lst)
+
+    def __str__(self) -> str:
+        return str(self.__lst)
+
+    def __repr__(self) -> str:
+        return repr(self.__lst)
+
+    def to_set(self) -> AbstractSet[T]:
+        return set(self.__lst)
+
+
+class FrozeDict(Generic[K, V]):
     def __init__(self, dct: Mapping[K, V]):
-        self.__dct = dct
+        self.__dct = dct if isinstance(dct, dict) else dict(dct)
         self.__hash = hash(tuple(dct.items()))
 
     def __iter__(self):
@@ -100,17 +153,20 @@ class FrozenDict(Generic[K, V]):
     def values(self) -> ValuesView[V]:
         return self.__dct.values()
 
-    def __getitem__(self, item) -> V:
+    def __getitem__(self, item):
         return self.__dct[item]
 
     def __hash__(self) -> int:
         return self.__hash
 
-    def __eq__(self, other: FrozenDict[K, V]) -> bool:
-        return self.__hash == other.__dct
-
-    def __lt__(self, other: FrozenDict[K, V]) -> bool:
-        return self.__dct < other.__dct
+    def __eq__(self, other: FrozeDict[K, V]) -> bool:
+        if isinstance(self, FrozeDict):
+            return self.__dct == other.__dct
+        elif isinstance(self, dict):
+            return self == other.__dct
+        elif isinstance(self, Mapping):
+            return self == dict(other.__dct)
+        raise TypeError(f"Cannot compare to {type(other)}")
 
     def __len__(self) -> int:
         return len(self.__dct)
@@ -131,14 +187,14 @@ class Utils:
 
         Returns:
             Either ``v`` itself,
-            a :py.type:`typing.FrozenSet` (subclass of :py.type:`typing.AbstractSet`),
-            a :py.type:`typeddfs.utils.FrozenList` (subclass of :py.type:`typing.Sequence`),
-            or a :py.type:`typeddfs.utils.FrozenDict` (subclass of :py.type:`typing.Mapping`).
-            int, float, str, np.generic, tuple, and FrozenSet are always returned as-is.
+            a :py.type:`typeddfs.utils.FrozeSet` (subclass of :py.type:`typing.AbstractSet`),
+            a :py.type:`typeddfs.utils.FrozeList` (subclass of :py.type:`typing.Sequence`),
+            or a :py.type:`typeddfs.utils.FrozeDict` (subclass of :py.type:`typing.Mapping`).
+            int, float, str, np.generic, and tuple are always returned as-is.
 
         Raises:
             AttributeError: If ``v`` is not hashable and could not converted to
-                            a FrozenSet, FrozenList, or FrozenDict, *or* if one of the elements for
+                            a FrozeSet, FrozeList, or FrozeDict, *or* if one of the elements for
                             one of the above types is not hashable.
             TypeError: If ``v`` is a :py.type:`iterator.Iterator` or :py.type:`collections.deque`
         """
@@ -149,11 +205,11 @@ class Utils:
         if isinstance(v, collections.deque):  # the only other major built-in type we won't accept
             raise TypeError(f"Type is a deque")
         if isinstance(v, Sequence):
-            return FrozenList(v)
+            return FrozeList(v)
         if isinstance(v, AbstractSet):
             return frozenset(v)
         if isinstance(v, Mapping):
-            return FrozenDict(v)
+            return FrozeDict(v)
         hash(v)  # let it raise an AttributeError
         if not orderable_flag[0]:
             try:
@@ -570,4 +626,4 @@ class Utils:
             )
 
 
-__all__ = ["Utils", "TableFormat", "FrozenList", "FrozenDict", "FrozenSet"]
+__all__ = ["Utils", "TableFormat", "FrozeList", "FrozeDict", "FrozeSet"]
