@@ -11,7 +11,7 @@ from typeddfs.df_errors import (
     UnexpectedColumnError,
     UnexpectedIndexNameError,
     VerificationFailedError,
-    FormatInsecureError,
+    DfTypeConstructionError,
 )
 from typeddfs.df_typing import DfTyping
 from typeddfs.typed_dfs import TypedDf
@@ -89,7 +89,7 @@ class TestBuilders:
     def test_secure(self):
         TypedDfBuilder("a").secure().hash(alg="sha256").build()
         TypedDfBuilder("a").hash(alg="sha1").build()
-        with pytest.raises(FormatInsecureError):
+        with pytest.raises(DfTypeConstructionError):
             TypedDfBuilder("a").secure().hash(alg="sha1").build()
 
     def test_bad_type(self):
@@ -102,20 +102,20 @@ class TestBuilders:
 
     def test_bad_require(self):
         for index in [True, False]:
-            with pytest.raises(ValueError):
+            with pytest.raises(ClashError):
                 TypedDfBuilder("a").require("level_0", index=index)
-            with pytest.raises(ValueError):
+            with pytest.raises(ClashError):
                 TypedDfBuilder("a").require("abc", "level_0", index=index)
-            with pytest.raises(ValueError):
+            with pytest.raises(ClashError):
                 TypedDfBuilder("a").require("abc", "index", index=index)
 
     def test_bad_reserve(self):
         for index in [True, False]:
-            with pytest.raises(ValueError):
+            with pytest.raises(ClashError):
                 TypedDfBuilder("a").reserve("level_0", index=index)
-            with pytest.raises(ValueError):
+            with pytest.raises(ClashError):
                 TypedDfBuilder("a").reserve("abc", "level_0", index=index)
-            with pytest.raises(ValueError):
+            with pytest.raises(ClashError):
                 TypedDfBuilder("a").reserve("abc", "index", index=index)
 
     def test_already_added(self):
@@ -128,7 +128,7 @@ class TestBuilders:
                             builder = builder.require("a", index=indexa)
                         else:
                             cola = builder.reserve("a", index=indexa)
-                        with pytest.raises(ValueError):
+                        with pytest.raises(ClashError):
                             if colb:
                                 builder.require("a", index=indexb)
                             else:

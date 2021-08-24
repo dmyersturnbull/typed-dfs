@@ -146,7 +146,7 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
     @classmethod
     def _create_dataclass(cls, fields: Sequence[Tuple[str, Type[Any]]]) -> Type[TypedDfDataclass]:
         clazz = make_dataclass(
-            cls.__name__,
+            f"{cls.__name__}Dataclass",
             fields,
             bases=(TypedDfDataclass,),
             frozen=True,

@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from lxml.etree import XMLSyntaxError  # nosec
-from typeddfs.utils import Utils
 
 from typeddfs.df_errors import NoValueError
 
@@ -145,62 +144,17 @@ class TestReadWrite:
         ]:
             with tmpfile(suffix) as path:
                 for dtype in dtypes:
-                    logger.info(dtype)
-                    df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2())).astype(dtype)
-                    assert list(df.index.names) == ["qqq", "rrr"]
-                    assert list(df.columns) == ["abc", "xyz"]
-                    getattr(df, "to_" + fn)(path)
-                    df2 = getattr(Ind2Col2, "read_" + fn)(path)
-                    assert list(df2.index.names) == ["qqq", "rrr"]
-                    assert list(df2.columns) == ["abc", "xyz"]
-
-    def test_numeric_dtypes(self):
-        dtypes = [
-            bool,
-            np.byte,
-            np.ubyte,
-            np.short,
-            np.ushort,
-            np.single,
-            np.int32,
-            np.intc,
-            np.half,
-            np.float16,
-            np.double,
-            np.float64,
-            pd.StringDtype(),
-            pd.Int64Dtype(),
-            pd.UInt64Dtype(),
-            pd.Int32Dtype(),
-            pd.UInt32Dtype(),
-            pd.Int16Dtype(),
-            pd.UInt16Dtype(),
-            pd.Int8Dtype(),
-            pd.UInt8Dtype(),
-        ]
-        for suffix, fn in [
-            (".snappy", "parquet"),
-            (".feather", "feather"),
-            (".xml", "xml"),
-            (".csv", "csv"),
-            (".tsv", "tsv"),
-            (".json", "json"),
-            (".xlsx", "xlsx"),
-            (".xls", "xls"),
-            (".xlsb", "xlsb"),
-            (".ods", "ods"),
-            (".pickle", "pickle"),
-        ]:
-            with tmpfile(suffix) as path:
-                for dtype in dtypes:
-                    logger.info(dtype)
-                    df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2())).astype(dtype)
-                    assert list(df.index.names) == ["qqq", "rrr"]
-                    assert list(df.columns) == ["abc", "xyz"]
-                    getattr(df, "to_" + fn)(path)
-                    df2 = getattr(Ind2Col2, "read_" + fn)(path)
-                    assert list(df2.index.names) == ["qqq", "rrr"]
-                    assert list(df2.columns) == ["abc", "xyz"]
+                    try:
+                        df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2())).astype(dtype)
+                        assert list(df.index.names) == ["qqq", "rrr"]
+                        assert list(df.columns) == ["abc", "xyz"]
+                        getattr(df, "to_" + fn)(path)
+                        df2 = getattr(Ind2Col2, "read_" + fn)(path)
+                        assert list(df2.index.names) == ["qqq", "rrr"]
+                        assert list(df2.columns) == ["abc", "xyz"]
+                    except Exception:
+                        logger.error(f"Failed on path {path}, dtype {dtype}")
+                        raise
 
     def test_numeric_nullable_dtypes(self):
         dtypes = [
@@ -234,14 +188,17 @@ class TestReadWrite:
         ]:
             with tmpfile(suffix) as path:
                 for dtype in dtypes:
-                    logger.info(dtype)
-                    df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2_pd_na())).astype(dtype)
-                    assert list(df.index.names) == ["qqq", "rrr"]
-                    assert list(df.columns) == ["abc", "xyz"]
-                    getattr(df, "to_" + fn)(path)
-                    df2 = getattr(Ind2Col2, "read_" + fn)(path)
-                    assert list(df2.index.names) == ["qqq", "rrr"]
-                    assert list(df2.columns) == ["abc", "xyz"]
+                    try:
+                        df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2_pd_na())).astype(dtype)
+                        assert list(df.index.names) == ["qqq", "rrr"]
+                        assert list(df.columns) == ["abc", "xyz"]
+                        getattr(df, "to_" + fn)(path)
+                        df2 = getattr(Ind2Col2, "read_" + fn)(path)
+                        assert list(df2.index.names) == ["qqq", "rrr"]
+                        assert list(df2.columns) == ["abc", "xyz"]
+                    except Exception:
+                        logger.error(f"Failed on path {path}, dtype {dtype}")
+                        raise
 
     def test_xml(self):
         with tmpfile(".xml.gz") as path:

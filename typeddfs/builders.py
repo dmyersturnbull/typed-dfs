@@ -31,10 +31,10 @@ class _GenericBuilder:
             doc: The docstring of the resulting class
 
         Raises:
-            DfTypeConstructionError for some errors
+            TypeError: If ``name`` or ``doc`` non-string
         """
         if not isinstance(name, str):
-            raise DfTypeConstructionError(f"Class name {name} is a {type(name)}, not str")
+            raise TypeError(f"Class name {name} is a {type(name)}, not str")
         self._name = name
         self._doc = doc
         self._clazz = None
@@ -459,9 +459,7 @@ class TypedDfBuilder(_GenericBuilder):
             A newly created subclass of :py.class:`typeddfs.typed_dfs.TypedDf`.
 
         Raises:
-            ClashError: If there is a contradiction in the specification
-            FormatInsecureError: If :py.meth:`hash` set an insecure
-                                 hash format and :py.meth:`secure` was set.
+            DfTypeConstructionError: If there is a contradiction in the specification
 
         .. note ::
 

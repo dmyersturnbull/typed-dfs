@@ -16,16 +16,13 @@ from typing import (
     Mapping,
     Set,
     Union,
-    FrozenSet,
     Any,
     ValuesView,
     TypeVar,
     List,
-    Generic,
     Iterator,
     AbstractSet,
     Dict,
-    overload,
 )
 
 import numpy as np
@@ -252,9 +249,9 @@ class Utils:
         if isinstance(v, (int, float, str, np.generic, tuple, frozenset)):
             return v  # short-circuit
         if isinstance(v, Iterator):  # let's not ruin their iterator by traversing
-            raise TypeError(f"Type is an iterator")
+            raise TypeError("Type is an iterator")
         if isinstance(v, collections.deque):  # the only other major built-in type we won't accept
-            raise TypeError(f"Type is a deque")
+            raise TypeError("Type is a deque")
         if isinstance(v, Sequence):
             return FrozeList(v)
         if isinstance(v, AbstractSet):
