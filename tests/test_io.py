@@ -100,6 +100,12 @@ class TestReadWrite:
             assert list(df2.index.names) == [None]
             assert set(df2.columns) == {"abc", "123", "xyz"}
 
+    def test_records(self):
+        df = UntypedDf(sample_data())
+        records = df.to_records()
+        df2 = UntypedDf.from_records(records)
+        assert isinstance(df2, UntypedDf)
+
     def test_numeric_dtypes(self):
         dtypes = [
             bool,

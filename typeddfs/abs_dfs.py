@@ -7,15 +7,8 @@ from __future__ import annotations
 import abc
 import csv
 import os
-from dataclasses import (
-    Field,
-    dataclass,
-    make_dataclass,
-    fields as dataclass_fields,
-    asdict as dataclass_asdict,
-)
 from pathlib import Path, PurePath
-from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union, Type, AbstractSet
+from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -39,26 +32,6 @@ from typeddfs.utils import Utils
 _SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
 
 
-@dataclass(frozen=True)
-class TypedDfDataclass:
-    @classmethod
-    def get_fields(cls) -> Sequence[Field]:
-        """
-        Finds the list of fields in this class by reflection
-        """
-        return [t for t in dataclass_fields(cls) if not t.name.startswith("__")]
-
-    @classmethod
-    def get_df_type(cls) -> Type[AbsDf]:
-        raise NotImplementedError()
-
-    def get_as_tuple(self) -> Tuple[Any]:
-        return tuple(dataclass_asdict(self).values())
-
-    def get_as_dict(self) -> Mapping[str, Any]:
-        return dataclass_asdict(self)
-
-
 class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     """
     An abstract DataFrame type with typing rules and IO methods.
@@ -73,99 +46,6 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Note that not all info is necessarily applicable, or even enforced by this subclass.
         """
         raise NotImplementedError()
-
-    @classmethod
-    def from_dataclass_instances(cls, instances: Sequence[TypedDfDataclass]) -> __qualname__:
-        fields = cls.create_dataclass().get_fields()
-        if len(instances) > 0:
-            _types = {i.__class__.__name__ for i in instances}
-            if len(_types) != 1:
-                raise TypeError(f"{len(_types)} dataclasses: {_types}")
-            fields = instances[0].get_fields()
-        return cls.of(
-            [[getattr(instance, field.name) for instance in instances] for field in fields],
-            columns=fields,
-        )
-
-    def to_dataclass_instances(self) -> Sequence[TypedDfDataclass]:
-        df = self.convert(self)
-        fix = {
-            list: Sequence,
-            set: AbstractSet,
-            dict: Mapping,
-        }
-        origin = self.__class__.create_dataclass()
-        if [*df.index_names(), *df.column_names()] == [f.name for f in origin.get_fields()]:
-            clazz = origin
-        else:
-            clazz = self.__class__._create_dataclass(
-                {c: fix.get(df[c].dtype, df[c].dtype) for c in df.column_names()}, origin=origin
-            )
-        instances = []
-        orderable_flag = [True]
-        for row in df.itertuples():
-            # ignore extra columns
-            # if cols are missing, let it fail on clazz.__init__
-            data = {
-                field.name: Utils.freeze(getattr(row, field.name), orderable_flag)
-                for field in clazz.get_fields()
-            }
-            # noinspection PyArgumentList
-            instances.append(clazz(**data))
-        if not orderable_flag[0]:
-            clazz.__lt__ = None
-            clazz.__gt__ = None
-            clazz.__le__ = None
-            clazz.__ge__ = None
-        return instances
-
-    @classmethod
-    def create_dataclass(cls, reserved: bool = True) -> Type[TypedDfDataclass]:
-        fields = [
-            (field, cls.get_typing().auto_dtypes.get(field, Any))
-            for field in cls.get_typing().required_names
-        ]
-        if reserved:
-            fields += [
-                (field, Optional[cls.get_typing().auto_dtypes.get(field, Any)])
-                for field in [
-                    *cls.get_typing().reserved_columns,
-                    *cls.get_typing().reserved_index_names,
-                ]
-            ]
-        fix = {
-            list: Sequence,
-            set: AbstractSet,
-            dict: Mapping,
-        }
-        fields = [(x0, fix.get(x1, x1)) for x0, x1 in fields]
-        clazz = cls._create_dataclass(fields, TypedDfDataclass)
-
-        # If we don't do this, then, because we create a new type each call,
-        # instances will never be equal under dataclass's built-in __eq__
-        def eq(self_: TypedDfDataclass, other_: TypedDfDataclass) -> bool:
-            return self_.get_as_dict() == other_.get_as_dict()
-
-        clazz.__eq__ = eq
-        return clazz
-
-    @classmethod
-    def _create_dataclass(
-        cls, fields: Sequence[Tuple[str, Type[Any]]], origin: Type[TypedDfDataclass]
-    ) -> Type[TypedDfDataclass]:
-        clazz = make_dataclass(
-            cls.__name__,
-            fields,
-            bases=(origin,),
-            frozen=True,
-            repr=True,
-            unsafe_hash=True,
-            order=True,
-        )
-        _get_type = lambda: cls.__class__
-        _get_type.__name__ = "get_df_type"
-        clazz.get_df_type = _get_type
-        return clazz
 
     @classmethod
     def _check(cls, df) -> None:
@@ -321,6 +201,14 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             for f in FileFormat.all_writable()
             if f is not FileFormat.lines or cls._lines_files_apply()
         }
+
+    @classmethod
+    def from_records(
+        cls,
+        *args,
+        **kwargs,
+    ) -> __qualname__:
+        return cls.convert(super().from_records(*args, **kwargs))
 
     def to_lines(
         self,
@@ -1021,4 +909,4 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return len(cls.get_typing().required_names) <= 1
 
 
-__all__ = ["AbsDf", "TypedDfDataclass"]
+__all__ = ["AbsDf"]

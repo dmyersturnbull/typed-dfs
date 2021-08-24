@@ -3,11 +3,16 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.11.0] - unreleased
+## [0.11.0] - 2021-08-24
 
 ### Added
 
 - Dataclass conversion
+- Utils for freezing types
+
+### Changed
+
+- `from_records` now calls `convert`
 
 ## [0.10.0] - 2021-08-21
 

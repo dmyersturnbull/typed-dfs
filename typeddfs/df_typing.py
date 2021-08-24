@@ -138,10 +138,18 @@ class DfTyping:
     _auto_dtypes: Optional[Mapping[str, Type[Any]]] = None
     _columns_to_drop: Optional[Set[str]] = None
     _value_dtype: Optional[Type[Any]] = None
+    _order_dclass: bool = True
 
     @property
     def io(self) -> IoTyping:
         return self._io_typing
+
+    @property
+    def order_dataclass(self) -> bool:
+        """
+        Whether the corresponding dataclass can be sorted (has ``__lt__``).
+        """
+        return self._order_dclass
 
     @property
     def index_series_name(self) -> Union[bool, None, str]:

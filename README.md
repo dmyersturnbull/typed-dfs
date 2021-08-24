@@ -78,7 +78,12 @@ MyDfType = (
 ).build()
 
 df = MyDfType.read_file(input("filename? [.feather/.csv.gz/.tsv.xz/etc.]"))
-df.sort_natural().write_file("myfile.feather", mkdirs=True)
+df = df.sort_natural()
+df.write_file("myfile.feather", mkdirs=True)
+# want to write to a sha1sum-like (.sha256) file?
+df.write_file("myfile.feather", file_hash=True)
+# verify it?
+MyDfType.read_file("myfile.feather", check_hash="file")
 ```
 
 ### 📉 A matrix-style DataFrame

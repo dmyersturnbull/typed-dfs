@@ -20,12 +20,12 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         self.__class__._change(self)
 
     @classmethod
-    def new_df(cls, *args, **kwargs) -> __qualname__:
+    def new_df(cls, **kwargs) -> __qualname__:
         """
         Creates a new, somewhat arbitrary DataFrame of this type.
+        Calling this with no arguments should always be supported.
 
         Arguments:
-            *args: These should be narrowed by the overriding method as needed.
             **kwargs: These should be narrowed by the overriding method as needed.
 
         Raises:

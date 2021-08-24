@@ -24,6 +24,8 @@ from typing import (
     Generic,
     Iterator,
     AbstractSet,
+    Dict,
+    overload,
 )
 
 import numpy as np
@@ -52,7 +54,12 @@ V = TypeVar("V", covariant=True)
 
 
 @functools.total_ordering
-class FrozeList(Generic[T]):
+class FrozeList(Sequence[T]):
+    """
+    An immutable list.
+    Hashable and ordered.
+    """
+
     def __init__(self, lst: Sequence[T]):
         self.__lst = lst if isinstance(lst, list) else list(lst)
         try:
@@ -63,29 +70,17 @@ class FrozeList(Generic[T]):
     def __iter__(self) -> Iterator[T]:
         return iter(self.__lst)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int):
         return self.__lst[item]
 
     def __hash__(self) -> int:
         return self.__hash
 
-    def __eq__(self, other: FrozeList[T]) -> bool:
-        if isinstance(other, FrozeList):
-            return self.__lst == list(other.__lst)
-        elif isinstance(other, list):
-            return self.__lst == other
-        elif isinstance(other, Sequence):
-            return self.__lst == list(other)
-        raise TypeError(f"Cannot compare to {type(other)}")
+    def __eq__(self, other: Union[FrozeList[T], Sequence[T]]) -> bool:
+        return self.__lst == self.__make_other(other)
 
-    def __lt__(self, other: FrozeList[T]):
-        if isinstance(other, FrozeList):
-            return self.__lst < list(other.__lst)
-        elif isinstance(other, list):
-            return self.__lst < other
-        elif isinstance(other, Sequence):
-            return self.__lst < list(other)
-        raise TypeError(f"Cannot compare to {type(other)}")
+    def __lt__(self, other: Union[FrozeList[T], Sequence[T]]):
+        return self.__lst < self.__make_other(other)
 
     def __len__(self) -> int:
         return len(self.__lst)
@@ -99,14 +94,43 @@ class FrozeList(Generic[T]):
     def to_list(self) -> List[T]:
         return list(self.__lst)
 
+    def __make_other(self, other: Union[FrozeList[T], Sequence[T]]) -> List[T]:
+        if isinstance(other, FrozeList):
+            other = other.__lst
+        if isinstance(other, list):
+            return other
+        elif isinstance(other, Sequence):
+            return list(other)
+        raise TypeError(f"Cannot compare to {type(other)}")
 
-class FrozeSet(Generic[T]):
+
+class FrozeSet(AbstractSet[T]):
+    """
+    An immutable set.
+    Hashable.
+    This is almost identical to ``typing.FrozenSet``, but it's behavior was made
+    equivalent to those of FrozeDict and FrozeList.
+    """
+
     def __init__(self, lst: AbstractSet[T]):
         self.__lst = lst if isinstance(lst, set) else set(lst)
         try:
             self.__hash = hash(tuple(lst))
         except AttributeError:
             self.__hash = 0
+
+    def get(self, item: T, default: Optional[T]) -> Optional[T]:
+        if item in self.__lst:
+            return item
+        return default
+
+    def __getitem__(self, item: T) -> T:
+        if item in self.__lst:
+            return item
+        raise KeyError(f"Item {item} not found")
+
+    def __contains__(self, x: T) -> bool:
+        return x in self.__lst
 
     def __iter__(self) -> Iterator[T]:
         return iter(self.__lst)
@@ -115,13 +139,7 @@ class FrozeSet(Generic[T]):
         return self.__hash
 
     def __eq__(self, other: FrozeSet[T]) -> bool:
-        if isinstance(other, FrozeSet):
-            return self.__lst == set(other.__lst)
-        elif isinstance(other, set):
-            return self.__lst == other
-        elif isinstance(other, AbstractSet):
-            return self.__lst == set(other)
-        raise TypeError(f"Cannot compare to {type(other)}")
+        return self.__lst == self.__make_other(other)
 
     def __len__(self) -> int:
         return len(self.__lst)
@@ -135,14 +153,36 @@ class FrozeSet(Generic[T]):
     def to_set(self) -> AbstractSet[T]:
         return set(self.__lst)
 
+    def __make_other(self, other: Union[FrozeSet[T], AbstractSet[T]]) -> Set[T]:
+        if isinstance(other, FrozeSet):
+            other = other.__lst
+        if isinstance(other, set):
+            return other
+        elif isinstance(other, AbstractSet):
+            return set(other)
+        raise TypeError(f"Cannot compare to {type(other)}")
 
-class FrozeDict(Generic[K, V]):
+
+class FrozeDict(Mapping[K, V]):
+    """
+    An immutable dictionary/mapping.
+    Hashable.
+    """
+
     def __init__(self, dct: Mapping[K, V]):
         self.__dct = dct if isinstance(dct, dict) else dict(dct)
         self.__hash = hash(tuple(dct.items()))
 
     def __iter__(self):
         return iter(self.__dct)
+
+    def get(self, key: K, default: Optional[V] = None) -> Optional[V]:
+        return self.__dct.get(key)
+
+    def req(self, key: K, default: Optional[V] = None) -> V:
+        if default is None:
+            return self.__dct[key]
+        return self.__dct.get(key, default)
 
     def items(self) -> AbstractSet[tuple[K, V]]:
         return self.__dct.items()
@@ -153,7 +193,7 @@ class FrozeDict(Generic[K, V]):
     def values(self) -> ValuesView[V]:
         return self.__dct.values()
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: K) -> T:
         return self.__dct[item]
 
     def __hash__(self) -> int:
@@ -174,16 +214,27 @@ class FrozeDict(Generic[K, V]):
     def to_dict(self) -> Mapping[K, V]:
         return dict(self.__dct)
 
+    def __make_other(self, other: Union[FrozeDict[K, V], Mapping[K, V]]) -> Dict[K, V]:
+        if isinstance(other, FrozeDict):
+            other = other.__dct
+        if isinstance(other, dict):
+            return other
+        elif isinstance(other, Mapping):
+            return dict(other)
+        raise TypeError(f"Cannot compare to {type(other)}")
+
 
 class Utils:
     @classmethod
-    def freeze(cls, v: Any, orderable_flag: List[bool]) -> Any:
+    def freeze(cls, v: Any) -> Any:
         """
-        Returns either ``v`` or a frozen view of ``v``.
+        Returns ``v`` or a hashable view of it.
+        Note that the returned types must be hashable but might not be ordered.
+        You can generally add these values as DataFrame elements, but you might not
+        be able to sort on those columns.
 
         Args:
             v: Any value
-            orderable_flag: Item 0 will be set to ``True`` if the value is not orderable
 
         Returns:
             Either ``v`` itself,
@@ -211,11 +262,6 @@ class Utils:
         if isinstance(v, Mapping):
             return FrozeDict(v)
         hash(v)  # let it raise an AttributeError
-        if not orderable_flag[0]:
-            try:
-                sorted([v])
-            except AttributeError:
-                orderable_flag[0] = False
         return v
 
     @classmethod

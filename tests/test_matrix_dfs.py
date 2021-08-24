@@ -94,6 +94,8 @@ class TestMatrixDfs:
         assert df.fix().flatten().tolist() == [11.5, 12.5, 21.5, 22.5]
 
     def test_new(self):
+        mx = MatrixDf.new_df()
+        assert len(mx) == len(mx.columns) == 0
         mx = MatrixDf.new_df(0, 0)
         assert len(mx) == len(mx.columns) == 0
         mx = MatrixDf.new_df(2, 2)

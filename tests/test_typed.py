@@ -132,6 +132,14 @@ class TestTyped:
         assert df.index_names() == ["qqq", "rrr"]
         assert df.column_names() == ["abc", "xyz", "res"]
 
+    def test_records(self):
+        df = Ind2.convert(pd.DataFrame(sample_data()))
+        records = df.to_records()
+        df2 = Ind2.from_records(records)
+        assert isinstance(df2, Ind2)
+        assert df2.values.tolist() == [[2], [5]]
+        assert df2.reset_index().values.tolist() == [[1, 3, 2], [4, 6, 5]]
+
 
 if __name__ == "__main__":
     pytest.main()

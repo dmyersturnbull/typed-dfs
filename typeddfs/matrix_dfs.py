@@ -204,8 +204,8 @@ class MatrixDf(_MatrixDf):
     @classmethod
     def new_df(
         cls,
-        rows: Union[int, Sequence[str]],
-        cols: Union[int, Sequence[str]],
+        rows: Union[int, Sequence[str]] = 0,
+        cols: Union[int, Sequence[str]] = 0,
         fill: Union[int, float, complex] = 0,
     ) -> __qualname__:
         """
@@ -246,7 +246,7 @@ class AffinityMatrixDf(_MatrixDf):
 
     @classmethod
     def new_df(
-        cls, n: Union[int, Sequence[str]], fill: Union[int, float, complex] = 0
+        cls, n: Union[int, Sequence[str]] = 0, fill: Union[int, float, complex] = 0
     ) -> __qualname__:
         """
         Returns a DataFrame that is empty but valid.
