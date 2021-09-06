@@ -386,7 +386,7 @@ class FileFormat(enum.Enum):
             return FileFormat.of(format_map[suffix])
         except KeyError:
             msg = f"Suffix {suffix} not recognized. Is an extra package needed?"
-            raise FilenameSuffixError(msg) from None
+            raise FilenameSuffixError(msg, key=suffix) from None
 
     @classmethod
     def all_readable(cls) -> Set[FileFormat]:

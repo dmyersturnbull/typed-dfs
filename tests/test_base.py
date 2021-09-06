@@ -81,6 +81,12 @@ class TestBase:
         df3 = df.drop_cols("777")
         assert list(df3.columns) == ["abc", "123", "xyz"]
 
+    def test_drop_cols_2(self):
+        df = Trivial(sample_data())
+        df2 = df.drop_cols("abc", "123")
+        assert list(df.columns) == ["abc", "123", "xyz"]
+        assert list(df2.columns) == ["xyz"]
+
     def test_no_detype(self):
         df = Trivial(sample_data())
         assert isinstance(df, Trivial)

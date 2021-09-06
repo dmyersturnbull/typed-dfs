@@ -23,8 +23,14 @@ from typing import (
     Iterator,
     AbstractSet,
     Dict,
+    Type,
+    Tuple,
+    Collection,
 )
 
+# noinspection PyProtectedMember
+from pandas.api.types import is_integer_dtype, is_float_dtype, is_bool_dtype, is_string_dtype
+from natsort import ns_enum
 import numpy as np
 from pandas.io.common import get_handle
 
@@ -323,6 +329,92 @@ class Utils:
         return encoding
 
     @classmethod
+    def all_natsort_flags(cls) -> Mapping[str, int]:
+        """
+        Simply returns the mapping between natsort flag names and their int values.
+        "Combined" flags such as ``ns.REAL`` are included.
+        """
+        # import enum_fields, enum_combos, enum_aliases
+        return dict(ns_enum.enum_fields)
+
+    @classmethod
+    def guess_natsort_alg(cls, dtype: Type[Any]) -> Tuple[Set[str], int]:
+        """
+        Guesses a good natsorted flag for the dtype.
+
+        Here are some specifics:
+            - integers       ==> INT and SIGNED
+            - floating-point ==> FLOAT and SIGNED
+            - strings        ==> COMPATIBILITYNORMALIZE and GROUPLETTERS
+            - paths          ==> PATH, COMPATIBILITYNORMALIZE, and GROUPLETTERS
+
+        Args:
+            dtype: Probably from ``pd.Series.dtype``
+
+        Returns:
+            A tuple of (set of flags, int) -- see :py.meth:`exact_natsort_alg`
+        """
+        st, x = set(), 0
+        if is_string_dtype(dtype):
+            st.update(["COMPATIBILITYNORMALIZE", "GROUPLETTERS"])
+            x |= ns_enum.ns.COMPATIBILITYNORMALIZE | ns_enum.ns.GROUPLETTERS
+        if is_integer_dtype(dtype) or is_bool_dtype(dtype):
+            st.update(["INT", "SIGNED"])
+            x |= ns_enum.ns.INT | ns_enum.ns.SIGNED
+        elif is_float_dtype(dtype):
+            st.update(["FLOAT", "SIGNED"])
+            x |= ns_enum.ns.FLOAT | ns_enum.ns.SIGNED  # same as ns_enum.ns.REAL
+        return st, x
+
+    @classmethod
+    def exact_natsort_alg(
+        cls, flags: Union[int, Collection[Union[int, str]]]
+    ) -> Tuple[Set[str], int]:
+        """
+        Gets the flag names and combined ``alg=`` argument for natsort.
+
+        Examples:
+            - exact_natsort_alg({"REAL"}) == ({"FLOAT", "SIGNED"}, ns.FLOAT | ns.SIGNED)
+            - exact_natsort_alg({}) == ({}, 0)
+            - exact_natsort_alg(ns.LOWERCASEFIRST) == ({"LOWERCASEFIRST"}, ns.LOWERCASEFIRST)
+            - exact_natsort_alg({"localenum", "numafter"})
+              == ({"LOCALENUM", "NUMAFTER"}, ns.LOCALENUM | ns.NUMAFTER)
+
+        Args:
+            flags: Can be either:
+                   - a single integer ``alg`` argument
+                   - a set of flag ints and/or names in ``natsort.ns``
+
+        Returns:
+            A tuple of the set of flag names, and the corresponding input to ``natsorted``
+            Only uses standard flag names, never the "combined" ones.
+            (E.g. ``exact_natsort_alg({"REAL"})``
+            will return ``({"FLOAT", "SIGNED"}, ns.FLOAT | ns.SIGNED)``.
+        """
+        if (
+            flags is None
+            or isinstance(flags, Collection)
+            and len(flags) == 0
+            or isinstance(flags, int)
+            and flags == 0
+        ):
+            return set(), 0
+        if isinstance(flags, int):
+            st = set()
+            for f, v in ns_enum.enum_fields.items():
+                if f in ns_enum.enum_fields and (v & flags) != 0:
+                    st.add(f)
+            return st, flags
+        elif isinstance(flags, Collection):
+            a = 0
+            for f in flags:
+                if isinstance(f, str):
+                    f = ns_enum.enum_fields[f.upper()]
+                a |= f
+            return set(flags), a
+        raise TypeError(f"Unknown type {type(flags)} for {flags}")
+
+    @classmethod
     def table_formats(cls) -> Sequence[str]:
         """
         Returns the names of styles for :py:mod`tabulate`.
@@ -376,7 +468,7 @@ class Utils:
         hash_file_path = cls.get_hash_file(path, algorithm)
         hash_dir_path = cls.get_hash_dir(path, algorithm)
         if to_file and hash_file_path.exists() and not overwrite:  # check first -- save time
-            raise HashFileExistsError(f"Hash file {path} already exists")
+            raise HashFileExistsError(f"Hash file {path} already exists", key=str(path))
         if not to_file and not to_dir:
             return None
         digest = cls.calc_hash(path, algorithm)
@@ -404,7 +496,7 @@ class Utils:
         algorithm = cls.get_algorithm(algorithm)
         hash_path = path.with_suffix(path.suffix + f".{algorithm}")
         if hash_path.exists() and not overwrite:  # check first -- save time
-            raise HashFileExistsError(f"Hash file {path} already exists")
+            raise HashFileExistsError(f"Hash file {path} already exists", key=str(path))
         digest = cls.calc_hash(path)
         cls._add_file_hash(path, hash_path, digest, overwrite)
         return digest

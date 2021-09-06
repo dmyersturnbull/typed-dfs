@@ -374,11 +374,11 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
         if not t.more_columns_allowed:
             for c in df.column_names():
                 if c not in t.required_columns and c not in t.reserved_columns:
-                    raise UnexpectedColumnError(f"Unexpected column {c}")
+                    raise UnexpectedColumnError(f"Unexpected column {c}", key=c)
         if not t.more_indices_allowed:
             for c in df.index_names():
                 if c not in t.required_index_names and c not in t.reserved_index_names:
-                    raise UnexpectedIndexNameError(f"Unexpected index name {c}")
+                    raise UnexpectedIndexNameError(f"Unexpected index name {c}", key=c)
 
 
 __all__ = ["TypedDf", "TypedDfDataclass"]

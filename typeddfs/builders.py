@@ -63,12 +63,21 @@ class _GenericBuilder:
         self._secure = False
         self._req_hash: Optional = False
         self._req_order: Optional = False
-        # use utf-8 by default
-        self.encoding()
         # make these use an explicit version
         # the user can override if needed
         self.add_read_kwargs("pickle", protocol=5)
         self.add_write_kwargs("pickle", protocol=5)
+
+    def doc(self, s: str) -> __qualname__:
+        """
+        Sets the docstring.
+        This has the same effect as setting doc in :py.meth:`__init__`.
+
+        Returns:
+            This builder for chaining
+        """
+        self._doc = s
+        return self
 
     def series_names(
         self, index: Union[None, bool, str] = False, columns: Union[None, bool, str] = False
@@ -596,7 +605,7 @@ class TypedDfBuilder(_GenericBuilder):
             raise ClashError(f"{','.join(_FORBIDDEN_NAMES)} are forbidden names")
         for name in names:
             if name in [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]:
-                raise ClashError(f"Column {name} for {self._name} already exists")
+                raise ClashError(f"Column {name} for {self._name} already exists", keys={name})
 
 
 __all__ = ["TypedDfBuilder", "MatrixDfBuilder", "AffinityMatrixDfBuilder"]

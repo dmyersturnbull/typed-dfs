@@ -275,7 +275,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
                 **kwargs,
             )
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         if len(df.columns) > 1:
             raise NotSingleColumnError(f"Read multiple columns on {path_or_buff}")
         return cls._convert_typed(df)
@@ -285,8 +287,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             return cls._convert_typed(pd.read_fwf(*args, **kwargs))
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
-        return cls._convert_typed(df)
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
 
     def to_fwf(
         self,
@@ -400,7 +403,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
                 **kwargs,
             )
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         df.columns = [c.strip() for c in df.columns]
         for c in df.columns:
             try:
@@ -435,7 +440,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_excel(io, sheet_name, *args, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         # This only applies for .xlsb -- the others don't have this problem
         if "Unnamed: 0" in df.columns:
             df = df.drop("Unnamed: 0", axis=1)
@@ -535,7 +542,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_pickle(filepath_or_buffer, *args, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         return cls._convert_typed(df)
 
     # noinspection PyFinal
@@ -548,7 +557,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_json(*args, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         return cls._convert_typed(df)
 
     @classmethod
@@ -556,10 +567,14 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_xml(*args, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         # see to_xml for why these fixes are needed
         if "__xml_is_empty_" in df.reset_index().columns:
-            df = pd.DataFrame()
+            # TODO: This ok?
+            # df = pd.DataFrame()
+            return cls.new_df()
         elif "__xml_index_" in df.columns:
             df = df.drop(columns={"__xml_index_"})
         return cls._convert_typed(df)
@@ -597,7 +612,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_feather(*args, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         if "__feather_ignore_" in df.columns:
             df = df.drop("__feather_ignore_", axis=1)
         return cls._convert_typed(df)
@@ -637,7 +654,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_parquet(*args, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         return cls._convert_typed(df)
 
     # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
@@ -718,7 +737,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_csv(*args, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
         return cls._convert_typed(df)
 
     def to_tsv(self, *args, **kwargs) -> Optional[str]:
@@ -744,7 +765,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         try:
             df = pd.read_hdf(*args, key=key, **kwargs)
         except pd.errors.EmptyDataError:
-            df = pd.DataFrame()
+            # TODO: Figure out exactly what EmptyDataError is
+            return cls.new_df()
+        # noinspection PyTypeChecker
         return cls._convert_typed(df)
 
     def to_html(self, *args, **kwargs) -> Optional[str]:
