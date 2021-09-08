@@ -1,4 +1,5 @@
 import abc
+import functools
 from typing import Any, Iterable, Mapping, Sequence, Union, Generator, Tuple, Set
 
 import pandas as pd
@@ -37,6 +38,16 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
                             consuming code, in general, should assume that ``new_df`` will always work.
         """
         raise NotImplementedError()
+
+    def strip_control_chars(self) -> __qualname__:
+        """
+        Removes all control characters (Unicode group 'C') from all string-typed columns.
+        """
+        df = self.vanilla_reset()
+        for c in df.columns:
+            if Utils.is_string_dtype(df[c]):
+                df[c] = df[c].map(Utils.strip_control_chars)
+        return self.__class__._convert_typed(df)
 
     def iter_row_col(self) -> Generator[Tuple[Tuple[int, int], Any], None, None]:
         """

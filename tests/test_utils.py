@@ -24,6 +24,12 @@ class TestUtils:
         assert "sha1" in Utils.insecure_hash_functions()
         assert "__xml_index_" in Utils.banned_names()
 
+    def test_strip_control_chars(self):
+        assert Utils.strip_control_chars("ab\ncd") == "abcd"
+        assert Utils.strip_control_chars("ab\0\0cℶd") == "abcℶd"
+        assert Utils.strip_control_chars("ℶℶ\u202Cℶℶ") == "ℶℶℶℶ"
+        assert Utils.strip_control_chars("\u202C") == ""
+
 
 if __name__ == "__main__":
     pytest.main()

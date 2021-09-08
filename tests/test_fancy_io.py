@@ -328,13 +328,12 @@ class TestReadWrite:
             df.write_file(path, file_hash=True)
             hash_file = Utils.get_hash_file(path)
             assert hash_file.exists()
-            got = Utils.parse_hash_file(hash_file)
+            got = Utils.parse_hash_file_resolved(hash_file)
             assert list(got.keys()) == [path.resolve()]
             hit = got[path.resolve()]
             assert len(hit) == 64
-            t.read_file(path, check_hash="file")
+            t.read_file(path, file_hash=True)
             t.read_file(path, check_hash=hit)
-            t.read_file(path, check_hash=Utils.get_hash_file(path))
 
     def test_dir_hash(self):
         t = TypedDfBuilder("a").reserve("x", "y").build()
@@ -344,13 +343,12 @@ class TestReadWrite:
             hash_dir.unlink(missing_ok=True)
             df.write_file(path, dir_hash=True)
             assert hash_dir.exists()
-            got = Utils.parse_hash_file(hash_dir)
+            got = Utils.parse_hash_file_resolved(hash_dir)
             assert list(got.keys()) == [path.resolve()]
             hit = got[path.resolve()]
             assert len(hit) == 64
-            t.read_file(path, check_hash="dir")
-            t.read_file(path, check_hash=hit)
-            t.read_file(path, check_hash=Utils.get_hash_dir(path))
+            t.read_file(path, dir_hash=True)
+            t.read_file(path, hex_hash=hit)
 
 
 if __name__ == "__main__":

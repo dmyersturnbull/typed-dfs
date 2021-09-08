@@ -89,6 +89,7 @@ python                   = "^3.8"
 # natsort has major version bumps often
 natsort                  = ">=7"
 pandas                   = "^1.2"
+regex                    = ">=2021.8.28"
 tabulate                 = "^0.8"
 # we don't care about the exact versions, as long as tabulate and pandas accept them
 wcwidth                  = ">=0.2"

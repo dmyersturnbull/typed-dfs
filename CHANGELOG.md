@@ -3,6 +3,27 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.12.0] - unreleased
+
+### Added
+
+- `CoreDf.strip_control_chars`
+- `Utils.exact_natsort_alg`, `Utils.guess_natsort_alg`, and `Utils.all_natsort_flags`
+- Functions from `pandas.api.types` to `Utils`
+
+### Changed
+
+- `sort_natural` now infers the best algorithm from the data type, by default
+- `drop_cols` can now accept \*args
+- Split `parse_hash_file` into `parse_hash_file_resolved` and `parse_hash_file_generic`
+- `regex` is now a dependency
+- Hashing options in `write_file`
+- Some `Utils` options are keyword-only
+
+### Removed
+
+- `Utils.verify_any_hash`
+
 ## [0.11.0] - 2021-08-24
 
 ### Added

@@ -61,7 +61,11 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
     @classmethod
     def read_file(
-        cls, path: Union[Path, str], check_hash: Union[None, bool, str, PurePath] = False
+        cls,
+        path: Union[Path, str],
+        file_hash: Optional[bool] = None,
+        dir_hash: Optional[bool] = None,
+        hex_hash: Optional[str] = None,
     ) -> __qualname__:
         """
         Reads from a file (or possibly URL), guessing the format from the filename extension.
@@ -88,21 +92,15 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
                   (because we need a filename).
-            check_hash: Require a hash file for the file or directory and make sure it matches.
-                        Must be one of these:
-                          - False / "no" -- do not check
-                          - True / "yes" -- check either a file hash or a dir hash
-                          - None -- Treat as "yes" if dictated by ``self.get_typing().io``
-                          - "file" -- check a file hash (ignoring the filename in the hash file)
-                          - "dir" -- check a dir hash (looking up the filename in the hash file)
-                          - str or Path (extant); a path to the hash file (does not check the filename)
-                          - str matching [A-Ha-h0-9]+; a hex-encoded digest
+            file_hash: Check against a hash file specific to this file (e.g. <path>.sha1)
+            dir_hash: Check against a per-directory hash file
+            hex_hash: Check against this hex-encoded hash
 
         Returns:
             An instance of this class
         """
         path = Path(path)
-        cls._check_hash(path, check_hash)
+        cls._check_hash(path, file_hash, dir_hash, hex_hash)
         df = cls._call_read(cls, path)
         return cls._convert_typed(df)
 
@@ -917,15 +915,16 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return kwargs
 
     @classmethod
-    def _check_hash(cls, path: Path, check_hash: Union[None, bool, str, PurePath]):
+    def _check_hash(cls, path: Path, file_hash: bool, dir_hash: bool, hex_hash: Optional[str]):
         t = cls.get_typing().io
-        if check_hash is None and t.file_hash:
-            check_hash = "file"
-        elif check_hash is None and t.dir_hash:
-            check_hash = "dir"
-        elif check_hash is None:
-            check_hash = "no"
-        Utils.verify_any_hash(path, check_hash, algorithm=t.hash_algorithm)
+        if hex_hash is not None:
+            Utils.verify_hash_from_hex(path, hex_hash)
+        if file_hash or dir_hash:
+            z = Utils.calc_hash(path, algorithm=t.hash_algorithm)
+            if file_hash:
+                Utils.verify_dir_hash(path, algorithm=t.hash_algorithm, computed=z)
+            if dir_hash:
+                Utils.verify_dir_hash(path, algorithm=t.hash_algorithm, computed=z)
 
     @classmethod
     def _lines_files_apply(cls) -> bool:

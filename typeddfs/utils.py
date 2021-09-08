@@ -7,9 +7,8 @@ import collections
 import functools
 import hashlib
 import os
-import re
 import sys
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import (
     Optional,
     Sequence,
@@ -28,8 +27,32 @@ from typing import (
     Collection,
 )
 
+import regex
+
 # noinspection PyProtectedMember
-from pandas.api.types import is_integer_dtype, is_float_dtype, is_bool_dtype, is_string_dtype
+from pandas.api.types import (
+    is_integer_dtype,
+    is_float_dtype,
+    is_bool_dtype,
+    is_string_dtype,
+    is_categorical_dtype,
+    is_complex_dtype,
+    is_integer,
+    is_float,
+    is_bool,
+    is_categorical,
+    is_complex,
+    is_datetime64_any_dtype,
+    is_datetime64tz_dtype,
+    is_period_dtype,
+    is_interval,
+    is_numeric_dtype,
+    is_object_dtype,
+    is_number,
+    is_interval_dtype,
+    is_extension_type,
+    is_scalar,
+)
 from natsort import ns_enum
 import numpy as np
 from pandas.io.common import get_handle
@@ -49,8 +72,9 @@ from typeddfs.df_errors import (
 )
 
 
-_hex_pattern = re.compile(r"[A-Ha-h0-9]+")
-_hashsum_file_sep = re.compile(r" [ *]")
+_control_chars = regex.compile(r"\p{C}", flags=regex.V1)
+_hex_pattern = regex.compile(r"[A-Ha-h0-9]+", flags=regex.V1)
+_hashsum_file_sep = regex.compile(r" [ *]", flags=regex.V1)
 T = TypeVar("T", covariant=True)
 K = TypeVar("K", contravariant=True)
 V = TypeVar("V", covariant=True)
@@ -228,6 +252,33 @@ class FrozeDict(Mapping[K, V]):
 
 
 class Utils:
+
+    is_integer_dtype = is_integer_dtype
+    is_float_dtype = is_float_dtype
+    is_bool_dtype = is_bool_dtype
+    is_string_dtype = is_string_dtype
+    is_categorical_dtype = is_categorical_dtype
+    is_complex_dtype = is_complex_dtype
+    is_integer = is_integer
+    is_float = is_float
+    is_bool = is_bool
+    is_categorical = is_categorical
+    is_complex = is_complex
+    is_datetime64_any_dtype = is_datetime64_any_dtype
+    is_datetime64tz_dtype = is_datetime64tz_dtype
+    is_period_dtype = is_period_dtype
+    is_interval = is_interval
+    is_numeric_dtype = is_numeric_dtype
+    is_object_dtype = is_object_dtype
+    is_number = is_number
+    is_interval_dtype = is_interval_dtype
+    is_extension_type = is_extension_type
+    is_scalar = is_scalar
+
+    @classmethod
+    def strip_control_chars(cls, s: str) -> str:
+        return _control_chars.sub("", s)
+
     @classmethod
     def freeze(cls, v: Any) -> Any:
         """
@@ -465,13 +516,13 @@ class Utils:
         Adds and/or appends the hex hash of ``path``.
         """
         algorithm = cls.get_algorithm(algorithm)
-        hash_file_path = cls.get_hash_file(path, algorithm)
-        hash_dir_path = cls.get_hash_dir(path, algorithm)
+        hash_file_path = cls.get_hash_file(path, algorithm=algorithm)
+        hash_dir_path = cls.get_hash_dir(path, algorithm=algorithm)
         if to_file and hash_file_path.exists() and not overwrite:  # check first -- save time
             raise HashFileExistsError(f"Hash file {path} already exists", key=str(path))
         if not to_file and not to_dir:
             return None
-        digest = cls.calc_hash(path, algorithm)
+        digest = cls.calc_hash(path, algorithm=algorithm)
         if to_file:
             cls._add_file_hash(path, hash_file_path, digest, overwrite)
         if to_dir:
@@ -517,45 +568,10 @@ class Utils:
             The hex-encoded hash
         """
         path = Path(path)
-        hash_path = cls.get_hash_dir(path, algorithm)
+        hash_path = cls.get_hash_dir(path, algorithm=algorithm)
         digest = cls.calc_hash(path)
         cls._append_dir_hash(path, hash_path, digest, overwrite)
         return digest
-
-    @classmethod
-    def verify_any_hash(
-        cls, path: Path, how: Union[bool, str, PurePath], algorithm: str = _DEFAULT_HASH_ALG
-    ) -> None:
-        """
-        See :py.meth:`typeddfs.abs_dfs.AbsDf.write_file`.
-        """
-        origin_how = str(how)
-        f_path = cls.get_hash_file(path, algorithm=algorithm)
-        d_path = cls.get_hash_dir(path, algorithm=algorithm)
-        if how is True or how == "yes" and f_path.exists():
-            how = "file"
-        elif how is True or how == "yes" and d_path.exists():
-            how = "dir"
-        elif how is True or how == "yes":
-            how = "file"  # we'll fail later
-        elif how is False or how == "false":
-            how = "no"
-        elif how == "dir" or how == "directory":
-            how = "dir"
-        elif how == "file":
-            how = "file"
-        elif isinstance(how, str) and _hex_pattern.fullmatch(how):
-            cls.verify_hash_from_hex(path, how, algorithm=algorithm)
-            how = "no"
-        elif isinstance(how, (str, PurePath)):
-            cls.verify_hash_from_file(path, Path(how), algorithm=algorithm)
-            how = "no"
-        else:
-            raise ValueError(f"Option check_hash={origin_how} not understood or impossible")
-        if how == "file":
-            cls.verify_file_hash(path, algorithm=algorithm)
-        if how == "dir":
-            cls.verify_dir_hash(path, algorithm=algorithm)
 
     @classmethod
     def verify_hash_from_hex(
@@ -574,12 +590,23 @@ class Utils:
 
     @classmethod
     def verify_hash_from_file(
-        cls, path: Path, hash_path: Path, algorithm: Optional[str] = _DEFAULT_HASH_ALG
+        cls,
+        path: Path,
+        hash_path: Path,
+        *,
+        algorithm: Optional[str] = _DEFAULT_HASH_ALG,
+        computed: Optional[str] = None,
     ) -> Optional[str]:
         """
         Verifies a hash directly from a specific hash file.
         The hash file should contain only filename, which is ignored.
         If there are multiple filenames, it will use the one for ``path.name``.
+
+        Args:
+            path: The file to calculate the (binary mode) hash of
+            hash_path: The path to the hash file
+            algorithm: The algorithm in hashlib (ignored if ``computed`` is passed)
+            computed: A pre-computed hex-encoded hash; if set, do not calculate from ``path``
         """
         if algorithm is None:
             algorithm = cls.guess_algorithm(hash_path)
@@ -593,7 +620,12 @@ class Utils:
 
     @classmethod
     def verify_file_hash(
-        cls, path: Path, algorithm: str = _DEFAULT_HASH_ALG, use_filename: Optional[bool] = None
+        cls,
+        path: Path,
+        *,
+        algorithm: str = _DEFAULT_HASH_ALG,
+        use_filename: Optional[bool] = None,
+        computed: Optional[str] = None,
     ) -> str:
         """
         Verifies a file against is corresponding hash file.
@@ -602,39 +634,65 @@ class Utils:
 
         Args:
             path: The file to calculate the (binary mode) hash of
-            algorithm: The algorithm in hashlib
+            algorithm: The algorithm in hashlib (ignored if ``computed`` is passed)
             use_filename: If True, require the filename in the hash file to match ``path.name``;
                           If False, ignore the filename but require exactly 1 filename listed
                           If None, use either the single filename or the one for path.name.
+            computed: A pre-computed hex-encoded hash; if set, do not calculate from ``path``
+
+        Returns:
+            The hex-encoded hash
+
+        Raises:
+            FileNotFoundError: If ``path`` does not exist
+            HashFileMissingError: If the hash file does not exist
+            HashDidNotValidateError: If the hashes are not equal
         """
-        hash_path = cls.get_hash_file(path, algorithm)
+        hash_path = cls.get_hash_file(path, algorithm=algorithm)
         algorithm = cls.get_algorithm(algorithm)
         if not hash_path.exists():
             raise HashFileMissingError(f"No hash file {hash_path} found")
-        actual = cls.calc_hash(path, algorithm=algorithm)
-        cls._verify_file_hash(path, hash_path, actual, use_filename)
-        return actual
+        if computed is None:
+            computed = cls.calc_hash(path, algorithm=algorithm)
+        cls._verify_file_hash(path, hash_path, computed, use_filename)
+        return computed
 
     @classmethod
-    def verify_dir_hash(cls, path: Path, algorithm: str = _DEFAULT_HASH_ALG) -> str:
+    def verify_dir_hash(
+        cls, path: Path, *, algorithm: str = _DEFAULT_HASH_ALG, computed: Optional[str] = None
+    ) -> str:
         """
         Verifies a file against is corresponding per-directory hash file.
         The filename ``path.name`` must be listed in the file.
 
         Args:
             path: The file to calculate the (binary mode) hash of
-            algorithm: The algorithm in hashlib
+            algorithm: The algorithm in hashlib (ignored if ``computed`` is passed)
+            computed: A pre-computed hex-encoded hash; if set, do not calculate from ``path``
+
+        Returns:
+            The hex-encoded hash
+
+        Raises:
+            FileNotFoundError: If ``path`` does not exist
+            HashFileMissingError: If the hash file does not exist
+            HashDidNotValidateError: If the hashes are not equal
+            HashVerificationError`: Superclass of ``HashDidNotValidateError`` if
+                                    the filename is not listed, etc.
         """
-        hash_path = cls.get_hash_dir(path, algorithm)
+        hash_path = cls.get_hash_dir(path, algorithm=algorithm)
         algorithm = cls.get_algorithm(algorithm)
         if not hash_path.exists():
             raise HashFileMissingError(f"No hash file {hash_path} found")
-        actual = cls.calc_hash(path, algorithm=algorithm)
-        cls._verify_file_hash(path, hash_path, actual, True)
-        return actual
+        if not path.exists():
+            raise FileNotFoundError(f"Path {path} not found")
+        if computed is None:
+            computed = cls.calc_hash(path, algorithm=algorithm)
+        cls._verify_file_hash(path, hash_path, computed, True)
+        return computed
 
     @classmethod
-    def calc_hash(cls, path: Path, algorithm: str = _DEFAULT_HASH_ALG) -> str:
+    def calc_hash(cls, path: Path, *, algorithm: str = _DEFAULT_HASH_ALG) -> str:
         """
         Calculates the hash of a file and returns it, hex-encoded.
         """
@@ -646,25 +704,57 @@ class Utils:
         return alg.hexdigest()
 
     @classmethod
-    def parse_hash_file(cls, path: Path) -> Mapping[Path, str]:
+    def parse_hash_file_resolved(cls, path: Path) -> Mapping[Path, str]:
         """
         Reads a hash file.
 
+        See Also: :py.meth:`parse_hash_file_generic`.
+
         Returns:
-            A mapping from resolved Paths to their hex hashes
+            A mapping from resolved ``Path`` instances to their hex hashes
+        """
+        return {
+            Path(path.parent, *k.split("/")).resolve(): v
+            for k, v in cls.parse_hash_file_generic(path)
+        }
+
+    @classmethod
+    def parse_hash_file_generic(
+        cls, path: Path, *, forbid_slash: bool = False
+    ) -> Mapping[str, str]:
+        """
+        Reads a hash file.
+
+        See Also: :py.meth:`parse_hash_file_resolved`.
+
+        Args:
+            path: The path to read
+            forbid_slash: Raise a ``ValueError`` if a a path contains a slash
+                          In other words, do not allow specifying subdirectories.
+                          In general, most tools do not support these,
+                          nor does typeddfs.
+
+        Returns:
+            A mapping from raw string filenames to their hex hashes.
+            Any node called ``./`` in the path is stripped.
         """
         read = path.read_text(encoding="utf8").splitlines()
         read = [_hashsum_file_sep.split(s, 1) for s in read]
         # obviously this means that / can't appear in a node
         # this is consistent with the commonly accepted spec for shasum
-        return {
-            Path(path.parent, *r[1].split("/")).resolve(): r[0].strip()
+        kv = {
+            r[1]: "/".join([n for n in r[0].strip().split() if n != "./"])
             for r in read
             if len(r[1]) != 0
         }
+        if forbid_slash:
+            slashed = {k for k in kv.keys() if "/" in k}
+            if len(slashed) > 0:
+                raise ValueError(f"Subdirectory (containing /): {slashed} in {path}")
+        return kv
 
     @classmethod
-    def get_hash_file(cls, path: Path, algorithm: str = _DEFAULT_HASH_ALG) -> Path:
+    def get_hash_file(cls, path: Path, *, algorithm: str = _DEFAULT_HASH_ALG) -> Path:
         """
         Returns the path required for the per-file hash of ``path``.
 
@@ -675,7 +765,7 @@ class Utils:
         return path.with_suffix(path.suffix + "." + algorithm)
 
     @classmethod
-    def get_hash_dir(cls, path: Path, algorithm: str = _DEFAULT_HASH_ALG) -> Path:
+    def get_hash_dir(cls, path: Path, *, algorithm: str = _DEFAULT_HASH_ALG) -> Path:
         """
         Returns the path required for the per-file hash of ``path``.
 
@@ -728,7 +818,7 @@ class Utils:
     def _append_dir_hash(cls, path: Path, hash_path: Path, digest: str, overwrite: bool) -> None:
         txt = f"{digest} *{path.name}"
         if hash_path.exists():
-            existing = cls.parse_hash_file(hash_path)
+            existing = cls.parse_hash_file_resolved(hash_path)
             z = existing.get(path.resolve())
             if z is not None and z != digest and not overwrite:
                 raise HashContradictsExistingError(
@@ -743,7 +833,7 @@ class Utils:
         cls, path: Path, hash_path: Path, actual: str, use_filename: Optional[bool]
     ) -> None:
         path = Path(path)
-        hashes = cls.parse_hash_file(hash_path)
+        hashes = cls.parse_hash_file_resolved(hash_path)
         resolved = path.resolve()
         if (use_filename is None or use_filename is True) and resolved in hashes:
             expected = hashes[resolved]
