@@ -10,19 +10,30 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - `CoreDf.strip_control_chars`
 - `Utils.exact_natsort_alg`, `Utils.guess_natsort_alg`, and `Utils.all_natsort_flags`
 - Functions from `pandas.api.types` to `Utils`
+- `DfSupport.reload()`
 
 ### Changed
 
+- `DfTyping` is now generic
+- `FrozeSet` and `FrozeDict` are now ordered
+- Moved checksum utils to `checksums.py`
+- Moved `DfSupport` to `_format_support.py`
 - `sort_natural` now infers the best algorithm from the data type, by default
 - `drop_cols` can now accept \*args
 - Split `parse_hash_file` into `parse_hash_file_resolved` and `parse_hash_file_generic`
 - `regex` is now a dependency
 - Hashing options in `write_file`
-- Some `Utils` options are keyword-only
+- Some `Utils` and `FileFormat` params are keyword-only
 
 ### Removed
 
 - `Utils.verify_any_hash`
+- Positional args from `ffill` and `bfill`
+
+### Fixed
+
+- Bugs in `exact_natsort_alg`
+- Small bugs in `FrozeDict` and `FrozeSet`
 
 ## [0.11.0] - 2021-08-24
 

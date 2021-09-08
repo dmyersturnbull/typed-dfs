@@ -4,11 +4,14 @@ Information about how DataFrame subclasses should be handled.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Sequence, Set, Union, Callable, Type
+from typing import Any, Mapping, Optional, Sequence, Set, Union, Callable, Type, TypeVar, Generic
 
 from typeddfs._core_dfs import CoreDf
 
 from typeddfs.file_formats import FileFormat
+
+
+T = TypeVar("T", bound=CoreDf, covariant=True)
 
 
 def _opt_list(x):
@@ -24,7 +27,7 @@ def _opt_dict(x):
 
 
 @dataclass(frozen=True, repr=True)
-class IoTyping:
+class IoTyping(Generic[T]):
     _hash_alg: Optional[str] = "sha256"
     _save_hash_file: bool = False
     _save_hash_dir: bool = False
@@ -125,8 +128,8 @@ class DfTyping:
     """
 
     _io_typing: IoTyping = FINAL_IO_TYPING
-    _post_processing: Optional[Callable[[CoreDf], Optional[CoreDf]]] = None
-    _verifications: Optional[Sequence[Callable[[CoreDf], Union[None, bool, str]]]] = None
+    _post_processing: Optional[Callable[[T], Optional[T]]] = None
+    _verifications: Optional[Sequence[Callable[[T], Union[None, bool, str]]]] = None
     _column_series_name: Union[bool, None, str] = None
     _index_series_name: Union[bool, None, str] = None
     _more_columns_allowed: bool = True
@@ -280,7 +283,7 @@ class DfTyping:
         return _opt_set(self._columns_to_drop)
 
     @property
-    def post_processing(self) -> Optional[Callable[[CoreDf], Optional[CoreDf]]]:
+    def post_processing(self) -> Optional[Callable[[T], Optional[T]]]:
         """
         A function to be called at the final stage of ``convert``.
         It is called immediately before ``verifications`` are checked.
@@ -294,7 +297,7 @@ class DfTyping:
         return self._post_processing
 
     @property
-    def verifications(self) -> Sequence[Callable[[CoreDf], Union[None, bool, str]]]:
+    def verifications(self) -> Sequence[Callable[[T], Union[None, bool, str]]]:
         """
         Additional requirements for the DataFrame to be conformant.
 

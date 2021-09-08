@@ -4,10 +4,9 @@ from typing import Set, Type
 
 import pandas as pd
 import pytest
-from typeddfs.utils import Utils
 
+from typeddfs.checksums import Checksums
 from typeddfs.abs_dfs import AbsDf
-
 from typeddfs import BaseDf, TypedDf
 from typeddfs.builders import TypedDfBuilder
 from typeddfs.df_errors import (
@@ -73,7 +72,7 @@ def get_req_ext(txt: bool) -> Set[str]:
     return ne
 
 
-def get_actual_ext(cls: AbsDf) -> Set[str]:
+def get_actual_ext(cls: Type[AbsDf]) -> Set[str]:
     known_fmts = cls.can_read().intersection(cls.can_write())
     exclude_for_now = {".hdf", ".h5", ".hdf5"}
     known = set()
@@ -326,24 +325,24 @@ class TestReadWrite:
         # \n vs \r\n is an issue, so we can't check the exact hash
         with tmpfile(".csv") as path:
             df.write_file(path, file_hash=True)
-            hash_file = Utils.get_hash_file(path)
+            hash_file = Checksums.get_hash_file(path)
             assert hash_file.exists()
-            got = Utils.parse_hash_file_resolved(hash_file)
+            got = Checksums.parse_hash_file_resolved(hash_file)
             assert list(got.keys()) == [path.resolve()]
             hit = got[path.resolve()]
             assert len(hit) == 64
             t.read_file(path, file_hash=True)
-            t.read_file(path, check_hash=hit)
+            t.read_file(path, hex_hash=hit)
 
     def test_dir_hash(self):
         t = TypedDfBuilder("a").reserve("x", "y").build()
         df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
         with tmpfile(".csv") as path:
-            hash_dir = Utils.get_hash_dir(path)
+            hash_dir = Checksums.get_hash_dir(path)
             hash_dir.unlink(missing_ok=True)
             df.write_file(path, dir_hash=True)
             assert hash_dir.exists()
-            got = Utils.parse_hash_file_resolved(hash_dir)
+            got = Checksums.parse_hash_file_resolved(hash_dir)
             assert list(got.keys()) == [path.resolve()]
             hit = got[path.resolve()]
             assert len(hit) == 64

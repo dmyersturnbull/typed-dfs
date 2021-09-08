@@ -237,6 +237,7 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
             raise TypeError(f"Can't convert {type(df)} to {cls.__name__}")
         # first always reset the index so we can manage what's in the index vs columns
         # index_names() will return [] if no named indices are found
+        # noinspection PyTypeChecker
         df = df.copy()
         df.__class__ = PrettyDf
         original_index_names = df.index_names()

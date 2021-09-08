@@ -1,10 +1,9 @@
 import abc
-import functools
 from typing import Any, Iterable, Mapping, Sequence, Union, Generator, Tuple, Set
 
 import pandas as pd
 from pandas.core.frame import DataFrame as _InternalDataFrame
-from natsort import natsorted, ns
+from natsort import natsorted
 from typeddfs.utils import Utils
 
 from typeddfs._pretty_dfs import PrettyDf
@@ -308,15 +307,15 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         return self.__class__._change(df)
 
     # noinspection PyFinal
-    def ffill(self, *args, **kwargs) -> __qualname__:
+    def ffill(self, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
-        df = super().ffill(*args, **kwargs)
+        df = super().ffill(**kwargs)
         return self.__class__._change(df)
 
     # noinspection PyFinal
-    def bfill(self, *args, **kwargs) -> __qualname__:
+    def bfill(self, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
-        df = super().bfill(*args, **kwargs)
+        df = super().bfill(**kwargs)
         return self.__class__._change(df)
 
     # noinspection PyFinal

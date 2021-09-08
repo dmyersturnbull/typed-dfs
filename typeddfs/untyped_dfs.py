@@ -11,7 +11,7 @@ import pandas as pd
 from typeddfs.base_dfs import BaseDf
 from typeddfs.df_typing import IoTyping, DfTyping, FINAL_DF_TYPING
 
-_empty_io_typing = IoTyping()
+_empty_io_typing = IoTyping[BaseDf]()
 
 
 class UntypedDf(BaseDf):

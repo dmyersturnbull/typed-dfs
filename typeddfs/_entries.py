@@ -25,7 +25,8 @@ from typeddfs.df_errors import (
 from typeddfs.file_formats import FileFormat
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
-from typeddfs.utils import Utils, FrozeSet, FrozeList, FrozeDict
+from typeddfs.utils import Utils
+from typeddfs.frozen_types import FrozeList, FrozeSet, FrozeDict
 
 logger = logging.getLogger(Path(__file__).parent.name)
 

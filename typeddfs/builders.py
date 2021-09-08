@@ -8,6 +8,8 @@ from collections import defaultdict
 from typing import Any, Callable, Optional, Sequence, Type, Union
 
 import pandas as pd
+
+from typeddfs.checksums import Checksums
 from typeddfs.utils import Utils
 
 from typeddfs.base_dfs import BaseDf
@@ -198,7 +200,7 @@ class _GenericBuilder:
         Returns:
             This builder for chaining
         """
-        self._hash_alg = Utils.get_algorithm(alg)
+        self._hash_alg = Checksums.get_algorithm(alg)
         self._hash_file = file
         self._hash_dir = directory
         return self
@@ -282,7 +284,7 @@ class _GenericBuilder:
             raise DfTypeConstructionError(f"Hash algorithm {self._hash_alg} forbidden by .secure()")
         self._check_final()
 
-        _io_typing = IoTyping(
+        _io_typing = IoTyping[BaseDf](
             _remap_suffixes=dict(self._remapped_suffixes),
             _text_encoding=self._encoding,
             _read_kwargs=dict(self._read_kwargs),

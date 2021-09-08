@@ -10,31 +10,7 @@ from typing import MutableMapping, Mapping, Optional, Set, Union
 
 from typeddfs._utils import PathLike
 from typeddfs.df_errors import FilenameSuffixError
-
-try:
-    import pyarrow
-except ImportError:  # pragma: no cover
-    pyarrow = None
-
-try:
-    import fastparquet
-except ImportError:  # pragma: no cover
-    fastparquet = None
-
-try:
-    import tables
-except ImportError:  # pragma: no cover
-    tables = None
-
-try:
-    import openpyxl
-except ImportError:  # pragma: no cover
-    openpyxl = None
-
-try:
-    import pyxlsb
-except ImportError:  # pragma: no cover
-    pyxlsb = None
+from typeddfs._format_support import DfFormatSupport
 
 
 class CompressionFormat(enum.Enum):
@@ -200,40 +176,6 @@ _valid_formats = _format_map.done()
 _rev_valid_formats = _format_map.inverse()
 
 
-class DfFormatSupport:
-    """
-    Records the presence of required packages.
-    Records whether file formats are supported as per whether a required
-    package is available/installed.
-    This is used by :py.class:`FileFormat`
-    and thereby :py.meth:`typeddfs.abs_df.read_file`
-    and :py.meth:`typeddfs.abs_df.write_file`.
-
-    Example:
-        if not DfFormatSupport.has_hdf5:
-            print("No HDF5")
-    """
-
-    has_feather = pyarrow is not None
-    has_parquet = pyarrow is not None or fastparquet is not None
-    has_hdf5 = tables is not None
-    has_xlsx = openpyxl is not None
-    has_xls = openpyxl is not None
-    has_ods = openpyxl is not None
-    has_xlsb = pyxlsb is not None
-
-
-_support_map = {
-    "parquet": DfFormatSupport.has_parquet,
-    "feather": DfFormatSupport.has_feather,
-    "hdf": DfFormatSupport.has_hdf5,
-    "xlsx": DfFormatSupport.has_xlsx,
-    "xls": DfFormatSupport.has_xls,
-    "xlsb": DfFormatSupport.has_xlsb,
-    "ods": DfFormatSupport.has_ods,
-}
-
-
 class FileFormat(enum.Enum):
     """
     A computer-readable format for reading **and** writing of DataFrames in typeddfs.
@@ -320,7 +262,7 @@ class FileFormat(enum.Enum):
 
     @classmethod
     def from_path_or_none(
-        cls, path: PathLike, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
     ) -> Optional[FileFormat]:
         """
         Same as :py.meth:`from_path`, but returns None if not found.
@@ -332,7 +274,7 @@ class FileFormat(enum.Enum):
 
     @classmethod
     def from_path(
-        cls, path: PathLike, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
     ) -> FileFormat:
         """
         Guesses a FileFormat from a filename.
@@ -355,7 +297,7 @@ class FileFormat(enum.Enum):
 
     @classmethod
     def from_suffix_or_none(
-        cls, suffix: str, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, suffix: str, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
     ) -> Optional[FileFormat]:
         """
         Same as :py.meth:`from_suffix`, but returns None if not found.
@@ -367,7 +309,7 @@ class FileFormat(enum.Enum):
 
     @classmethod
     def from_suffix(
-        cls, suffix: str, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, suffix: str, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
     ) -> FileFormat:
         """
         Returns the FileFormat corresponding to a filename suffix.
@@ -455,7 +397,7 @@ class FileFormat(enum.Enum):
         Returns whether this format can be read as long as typeddfs is installed.
         In other words, regardless of any optional packages.
         """
-        return self.name not in _support_map
+        return self.name not in DfFormatSupport.support_map
 
     @property
     def can_always_write(self) -> bool:
@@ -463,7 +405,7 @@ class FileFormat(enum.Enum):
         Returns whether this format can be written to as long as typeddfs is installed.
         In other words, regardless of any optional packages.
         """
-        return self.name not in _support_map
+        return self.name not in DfFormatSupport.support_map
 
     @property
     def can_read(self) -> bool:
@@ -471,7 +413,7 @@ class FileFormat(enum.Enum):
         Returns whether this format can be read.
         Note that the result may depend on whether supporting packages are installed.
         """
-        return _support_map.get(self.name, True)
+        return DfFormatSupport.support_map.get(self.name, True)
 
     @property
     def can_write(self) -> bool:
@@ -479,7 +421,7 @@ class FileFormat(enum.Enum):
         Returns whether this format can be written.
         Note that the result may depend on whether supporting packages are installed.
         """
-        return _support_map.get(self.name, True)
+        return DfFormatSupport.support_map.get(self.name, True)
 
 
 __all__ = ["FileFormat", "CompressionFormat", "DfFormatSupport"]

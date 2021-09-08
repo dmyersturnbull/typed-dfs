@@ -18,6 +18,7 @@ from tabulate import TableFormat, tabulate
 
 from typeddfs._core_dfs import CoreDf
 from typeddfs._utils import _FAKE_SEP, PathLike
+from typeddfs.checksums import Checksums
 from typeddfs.df_errors import (
     NonStrColumnError,
     NotSingleColumnError,
@@ -100,7 +101,10 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             An instance of this class
         """
         path = Path(path)
-        cls._check_hash(path, file_hash, dir_hash, hex_hash)
+        algorithm = cls.get_typing().io.hash_algorithm
+        Checksums.verify_any(
+            path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash, algorithm=algorithm
+        )
         df = cls._call_read(cls, path)
         return cls._convert_typed(df)
 
@@ -161,7 +165,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         z = self._call_write(path)
         file_hash = file_hash is True or file_hash is None and self.get_typing().io.file_hash
         dir_hash = dir_hash is True or dir_hash is None and self.get_typing().io.dir_hash
-        Utils.add_any_hashes(
+        Checksums.add_any_hashes(
             path,
             to_file=file_hash,
             to_dir=dir_hash,
@@ -361,7 +365,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             return content
         _encoding = dict(encoding=kwargs.get("encoding")) if "encoding" in kwargs else {}
         _compression = dict(encoding=kwargs.get("compression")) if "compression" in kwargs else {}
-        Utils.write(path_or_buff, content, mode, **_encoding, **_compression)
+        Utils.write(path_or_buff, content, mode=mode, **_encoding, **_compression)
 
     @classmethod
     def read_flexwf(
@@ -431,7 +435,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         content = self._tabulate(fmt, disable_numparse=True)
         if path_or_buff is None:
             return content
-        Utils.write(path_or_buff, content, mode, **kwargs)
+        Utils.write(path_or_buff, content, mode=mode, **kwargs)
 
     @classmethod
     def read_excel(cls, io, sheet_name: _SheetNamesOrIndices = 0, *args, **kwargs) -> __qualname__:
@@ -913,18 +917,6 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
-
-    @classmethod
-    def _check_hash(cls, path: Path, file_hash: bool, dir_hash: bool, hex_hash: Optional[str]):
-        t = cls.get_typing().io
-        if hex_hash is not None:
-            Utils.verify_hash_from_hex(path, hex_hash)
-        if file_hash or dir_hash:
-            z = Utils.calc_hash(path, algorithm=t.hash_algorithm)
-            if file_hash:
-                Utils.verify_dir_hash(path, algorithm=t.hash_algorithm, computed=z)
-            if dir_hash:
-                Utils.verify_dir_hash(path, algorithm=t.hash_algorithm, computed=z)
 
     @classmethod
     def _lines_files_apply(cls) -> bool:
