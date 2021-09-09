@@ -151,6 +151,7 @@ _format_map = (
     .text("tsv", ".tab")
     .text("json", ".json")
     .text("xml", ".xml")
+    .text("properties", ".properties")
     .text("lines", ".lines")
     .text("lines", ".txt")
     .text("lines", ".list")
@@ -194,6 +195,7 @@ class FileFormat(enum.Enum):
     tsv = enum.auto()
     json = enum.auto()
     xml = enum.auto()
+    properties = enum.auto()
     lines = enum.auto()
     fwf = enum.auto()
     flexwf = enum.auto()
@@ -225,6 +227,7 @@ class FileFormat(enum.Enum):
             FileFormat.csv,
             FileFormat.tsv,
             FileFormat.json,
+            FileFormat.properties,
             FileFormat.xml,
             FileFormat.lines,
             FileFormat.fwf,
@@ -246,6 +249,7 @@ class FileFormat(enum.Enum):
             FileFormat.tsv,
             FileFormat.json,
             FileFormat.xml,
+            FileFormat.properties,
             FileFormat.lines,
             FileFormat.fwf,
             FileFormat.flexwf,

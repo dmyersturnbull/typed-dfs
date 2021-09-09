@@ -25,6 +25,7 @@ from typeddfs.df_errors import (
     ValueNotUniqueError,
     NoValueError,
     FormatInsecureError,
+    UnsupportedOperationError,
 )
 from typeddfs.df_typing import DfTyping
 from typeddfs.file_formats import FileFormat
@@ -186,7 +187,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return {
             f
             for f in FileFormat.all_readable()
-            if f is not FileFormat.lines or cls._lines_files_apply()
+            if (f is not FileFormat.lines or cls._lines_files_apply())
+            and (f is not FileFormat.properties or cls._properties_files_apply())
         }
 
     @classmethod
@@ -201,7 +203,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return {
             f
             for f in FileFormat.all_writable()
-            if f is not FileFormat.lines or cls._lines_files_apply()
+            if (f is not FileFormat.lines or cls._lines_files_apply())
+            and (f is not FileFormat.properties or cls._properties_files_apply())
         }
 
     @classmethod
@@ -211,6 +214,100 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         **kwargs,
     ) -> __qualname__:
         return cls.convert(super().from_records(*args, **kwargs))
+
+    def to_properties(
+        self,
+        path_or_buff,
+        mode: str = "w",
+        *,
+        sep: str = "=",
+        **kwargs,
+    ) -> Optional[str]:
+        r"""
+        Writes a .properties file.
+        Backslashes, colons, spaces, and equal signs are escaped in keys.
+        Backslashes are escaped in values.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+
+        Args:
+            path_or_buff: Path or buffer
+            mode: Write ('w') or append ('a')
+            sep: Can be either '=', ':', or ' '
+            kwargs: Passed to ``to_csv``
+
+        Returns:
+            The string data if ``path_or_buff`` is a buffer; None if it is a file
+        """
+        if sep not in {"=", ":", " "}:
+            raise ValueError(f"Bad sep {sep}; must be '=', ':', or ' '")
+        kwargs = dict(kwargs)
+        kwargs["header"] = None
+        df = self.vanilla_reset()
+        if len(df.columns) != 2:
+            raise UnsupportedOperationError(
+                f"Cannot write {len(df.columns)} columns ({df}) to properties"
+            )
+        if not Utils.is_string_dtype(df.dtypes[0]):
+            raise UnsupportedOperationError(
+                f"Cannot write {df.columns[0]} with key dtype {df.dtypes[0]}"
+            )
+        df[df.columns[0]] = df[df.columns[0]].map(Utils.property_key_escape)
+        df[df.columns[1]] = df[df.columns[1]].map(Utils.property_value_escape)
+        return df.to_csv(
+            path_or_buff, mode=mode, index=False, sep=sep, quoting=csv.QUOTE_NONE, **kwargs
+        )
+
+    @classmethod
+    def read_properties(
+        cls,
+        path_or_buff,
+        **kwargs,
+    ) -> __qualname__:
+        r"""
+        Reads a .properties file.
+        Backslashes, colons, spaces, and equal signs are escaped in keys and values.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+            It currently does not support continued lines (ending with an odd number of backslahses).
+
+        Args:
+            path_or_buff: Path or buffer
+            kwargs: Passed to ``read_csv``; avoid setting
+        """
+        kwargs = dict(kwargs)
+        kwargs.setdefault("skip_blank_lines", True)
+        kwargs["header"] = None
+        kwargs.setdefault("engine", "python")
+        try:
+            df = pd.read_csv(
+                path_or_buff,
+                sep=r" *[ =:] *",
+                escapechar="\\",
+                index_col=False,
+                quoting=csv.QUOTE_NONE,
+                **kwargs,
+            )
+        except pd.errors.EmptyDataError:
+            # TODO: Figure out what EmptyDataError means
+            # df = pd.DataFrame()
+            return cls.new_df()
+        if len(df.columns) != 2:
+            raise UnsupportedOperationError(
+                f"Read {len(df.columns)} != 2 columns on {path_or_buff}"
+            )
+        df = df[~df[df.columns[0]].map(str).str.startswith("#")]
+        df = df[~df[df.columns[0]].map(str).str.startswith("!")]
+        df[df.columns[0]] = df[df.columns[0]].map(Utils.property_key_unescape)
+        df[df.columns[1]] = df[df.columns[1]].map(Utils.property_value_unescape)
+        if any((str(s).endswith("\\") for s in df[df.columns[1]])):
+            raise ValueError(f"Some rows end with \\; continued lines are not yet supported")
+        df.columns = cls.get_typing().required_names
+        return cls._convert_typed(df)
 
     def to_lines(
         self,
@@ -896,6 +993,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         if fmt in [
             FileFormat.csv,
             FileFormat.tsv,
+            FileFormat.properties,
             FileFormat.lines,
             FileFormat.flexwf,
             FileFormat.fwf,
@@ -919,7 +1017,18 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return kwargs
 
     @classmethod
+    def _properties_files_apply(cls) -> bool:
+        # Because we don't write a header, applies IF AND ONLY IF
+        # we REQUIRE EXACTLY 2 columns
+        return (
+            len(cls.get_typing().required_names) == 2
+            and not cls.get_typing().more_indices_allowed
+            and not cls.get_typing().more_columns_allowed
+        )
+
+    @classmethod
     def _lines_files_apply(cls) -> bool:
+        # CAN apply as long as we don't REQUIRE more than 1 column
         return len(cls.get_typing().required_names) <= 1
 
 

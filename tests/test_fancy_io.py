@@ -14,6 +14,7 @@ from typeddfs.df_errors import (
     NonStrColumnError,
     NotSingleColumnError,
     FormatInsecureError,
+    UnsupportedOperationError,
 )
 from typeddfs.file_formats import DfFormatSupport, FileFormat
 
@@ -46,7 +47,7 @@ assert DfFormatSupport.has_ods
 known_compressions = {"", ".gz", ".zip", ".bz2", ".xz"}
 
 
-def get_req_ext(txt: bool) -> Set[str]:
+def get_req_ext(*, lines: bool, properties: bool) -> Set[str]:
     ne = {
         ".feather",
         ".snappy",
@@ -62,10 +63,12 @@ def get_req_ext(txt: bool) -> Set[str]:
     }
     ne.add(".fwf")
     xx = {".csv", ".tsv", ".tab", ".json", ".xml", ".flexwf"}
-    if txt:
+    if lines:
         xx.add(".txt")
         xx.add(".lines")
         xx.add(".list")
+    if properties:
+        xx.add(".properties")
     for e in xx:
         for c in known_compressions:
             ne.add(e + c)
@@ -99,15 +102,15 @@ def rand_df(t):
 
 class TestReadWrite:
     def test_extensions(self):
-        assert get_actual_ext(Untyped) == get_req_ext(True)
-        assert get_actual_ext(Col1) == get_req_ext(True)
-        assert get_actual_ext(Ind1) == get_req_ext(True)
-        assert get_actual_ext(Col2) == get_req_ext(False)
-        assert get_actual_ext(Ind2) == get_req_ext(False)
-        assert get_actual_ext(Ind1Col1) == get_req_ext(False)
-        assert get_actual_ext(Ind1Col2) == get_req_ext(False)
-        assert get_actual_ext(Ind2Col1) == get_req_ext(False)
-        assert get_actual_ext(Ind2Col2) == get_req_ext(False)
+        assert get_actual_ext(Untyped) == get_req_ext(lines=True, properties=False)
+        assert get_actual_ext(Col1) == get_req_ext(lines=True, properties=False)
+        assert get_actual_ext(Ind1) == get_req_ext(lines=True, properties=False)
+        assert get_actual_ext(Col2) == get_req_ext(lines=False, properties=True)
+        assert get_actual_ext(Ind2) == get_req_ext(lines=False, properties=True)
+        assert get_actual_ext(Ind1Col1) == get_req_ext(lines=False, properties=True)
+        assert get_actual_ext(Ind1Col2) == get_req_ext(lines=False, properties=False)
+        assert get_actual_ext(Ind2Col1) == get_req_ext(lines=False, properties=False)
+        assert get_actual_ext(Ind2Col2) == get_req_ext(lines=False, properties=False)
 
     def test_untyped(self):
         self._test_great(Untyped)
@@ -124,11 +127,17 @@ class TestReadWrite:
     def test_col1(self):
         self._test_great(Col1)
 
+    def test_col2(self):
+        self._test_great(Col2, allow_properties=True)
+
     def test_ind1(self):
         self._test_great(Ind1)
 
+    def test_ind2(self):
+        self._test_great(Ind2, allow_properties=True)
+
     def test_ind1_col1(self):
-        self._test_great(Ind1Col1)
+        self._test_great(Ind1Col1, allow_properties=True)
 
     def test_ind1_col2(self):
         self._test_great(Ind1Col2)
@@ -139,7 +148,9 @@ class TestReadWrite:
     def test_ind2_col2(self):
         self._test_great(Ind2Col2)
 
-    def _test_great(self, t: Type[BaseDf], lines_fail: bool = False):
+    def _test_great(
+        self, t: Type[BaseDf], *, lines_fail: bool = False, allow_properties: bool = False
+    ):
         for ext in get_actual_ext(t):
             try:
                 with tmpfile(ext) as path:
@@ -148,12 +159,17 @@ class TestReadWrite:
                         with pytest.raises(NotSingleColumnError):
                             df.write_file(path)
                         continue
+                    if not allow_properties and ".properties" in ext:
+                        with pytest.raises(UnsupportedOperationError):
+                            df.write_file(path)
+                        continue
                     df.write_file(path)
                     if path.suffix in [
                         ".xml",
                         ".json",
                         ".csv",
                         ".tsv",
+                        ".properties",
                         ".lines",
                         ".txt",
                         ".flexwf",
@@ -206,7 +222,7 @@ class TestReadWrite:
 
     # noinspection DuplicatedCode
     def test_read_write_txt(self):
-        for c in get_req_ext(True):
+        for c in get_req_ext(lines=True, properties=False):
             df = Col1(["a", "puppy", "and", "a", "parrot"], columns=["abc"])
             with tmpfile(c) as path:
                 df.write_file(path)

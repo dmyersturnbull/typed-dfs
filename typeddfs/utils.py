@@ -136,6 +136,26 @@ class Utils:
         return {"md5", "sha1"}
 
     @classmethod
+    def property_key_escape(cls, s: str) -> str:
+        p = regex.compile(r"[ =:\\]", flags=regex.V1)
+        return p.sub(r"\\\0", s)
+
+    @classmethod
+    def property_key_unescape(cls, s: str) -> str:
+        p = regex.compile(r"\\([ =:\\])", flags=regex.V1)
+        return p.sub(r"\1", s)
+
+    @classmethod
+    def property_value_escape(cls, s: str) -> str:
+        p = regex.compile(r"\\", flags=regex.V1)
+        return p.sub(r"\\\0", s)
+
+    @classmethod
+    def property_value_unescape(cls, s: str) -> str:
+        p = regex.compile(r"\\([ =:\\])", flags=regex.V1)
+        return p.sub(r"\1", s)
+
+    @classmethod
     def banned_names(cls) -> Set[str]:
         """
         Lists strings that cannot be used for column names or index level names.
