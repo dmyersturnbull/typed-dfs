@@ -31,7 +31,7 @@ from typeddfs.untyped_dfs import UntypedDf
 class TypedDfDataclass:
     """
     Just a ``dataclass`` for TypedDfs.
-    Contains :py.meth:`get_df_type` to point to the original DataFrame.
+    Contains :meth:`get_df_type` to point to the original DataFrame.
     """
 
     @classmethod
@@ -92,11 +92,11 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
         """
         Creates a new instance of this DataFrame type from dataclass instances.
         This mostly delegates to ``pd.DataFrame.__init__``, calling ``cls.of(instances)``.
-        It is provided for consistency with :py.meth:`to_dataclass_instances`.
+        It is provided for consistency with :meth:`to_dataclass_instances`.
 
         Args:
             instances: A sequence of dataclass instances.
-                       Although typed as :py.class:`typeddfs.abs_dfs.TypedDfDataclass`,
+                       Although typed as :class:`typeddfs.abs_dfs.TypedDfDataclass`,
                        any type created by Python's ``dataclass`` module should work.
 
         Returns:
@@ -109,7 +109,7 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
     def to_dataclass_instances(self) -> Sequence[TypedDfDataclass]:
         """
         Creates a dataclass from this DataFrame and returns instances.
-        Also see :py.meth:`from_dataclass_instances`.
+        Also see :meth:`from_dataclass_instances`.
 
         .. note ::
 
@@ -117,7 +117,7 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
             even if they are of different types.
             This was done by overriding ``__eq__`` to enable comparing
             results from separate calls to this method.
-            Specifically, :py.meth:`typeddfs.abs_dfs.TypedDfDataclass.get_as_dict`
+            Specifically, :meth:`typeddfs.abs_dfs.TypedDfDataclass.get_as_dict`
             must return True.
 
         .. caution ::
@@ -171,22 +171,22 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
         """
         Creates a best-effort immutable ``dataclass`` for this type.
         The fields will depend on the columns and index levels present
-        in :py.meth:`get_typing`. The type of each field will correspond to
-        the specified dtype (:py.meth:`typeddfs.df_typing.DfTyping.auto_dtypes`),
+        in :meth:`get_typing`. The type of each field will correspond to
+        the specified dtype (:meth:`typeddfs.df_typing.DfTyping.auto_dtypes`),
         falling back to ``Any`` if none is specified.
 
         .. note ::
 
             If this type can support additional columns
-            (:py.meth:`typeddfs.df_typing.DfTyping.is_strict` is the default, ``False``),
+            (:meth:`typeddfs.df_typing.DfTyping.is_strict` is the default, ``False``),
             the dataclass will not be able to support extra fields.
-            For most cases, :py.meth:`typeddfs.abs_dfs.AbsDf.to_dataclass_instances` is better.
+            For most cases, :meth:`typeddfs.abs_dfs.AbsDf.to_dataclass_instances` is better.
 
         Args:
             reserved: Include reserved columns and index levels
 
         Returns:
-            A subclass of :py.class:`typeddfs.abs_dfs.TypedDfDataclass`
+            A subclass of :class:`typeddfs.abs_dfs.TypedDfDataclass`
         """
         fields = [
             (field, cls.get_typing().auto_dtypes.get(field, Any))
@@ -322,7 +322,7 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
             A shallow copy with its __class__ set to an UntypedDf
 
         See:
-            :py.meth:`vanilla`
+            :meth:`vanilla`
         """
         df = self.copy()
         df.__class__ = Df

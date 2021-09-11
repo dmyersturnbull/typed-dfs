@@ -3,11 +3,24 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.13.0] - 2021-09-08
+## [0.13.0] - unreleased
 
 ### Added
 
 - Preview support for .properties, INI, and TOML
+- Top-level imports `typed`, `untyped`, etc.
+- Q & A in the readme
+
+### Changed
+
+- `remap_suffixes()` renamed to `suffix()`
+- `.subclass()` now supports multiple inheritance
+
+### Removed
+
+### Fixed
+
+- `to_parquet()` doesn't change short to int
 
 ## [0.12.0] - 2021-09-08
 
@@ -17,12 +30,10 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - `Utils.exact_natsort_alg`, `Utils.guess_natsort_alg`, and `Utils.all_natsort_flags`
 - Functions from `pandas.api.types` to `Utils`
 - `DfSupport.reload()`
-- Top-level imports `typed`, `untyped`, etc.
 
 ### Changed
 
 - `DfTyping` is now generic
-- `remap_suffixes()` renamed to `suffix()`
 - `FrozeSet` and `FrozeDict` are now ordered
 - Moved checksum utils to `checksums.py`
 - Moved `DfSupport` to `_format_support.py`

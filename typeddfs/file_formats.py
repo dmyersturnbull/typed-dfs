@@ -184,8 +184,8 @@ class FileFormat(enum.Enum):
     A computer-readable format for reading **and** writing of DataFrames in typeddfs.
     This includes CSV, Parquet, ODT, etc. Some formats also include compressed variants.
     E.g. a ".csg.gz" will map to ``FileFormat.csv``.
-    This is used internally by :py.meth:`typeddfs.abs_df.read_file`
-    and :py.meth:`typeddfs.abs_df.write_file`, but it may be useful to calling code directly.
+    This is used internally by :meth:`typeddfs.abs_df.read_file`
+    and :meth:`typeddfs.abs_df.write_file`, but it may be useful to calling code directly.
 
     Example:
         FileFormat.from_path("my_file.csv.gz").is_text()   # True
@@ -197,6 +197,8 @@ class FileFormat(enum.Enum):
     tsv = enum.auto()
     json = enum.auto()
     xml = enum.auto()
+    toml = enum.auto()
+    ini = enum.auto()
     properties = enum.auto()
     lines = enum.auto()
     fwf = enum.auto()
@@ -271,7 +273,7 @@ class FileFormat(enum.Enum):
         cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
     ) -> Optional[FileFormat]:
         """
-        Same as :py.meth:`from_path`, but returns None if not found.
+        Same as :meth:`from_path`, but returns None if not found.
         """
         try:
             return cls.from_path(path, format_map=format_map)
@@ -286,7 +288,7 @@ class FileFormat(enum.Enum):
         Guesses a FileFormat from a filename.
 
         Args:
-            path: A string or :py.class:`pathlib.Path` to a file.
+            path: A string or :class:`pathlib.Path` to a file.
             format_map: A mapping from suffixes to formats;
                         if ``None``, uses :meth:`suffix_map`.
 
@@ -306,7 +308,7 @@ class FileFormat(enum.Enum):
         cls, suffix: str, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
     ) -> Optional[FileFormat]:
         """
-        Same as :py.meth:`from_suffix`, but returns None if not found.
+        Same as :meth:`from_suffix`, but returns None if not found.
         """
         try:
             return cls.from_suffix(suffix, format_map=format_map)

@@ -264,7 +264,7 @@ class Checksums:
         """
         Reads a hash file.
 
-        See Also: :py.meth:`parse_hash_file_generic`.
+        See Also: :meth:`parse_hash_file_generic`.
 
         Returns:
             A mapping from resolved ``Path`` instances to their hex hashes
@@ -283,7 +283,7 @@ class Checksums:
         """
         Reads a hash file.
 
-        See Also: :py.meth:`parse_hash_file_resolved`.
+        See Also: :meth:`parse_hash_file_resolved`.
 
         Args:
             path: The path to read
@@ -351,7 +351,7 @@ class Checksums:
     @classmethod
     def get_algorithm(cls, algorithm: str) -> str:
         """
-        Finds a hash algorithm by name in :py.mod:`hashlib`.
+        Finds a hash algorithm by name in :mod:`hashlib`.
         Converts to lowercase and removes hyphens.
 
         Raises:

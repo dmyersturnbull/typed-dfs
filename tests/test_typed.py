@@ -5,10 +5,10 @@ from typeddfs.abs_dfs import AbsDf
 from typeddfs.untyped_dfs import UntypedDf
 
 from . import (
-    Ind1,
-    Ind1Col1,
-    Ind2,
-    Ind2Col2,
+    Ind1NonStrict as Ind1,
+    Ind1Col1NonStrict as Ind1Col1,
+    Ind2NonStrict as Ind2,
+    Ind2Col2NonStrict as Ind2Col2,
     Ind2Col2Reserved1,
     Trivial,
     sample_data,
@@ -99,8 +99,8 @@ class TestTyped:
         df2 = Ind2(df)
         df3 = Ind2.convert(df)
         assert df.__class__.__name__ == "DataFrame"
-        assert df2.__class__.__name__ == "Ind2"
-        assert df3.__class__.__name__ == "Ind2"
+        assert df2.__class__.__name__ == "Ind2NonStrict"
+        assert df3.__class__.__name__ == "Ind2NonStrict"
 
     def test_index_names(self):
         df = Ind2.convert(pd.DataFrame(sample_data()))

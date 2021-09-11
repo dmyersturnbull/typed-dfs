@@ -226,7 +226,7 @@ class HashContradictsExistingError(HashWriteError, ValueError):
 
 class HashAlgorithmMissingError(HashWriteError, LookupError):
     """
-    The hash algorithm was not found in :py.mod:`hashlib`.
+    The hash algorithm was not found in :mod:`hashlib`.
 
     Attributes:
         key: The missing hash algorithm

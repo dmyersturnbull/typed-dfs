@@ -43,10 +43,10 @@ class TypedDfs:
     Contains static factory methods to build new DataFrame subclasses.
     In particular, see::
 
-      - :py.meth:`typed`
-      - :py.meth:`untyped`
-      - :py.meth:`matrix`
-      - :py.meth:`affinity_matrix`
+      - :meth:`typed`
+      - :meth:`untyped`
+      - :meth:`matrix`
+      - :meth:`affinity_matrix`
     """
 
     NoValueError = NoValueError
@@ -110,7 +110,7 @@ class TypedDfs:
     def typed(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
         """
         Creates a new type with flexible requirements.
-        The class will enforce contstraints and subclass :py.class:`typeddfs.typed_dfs.TypedDf`.
+        The class will enforce contstraints and subclass :class:`typeddfs.typed_dfs.TypedDf`.
 
         Args:
             name: The name that will be used for the new class
@@ -127,7 +127,7 @@ class TypedDfs:
     @classmethod
     def matrix(cls, name: str, doc: Optional[str] = None) -> MatrixDfBuilder:
         """
-        Creates a new subclass of an :py.class:`typeddfs.matrix_dfs.MatrixDf`.
+        Creates a new subclass of an :class:`typeddfs.matrix_dfs.MatrixDf`.
 
         Args:
             name: The name that will be used for the new class
@@ -141,7 +141,7 @@ class TypedDfs:
     @classmethod
     def affinity_matrix(cls, name: str, doc: Optional[str] = None) -> AffinityMatrixDfBuilder:
         """
-        Creates a new subclass of an :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
+        Creates a new subclass of an :class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
 
         Args:
             name: The name that will be used for the new class
@@ -157,7 +157,7 @@ class TypedDfs:
         """
         Creates a new subclass of ``UntypedDf``.
         The returned class will not enforce constraints but will have some extra methods.
-        In general :py.meth:`typed` should be preferred because it has more consistent behavior,
+        In general :meth:`typed` should be preferred because it has more consistent behavior,
         especially for IO.
 
         Args:

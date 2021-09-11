@@ -41,8 +41,8 @@ class IoTyping(Generic[T]):
     @property
     def hdf_key(self) -> str:
         """
-        The default key used in :py.meth:`typeddfs.abs_df.AbsDf.to_hdf`.
-        The key is also used in :py.meth:`typeddfs.abs_df.AbsDf.read_hdf.`
+        The default key used in :meth:`typeddfs.abs_df.AbsDf.to_hdf`.
+        The key is also used in :meth:`typeddfs.abs_df.AbsDf.read_hdf.`
         """
         return self._hdf_key
 
@@ -61,7 +61,7 @@ class IoTyping(Generic[T]):
     def file_hash(self) -> bool:
         """
         Whether to save per-file hash files by default.
-        Specifically, in :py.meth:`typeddfs.abs_df.AbsDf.write_file`.
+        Specifically, in :meth:`typeddfs.abs_df.AbsDf.write_file`.
         """
         return self._save_hash_file
 
@@ -69,7 +69,7 @@ class IoTyping(Generic[T]):
     def dir_hash(self) -> bool:
         """
         Whether to save (append) to per-directory hash files by default.
-        Specifically, in :py.meth:`typeddfs.abs_df.AbsDf.write_file`.
+        Specifically, in :meth:`typeddfs.abs_df.AbsDf.write_file`.
         """
         return self._save_hash_file
 

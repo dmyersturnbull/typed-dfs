@@ -112,6 +112,12 @@ class Ind1(TypedDf):
         )
 
 
+class Ind1NonStrict(TypedDf):
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_index_names=["abc"])
+
+
 class Col2(TypedDf):
     @classmethod
     def get_typing(cls) -> DfTyping:
@@ -120,6 +126,12 @@ class Col2(TypedDf):
             _more_index_names_allowed=False,
             _more_columns_allowed=False,
         )
+
+
+class Col2NonStrict(TypedDf):
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc", "xyz"])
 
 
 class Ind2(TypedDf):
@@ -132,6 +144,12 @@ class Ind2(TypedDf):
         )
 
 
+class Ind2NonStrict(TypedDf):
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_index_names=["abc", "xyz"])
+
+
 class Ind1Col1(TypedDf):
     @classmethod
     def get_typing(cls) -> DfTyping:
@@ -140,6 +158,15 @@ class Ind1Col1(TypedDf):
             _required_index_names=["qqq"],
             _more_index_names_allowed=False,
             _more_columns_allowed=False,
+        )
+
+
+class Ind1Col1NonStrict(TypedDf):
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(
+            _required_columns=["abc"],
+            _required_index_names=["qqq"],
         )
 
 
@@ -174,6 +201,12 @@ class Ind2Col2(TypedDf):
             _more_index_names_allowed=False,
             _more_columns_allowed=False,
         )
+
+
+class Ind2Col2NonStrict(TypedDf):
+    @classmethod
+    def get_typing(cls) -> DfTyping:
+        return DfTyping(_required_columns=["abc", "xyz"], _required_index_names=["qqq", "rrr"])
 
 
 def sample_data_ind2_col2():

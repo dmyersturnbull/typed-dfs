@@ -40,6 +40,7 @@ class _GenericBuilder:
         self._name = name
         self._doc = doc
         self._clazz = None
+        self._classes = []
         self._remapped_suffixes = {}
         self._encoding = "utf8"
         self._read_kwargs = defaultdict(dict)
@@ -70,10 +71,26 @@ class _GenericBuilder:
         self.add_read_kwargs("pickle", protocol=5)
         self.add_write_kwargs("pickle", protocol=5)
 
+    def subclass(self, clazz: Type[Any]) -> __qualname__:
+        """
+        Make the class inherit from some type.
+        May only subclass from a single subclass of DataFrame.
+        If ``class`` is a ``DataFrame`` subclass, replaces the existing subclass.
+        Otherwise, adds an additional superclass for multiple inheritance.
+
+        Returns:
+            This builder for chaining
+        """
+        if issubclass(clazz, pd.DataFrame):
+            self._clazz = clazz
+        else:
+            self._classes.append(clazz)
+        return self
+
     def doc(self, s: str) -> __qualname__:
         """
         Sets the docstring.
-        This has the same effect as setting doc in :py.meth:`__init__`.
+        This has the same effect as setting doc in :meth:`__init__`.
 
         Returns:
             This builder for chaining
@@ -182,11 +199,11 @@ class _GenericBuilder:
     def hash(self, alg: str = "sha256", file: bool = True, directory: bool = False) -> __qualname__:
         """
         Write a hash file (e.g. .sha256) alongside files.
-        Performed when calling :py.meth:`typeddfs.abs_dfs.AbsDf.write_file`.
+        Performed when calling :meth:`typeddfs.abs_dfs.AbsDf.write_file`.
         The hash files will be in the `sha1sum <https://en.wikipedia.org/wiki/Sha1sum>`_ format,
         with a the filename, followed by ``" *"``, followed by the filename.
 
-        Note that this affects the default behavior of :py.meth:`typeddfs.abs_dfs.AbsDf.write_file`,
+        Note that this affects the default behavior of :meth:`typeddfs.abs_dfs.AbsDf.write_file`,
         which can be called with ``file_hash=False`` and/or ``dir_hash=False``.
 
         Args:
@@ -314,7 +331,7 @@ class _GenericBuilder:
             _value_dtype=self._value_dtype,
         )
 
-        class New(self._clazz):
+        class New(self._clazz, *self._classes):
             @classmethod
             def get_typing(cls) -> DfTyping:
                 return _typing
@@ -333,7 +350,7 @@ class _GenericBuilder:
 
 class MatrixDfBuilder(_GenericBuilder):
     """
-    A builder pattern for :py.class:`typeddfs.matrix_dfs.MatrixDf`.
+    A builder pattern for :class:`typeddfs.matrix_dfs.MatrixDf`.
     """
 
     def __init__(self, name: str, doc: Optional[str] = None):
@@ -348,12 +365,12 @@ class MatrixDfBuilder(_GenericBuilder):
         Builds this type.
 
         Returns:
-            A newly created subclass of :py.class:`typeddfs.matrix_dfs.MatrixDf`.
+            A newly created subclass of :class:`typeddfs.matrix_dfs.MatrixDf`.
 
         Raises:
             ClashError: If there is a contradiction in the specification
-            FormatInsecureError: If :py.meth:`hash` set an insecure
-                                 hash format and :py.meth:`secure` was set.
+            FormatInsecureError: If :meth:`hash` set an insecure
+                                 hash format and :meth:`secure` was set.
 
         .. note ::
 
@@ -362,27 +379,8 @@ class MatrixDfBuilder(_GenericBuilder):
         Raises:
             DfTypeConstructionError for some errors
         """
-        # self.add_read_kwargs(FileFormat.csv, index_col=0)
-        # self.add_read_kwargs(FileFormat.tsv, index_col=0)
         # noinspection PyTypeChecker
         return self._build()
-
-    def subclass(self, clazz: Type[MatrixDf]) -> __qualname__:
-        """
-        Make the type subclass some subclass of :py.class:`typeddfs.matrix_dfs.MatrixDf`.
-
-        Returns:
-            This builder for chaining
-
-        Raises:
-            DfTypeConstructionError: If ``clazz`` is not a subclass of ``MatrixDf``.
-        """
-        if not issubclass(clazz, MatrixDf):
-            raise DfTypeConstructionError(
-                f"{clazz.__name__} is not a subclass of {MatrixDf.__name__}"
-            )
-        self._clazz = clazz
-        return self
 
     def dtype(self, dt: Type[Any]) -> __qualname__:
         """
@@ -408,7 +406,7 @@ class MatrixDfBuilder(_GenericBuilder):
 
 class AffinityMatrixDfBuilder(MatrixDfBuilder):
     """
-    A builder pattern for :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
+    A builder pattern for :class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
     """
 
     def __init__(self, name: str, doc: Optional[str] = None):
@@ -420,12 +418,12 @@ class AffinityMatrixDfBuilder(MatrixDfBuilder):
         Builds this type.
 
         Returns:
-            A newly created subclass of :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
+            A newly created subclass of :class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
 
         Raises:
             typeddfs.df_errors.ClashError: If there is a contradiction in the specification
-            typeddfs.df_errors.FormatInsecureError: If :py.meth:`hash` set an insecure
-                                                    hash format and :py.meth:`secure` was set.
+            typeddfs.df_errors.FormatInsecureError: If :meth:`hash` set an insecure
+                                                    hash format and :meth:`secure` was set.
 
         .. note ::
 
@@ -434,27 +432,10 @@ class AffinityMatrixDfBuilder(MatrixDfBuilder):
         # noinspection PyTypeChecker
         return self._build()
 
-    def subclass(self, clazz: Type[AffinityMatrixDf]) -> __qualname__:
-        """
-        Make the type subclass some subclass of :py.class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
-
-        Returns:
-            This builder for chaining
-
-        Raises:
-            DfTypeConstructionError: If ``clazz`` is not a subclass of ``AffinityMatrixDf``.
-        """
-        if not issubclass(clazz, AffinityMatrixDf):
-            raise DfTypeConstructionError(
-                f"{clazz.__name__} is not a subclass of {AffinityMatrixDf.__name__}"
-            )
-        self._clazz = clazz
-        return self
-
 
 class TypedDfBuilder(_GenericBuilder):
     """
-    A builder pattern for :py.class:`typeddfs.typed_dfs.TypedDf`.
+    A builder pattern for :class:`typeddfs.typed_dfs.TypedDf`.
 
     Example:
         TypedDfBuilder.typed().require("name").build()
@@ -469,7 +450,7 @@ class TypedDfBuilder(_GenericBuilder):
         Builds this type.
 
         Returns:
-            A newly created subclass of :py.class:`typeddfs.typed_dfs.TypedDf`.
+            A newly created subclass of :class:`typeddfs.typed_dfs.TypedDf`.
 
         Raises:
             DfTypeConstructionError: If there is a contradiction in the specification
@@ -480,23 +461,6 @@ class TypedDfBuilder(_GenericBuilder):
         """
         # noinspection PyTypeChecker
         return self._build()
-
-    def subclass(self, clazz: Type[TypedDf]) -> __qualname__:
-        """
-        Make the type subclass some subclass of :py.class:`typeddfs.typed_dfs.TypedDf`.
-
-        Returns:
-            This builder for chaining
-
-        Raises:
-            DfTypeConstructionError: If ``clazz`` is not a subclass of ``TypedDf``.
-        """
-        if not issubclass(clazz, TypedDf):
-            raise DfTypeConstructionError(
-                f"{clazz.__name__} is not a subclass of {TypedDf.__name__}"
-            )
-        self._clazz = clazz
-        return self
 
     def require(
         self, *names: str, dtype: Optional[Type] = None, index: bool = False

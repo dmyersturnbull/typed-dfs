@@ -48,9 +48,9 @@ class _DfFormatSupport:
     Records the presence of required packages.
     Records whether file formats are supported as per whether a required
     package is available/installed.
-    This is used by :py.class:`FileFormat`
-    and thereby :py.meth:`typeddfs.abs_df.read_file`
-    and :py.meth:`typeddfs.abs_df.write_file`.
+    This is used by :class:`FileFormat`
+    and thereby :meth:`typeddfs.abs_df.read_file`
+    and :meth:`typeddfs.abs_df.write_file`.
 
     Example:
         if not DfFormatSupport.has_hdf5:

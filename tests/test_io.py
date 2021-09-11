@@ -1,3 +1,5 @@
+from io import StringIO
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,15 +10,16 @@ from typeddfs.df_errors import NoValueError
 from typeddfs.untyped_dfs import UntypedDf
 
 from . import (
-    Ind1,
-    Ind2,
     Trivial,
+    Ind1NonStrict as Ind1,
+    Ind2NonStrict as Ind2,
+    Col2NonStrict as Col2,
+    Ind2Col2NonStrict as Ind2Col2,
     sample_data,
+    sample_data_ind2_col2_pd_na,
     tmpfile,
     logger,
-    Ind2Col2,
     sample_data_ind2_col2,
-    sample_data_ind2_col2_pd_na,
 )
 
 
@@ -247,6 +250,62 @@ class TestReadWrite:
             path.write_text("<html></html>", encoding="utf8")
             with pytest.raises(NoValueError):
                 UntypedDf.read_html(path)
+
+    def test_read_toml(self):
+        data = """
+        [[row]]
+        # a comment
+        key = "value"
+        """
+        s = StringIO(data)
+        df = UntypedDf.read_toml(s)
+        assert df.column_names() == ["key"]
+        assert df.values.tolist() == [["value"]]
+
+    def test_read_toml_jagged(self):
+        data = """
+        [[row]]
+        key = "value1"
+        [[row]]
+        key = "value2"
+        kitten = "elephant"
+        cuteness = 10.3
+        """
+        s = StringIO(data)
+        df = UntypedDf.read_toml(s)
+        assert df.column_names() == ["key", "kitten", "cuteness"]
+        xx = df.fillna(0).values.tolist()
+        assert xx == [["value1", 0, 0], ["value2", "elephant", 10.3]]
+
+    def test_read_ini(self):
+        data = """
+        [section]
+        ; a comment
+        key = value
+        """
+        s = StringIO(data)
+        df = UntypedDf.read_ini(s)
+        assert df.column_names() == ["key", "value"]
+        assert df.values.tolist() == [["section.key", "value"]]
+
+    def test_read_properties(self):
+        data = r"""
+        [section]
+        # a comment
+        ! another comment
+        k\:e\\y = v:a\\lue
+        """
+        s = StringIO(data)
+        df = UntypedDf.read_properties(s)
+        assert df.column_names() == ["key", "value"]
+        assert df.values.tolist() == [[r"section.k:e\y", r"v:a\lue"]]
+        data: str = df.to_properties()
+        lines = [s.strip() for s in data.splitlines()]
+        assert "[section]" in lines
+        assert r"k\:e\\y = v:a\\lue" in lines
+        s = StringIO(data)
+        df2 = UntypedDf.read_properties(s)
+        assert df2.values.tolist() == df.values.tolist()
 
     """
     # TODO re-enable when we get a tables 3.9 wheels on Windows

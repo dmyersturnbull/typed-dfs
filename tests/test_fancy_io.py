@@ -44,6 +44,7 @@ assert DfFormatSupport.has_xlsx
 assert DfFormatSupport.has_xls
 assert DfFormatSupport.has_xlsb
 assert DfFormatSupport.has_ods
+assert DfFormatSupport.has_toml
 known_compressions = {"", ".gz", ".zip", ".bz2", ".xz"}
 
 
@@ -62,13 +63,14 @@ def get_req_ext(*, lines: bool, properties: bool) -> Set[str]:
         ".pkl",
     }
     ne.add(".fwf")
-    xx = {".csv", ".tsv", ".tab", ".json", ".xml", ".flexwf"}
+    xx = {".csv", ".tsv", ".tab", ".json", ".xml", ".flexwf", ".toml"}
     if lines:
         xx.add(".txt")
         xx.add(".lines")
         xx.add(".list")
     if properties:
         xx.add(".properties")
+        xx.add(".ini")
     for e in xx:
         for c in known_compressions:
             ne.add(e + c)
@@ -159,7 +161,7 @@ class TestReadWrite:
                         with pytest.raises(NotSingleColumnError):
                             df.write_file(path)
                         continue
-                    if not allow_properties and ".properties" in ext:
+                    if not allow_properties and (".properties" in ext or ".ini" in ext):
                         with pytest.raises(UnsupportedOperationError):
                             df.write_file(path)
                         continue

@@ -149,6 +149,49 @@ Use `.of(df)` to convert a DataFrame to your type.
 
 ### 🗨️ Q & A
 
+**What is the difference between `__init__`, `convert`, and `of`?**
+
+These three methods in `TypedDf` (and its superclasses) are a bit different.
+`__init__` does NOT attempt to reorganize or validate your DataFrame,
+while `convert` and `of` do.
+`of` is simply more flexible than `convert`: `convert` only accepts a DataFrame,
+while `of` will take anything that `DataFrame.__init__` will.
+
+**When do typed DFs "detype" during chained invocations?**
+
+Most DataFrame-level functions that ordinarily return DataFrames themselves
+try to keep the same type.
+This includes `reindex`, `drop_duplicates`, `sort_values`, and `set_index`.
+This is to allow for easy chained invocation, but it’s important to note
+that the returned DataFrame might not conform to your requirements.
+Call `retype` at the end to reorganize and verify.
+
+```python
+from typeddfs import TypedDfs
+
+MyDf = TypedDfs.typed("MyDf").require("valid").build()
+my_df = MyDf.read_csv("x.csv")
+my_df_2 = my_df.drop_duplicates().rename_cols(valid="ok")
+print(type(my_df_2))  # type(MyDf)
+# but this fails!
+my_df_3 = my_df.drop_duplicates().rename_cols(valid="ok").retype()
+# MissingColumnError "valid"
+```
+
+You can call `.detype()` to remove any typing rules
+and `.vanilla()` if you need a plain DataFrame.
+
+**How does one get the typing info?**
+
+Call `.get_typing()`
+
+```python
+from typeddfs import TypedDfs
+
+MyDf = TypedDfs.typed("MyDf").require("valid").build()
+MyDf.get_typing().required_columns  # ["valid"]
+```
+
 **How are toml documents read and written?**
 
 These are limited to a single array of tables (AOT).
@@ -201,49 +244,6 @@ It seems pretty solid for Feather, Parquet, and CSV/TSV-like variants,
 especially if the dtypes are limited to bools, real values, int values, and strings.
 There may be corner cases for XML, TOML, INI, Excel, OpenDocument, and HDF5,
 as well as for categorical and miscellaneous `object` dtypes.
-
-**What is the difference between `__init__`, `convert`, and `of`?**
-
-These three methods in `TypedDf` (and its superclasses) are a bit different.
-`__init__` does NOT attempt to reorganize or validate your DataFrame,
-while `convert` and `of` do.
-`of` is simply more flexible than `convert`: `convert` only accepts a DataFrame,
-while `of` will take anything that `DataFrame.__init__` will.
-
-**When do typed DFs "detype" during chained invocations?**
-
-Most DataFrame-level functions that ordinarily return DataFrames themselves
-try to keep the same type.
-This includes `reindex`, `drop_duplicates`, `sort_values`, and `set_index`.
-This is to allow for easy chained invocation, but it’s important to note
-that the returned DataFrame might not conform to your requirements.
-Call `retype` at the end to reorganize and verify.
-
-```python
-from typeddfs import TypedDfs
-
-MyDf = TypedDfs.typed("MyDf").require("valid").build()
-my_df = MyDf.read_csv("x.csv")
-my_df_2 = my_df.drop_duplicates().rename_cols(valid="ok")
-print(type(my_df_2))  # type(MyDf)
-# but this fails!
-my_df_3 = my_df.drop_duplicates().rename_cols(valid="ok").retype()
-# MissingColumnError "valid"
-```
-
-You can call `.detype()` to remove any typing rules
-and `.vanilla()` if you need a plain DataFrame.
-
-**How does one get the typing info?**
-
-Call `.get_typing()`
-
-```python
-from typeddfs import TypedDfs
-
-MyDf = TypedDfs.typed("MyDf").require("valid").build()
-MyDf.get_typing().required_columns  # ["valid"]
-```
 
 **How do I include another filename suffix?**
 

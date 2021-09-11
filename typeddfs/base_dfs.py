@@ -13,8 +13,8 @@ from typeddfs.abs_dfs import AbsDf
 class BaseDf(AbsDf, metaclass=abc.ABCMeta):
     """
     An abstract DataFrame type that has a way to convert and de-convert.
-    A subclass of :py.class:`typeddfs.abs_dfs.AbsDf`,
-    it has methods :py.meth:`convert` and :py.meth:`vanilla`.
+    A subclass of :class:`typeddfs.abs_dfs.AbsDf`,
+    it has methods :meth:`convert` and :meth:`vanilla`.
     but no implementation or enforcement of typing.
     """
 
@@ -33,7 +33,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
     def of(cls, df, *args, **kwargs) -> __qualname__:
         """
         Construct or convert a DataFrame, returning this type.
-        Delegates to :py.meth:`convert` for DataFrames,
+        Delegates to :meth:`convert` for DataFrames,
         or tries first constructing a DataFrame by calling ``pd.DataFrame(df)``.
 
         May be overridden to accept more types, such as a string for database lookup.
@@ -41,7 +41,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
         or return the result of ``Customers.convert(...)`` if a DataFrame instance is provided.
 
         Returns:
-            A new DataFrame; see :py.meth:`convert` for more info.
+            A new DataFrame; see :meth:`convert` for more info.
         """
         if not isinstance(df, pd.DataFrame):
             df = pd.DataFrame(df, *args, **kwargs)

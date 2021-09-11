@@ -103,16 +103,16 @@ class Utils:
 
         Returns:
             Either ``v`` itself,
-            a :py.type:`typeddfs.utils.FrozeSet` (subclass of :py.type:`typing.AbstractSet`),
-            a :py.type:`typeddfs.utils.FrozeList` (subclass of :py.type:`typing.Sequence`),
-            or a :py.type:`typeddfs.utils.FrozeDict` (subclass of :py.type:`typing.Mapping`).
+            a :class:`typeddfs.utils.FrozeSet` (subclass of :class:`typing.AbstractSet`),
+            a :class:`typeddfs.utils.FrozeList` (subclass of :class:`typing.Sequence`),
+            or a :class:`typeddfs.utils.FrozeDict` (subclass of :class:`typing.Mapping`).
             int, float, str, np.generic, and tuple are always returned as-is.
 
         Raises:
             AttributeError: If ``v`` is not hashable and could not converted to
                             a FrozeSet, FrozeList, or FrozeDict, *or* if one of the elements for
                             one of the above types is not hashable.
-            TypeError: If ``v`` is a :py.type:`iterator.Iterator` or :py.type:`collections.deque`
+            TypeError: If ``v`` is an ``Iterator`` or `collections.deque``
         """
         if isinstance(v, (int, float, str, np.generic, tuple, frozenset)):
             return v  # short-circuit
@@ -139,23 +139,21 @@ class Utils:
 
     @classmethod
     def property_key_escape(cls, s: str) -> str:
-        p = regex.compile(r"[ =:\\]", flags=regex.V1)
-        return p.sub(r"\\\0", s)
+        p = regex.compile(r"([ =:\\])", flags=regex.V1)
+        return p.sub(r"\\\1", s)
 
     @classmethod
     def property_key_unescape(cls, s: str) -> str:
-        p = regex.compile(r"\\([ =:\\])", flags=regex.V1)
+        p = regex.compile(r"\\([ =:\\])", flags=regex.V0)
         return p.sub(r"\1", s)
 
     @classmethod
     def property_value_escape(cls, s: str) -> str:
-        p = regex.compile(r"\\", flags=regex.V1)
-        return p.sub(r"\\\0", s)
+        return s.replace("\\", "\\\\")
 
     @classmethod
     def property_value_unescape(cls, s: str) -> str:
-        p = regex.compile(r"\\([ =:\\])", flags=regex.V1)
-        return p.sub(r"\1", s)
+        return s.replace("\\\\", "\\")
 
     @classmethod
     def banned_names(cls) -> Set[str]:
@@ -196,7 +194,7 @@ class Utils:
             ``Utils.dots_to_dict({"genus.species": "fruit bat"}) == {"genus": {"species": "fruit bat"}}``
 
         See Also:
-            :py.meth:`dict_to_dots`
+            :meth:`dict_to_dots`
         """
         dct = {}
         cls._un_leaf(dct, items)
@@ -205,7 +203,7 @@ class Utils:
     @classmethod
     def dict_to_dots(cls, items: Mapping[str, Any]) -> Mapping[str, Any]:
         """
-        Performs the inverse of :py.meth:`dots_to_dict`.
+        Performs the inverse of :meth:`dots_to_dict`.
 
         Examples:
             ``Utils.dict_to_dots({"genus": {"species": "fruit bat"}}) == {"genus.species": "fruit bat"}``
@@ -226,7 +224,7 @@ class Utils:
             f.handle.write(content)
 
     @classmethod
-    def read(cls, path_or_buff, *, mode: str = "w", **kwargs) -> str:
+    def read(cls, path_or_buff, *, mode: str = "r", **kwargs) -> str:
         """
         Reads using Pandas's ``get_handle``.
         By default (unless ``compression=`` is set), infers the compression type from the filename suffix
@@ -280,7 +278,7 @@ class Utils:
             dtype: Probably from ``pd.Series.dtype``
 
         Returns:
-            A tuple of (set of flags, int) -- see :py.meth:`exact_natsort_alg`
+            A tuple of (set of flags, int) -- see :meth:`exact_natsort_alg`
         """
         st, x = set(), 0
         if is_string_dtype(dtype):

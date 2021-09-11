@@ -99,8 +99,8 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
             column: The name of the (single) column to sort by
             alg: Input as the ``alg`` argument to ``natsorted``
                  If ``None``, the "best" algorithm is chosen from the dtype of ``column``
-                 via :py.meth:`typeddfs.utils.Utils.guess_natsort_alg`.
-                 Otherwise, :py.meth:typeddfs.utils.Utils.exact_natsort_alg`
+                 via :meth:`typeddfs.utils.Utils.guess_natsort_alg`.
+                 Otherwise, :meth:typeddfs.utils.Utils.exact_natsort_alg`
                  is called with ``Utils.exact_natsort_alg(alg)``.
             reverse: Reverse the sort order (e.g. 'z' before 'a')
         """
@@ -122,8 +122,8 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         Args:
             alg: Input as the ``alg`` argument to ``natsorted``
                  If ``None``, the "best" algorithm is chosen from the dtype of ``column``
-                 via :py.meth:`typeddfs.utils.Utils.guess_natsort_alg`.
-                 Otherwise, :py.meth:typeddfs.utils.Utils.exact_natsort_alg`
+                 via :meth:`typeddfs.utils.Utils.guess_natsort_alg`.
+                 Otherwise, :meth:typeddfs.utils.Utils.exact_natsort_alg`
                  is called with ``Utils.exact_natsort_alg(alg)``.
             reverse: Reverse the sort order (e.g. 'z' before 'a')
         """
@@ -167,7 +167,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
 
     def vanilla_reset(self) -> pd.DataFrame:
         """
-        Same as :py.meth:`vanilla`, but resets the index -- but dropping the index if it has no name.
+        Same as :meth:`vanilla`, but resets the index -- but dropping the index if it has no name.
         This means that an effectively index-less dataframe will not end up with an extra column
         called "index".
         """

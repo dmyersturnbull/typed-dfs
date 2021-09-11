@@ -5,12 +5,11 @@ import abc
 from typing import List
 
 import pandas as pd
-from pandas.core.frame import DataFrame as _InternalDataFrame
 
 from typeddfs.df_errors import UnsupportedOperationError
 
 
-class PrettyDf(_InternalDataFrame, metaclass=abc.ABCMeta):
+class PrettyDf(pd.DataFrame, metaclass=abc.ABCMeta):
     """
     A DataFrame with an overridden ``_repr_html_`` and some simple additional methods.
     """

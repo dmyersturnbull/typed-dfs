@@ -37,7 +37,7 @@ _SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
 class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     """
     An abstract DataFrame type with typing rules and IO methods.
-    The method :py.meth:`get_typing` contains a plethora of typing rules
+    The method :meth:`get_typing` contains a plethora of typing rules
     that the type can choose how to (and whether to) enforce.
     """
 
@@ -52,7 +52,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     @classmethod
     def _check(cls, df) -> None:
         """
-        Should raise an :py.class:`typeddfs.df_errors.InvalidDfError` or subclass for issues.
+        Should raise an :class:`typeddfs.df_errors.InvalidDfError` or subclass for issues.
         """
 
     def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
@@ -80,16 +80,22 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             df.write_file(path))
             df.read_file(path)
 
+        Text files always allow encoding with .gz, .zip, .bz2, or .xz.
+
         Supports:
-            - .csv, .tsv, or .tab (optionally with .gz, .zip, .bz2, or .xz)
-            - .json  (optionally with .gz, .zip, .bz2, or .xz)
+            - .csv, .tsv, or .tab
+            - .json
+            - .xml
             - .feather
             - .parquet or .snappy
             - .h5 or .hdf
-            - .xlsx or .xls
+            - .xlsx, .xls, .odf, etc.
+            - .toml
+            - .properties
+            - .ini
             - .fxf (fixed-width)
             - .flexwf (fixed-but-unspecified-width with an optional delimiter)
-            - .txt, .lines, or .list (optionally .gz, .zip, .bz2, or .xz); see ``read_lines()``
+            - .txt, .lines, or .list
 
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
@@ -182,7 +188,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Some depend on the availability of optional packages.
         The lines format (``.txt``, ``.lines``, etc.) is only included if
         this DataFrame *can* support only 1 column+index.
-        See :py.meth:`typeddfs.file_formats.FileFormat.can_read`.
+        See :meth:`typeddfs.file_formats.FileFormat.can_read`.
         """
         return {
             f
@@ -198,13 +204,13 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Some depend on the availability of optional packages.
         The lines format (``.txt``, ``.lines``, etc.) is only included if
         this DataFrame type *can* support only 1 column+index.
-        See :py.meth:`typeddfs.file_formats.FileFormat.can_write`.
+        See :meth:`typeddfs.file_formats.FileFormat.can_write`.
         """
         return {
             f
             for f in FileFormat.all_writable()
             if (f is not FileFormat.lines or cls._lines_files_apply())
-            and (f is not FileFormat.properties or cls._properties_files_apply())
+            and (f not in [FileFormat.properties, FileFormat.ini] or cls._properties_files_apply())
         }
 
     @classmethod
@@ -217,16 +223,17 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
     def to_properties(
         self,
-        path_or_buff,
+        path_or_buff=None,
         mode: str = "w",
         *,
-        sep: str = "=",
+        comment: Union[None, str, Sequence[str]] = None,
         **kwargs,
     ) -> Optional[str]:
         r"""
         Writes a .properties file.
         Backslashes, colons, spaces, and equal signs are escaped in keys.
         Backslashes are escaped in values.
+        The separator is always ``=``.
 
         .. caution::
 
@@ -234,30 +241,29 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
         Args:
             path_or_buff: Path or buffer
+            comment: Comment line(s) to add at the top of the document
             mode: Write ('w') or append ('a')
-            sep: Can be either '=', ':', or ' '
-            kwargs: Passed to ``to_csv``
+            kwargs: Passed to :py.meth:`typeddfs.utils.Utils.write`
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
-        if sep not in {"=", ":", " "}:
-            raise ValueError(f"Bad sep {sep}; must be '=', ':', or ' '")
-        self.__class__._assert_can_write_properties_class()
-        self._assert_can_write_properties_instance()
-        kwargs = dict(kwargs)
-        kwargs["header"] = None
-        df = self.vanilla_reset()
-        df[df.columns[0]] = df[df.columns[0]].map(Utils.property_key_escape)
-        df[df.columns[1]] = df[df.columns[1]].map(Utils.property_value_escape)
-        return df.to_csv(
-            path_or_buff, mode=mode, index=False, sep=sep, quoting=csv.QUOTE_NONE, **kwargs
+        return self._to_properties_like(
+            Utils.property_key_escape,
+            Utils.property_value_escape,
+            "=",
+            "#",
+            path_or_buff,
+            mode,
+            comment,
+            **kwargs,
         )
 
     @classmethod
     def read_properties(
         cls,
         path_or_buff,
+        strip_quotes: bool = False,
         **kwargs,
     ) -> __qualname__:
         r"""
@@ -271,38 +277,17 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
         Args:
             path_or_buff: Path or buffer
+            strip_quotes: Remove quotation marks ("") surrounding values
             kwargs: Passed to ``read_csv``; avoid setting
         """
-        cls._assert_can_write_properties_class()
-        kwargs = dict(kwargs)
-        kwargs.setdefault("skip_blank_lines", True)
-        kwargs["header"] = None
-        kwargs.setdefault("engine", "python")
-        try:
-            df = pd.read_csv(
-                path_or_buff,
-                sep=r" *[ =:] *",
-                escapechar="\\",
-                index_col=False,
-                quoting=csv.QUOTE_NONE,
-                **kwargs,
-            )
-        except pd.errors.EmptyDataError:
-            # TODO: Figure out what EmptyDataError means
-            # df = pd.DataFrame()
-            return cls.new_df()
-        if len(df.columns) != 2:
-            raise UnsupportedOperationError(
-                f"Read {len(df.columns)} != 2 columns on {path_or_buff}"
-            )
-        df = df[~df[df.columns[0]].map(str).str.startswith("#")]
-        df = df[~df[df.columns[0]].map(str).str.startswith("!")]
-        df[df.columns[0]] = df[df.columns[0]].map(Utils.property_key_unescape)
-        df[df.columns[1]] = df[df.columns[1]].map(Utils.property_value_unescape)
-        if any((str(s).endswith("\\") for s in df[df.columns[1]])):
-            raise ValueError(f"Some rows end with \\; continued lines are not yet supported")
-        df.columns = cls.get_typing().required_names
-        return cls._convert_typed(df)
+        return cls._read_properties_like(
+            Utils.property_key_unescape,
+            Utils.property_value_unescape,
+            {"!", "#"},
+            strip_quotes,
+            path_or_buff,
+            **kwargs,
+        )
 
     @classmethod
     def read_toml(
@@ -333,12 +318,12 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         if aot is None:
             aot = next(iter(data.keys()))
         data = data[aot]
-        df = pd.DataFrame(data)
+        df = pd.DataFrame([pd.Series(d) for d in data])
         return cls._convert_typed(df)
 
     def to_toml(
         self,
-        path_or_buff,
+        path_or_buff=None,
         aot: str = "row",
         comment: Union[None, str, Sequence[str]] = None,
         mode: str = "w",
@@ -356,14 +341,14 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             aot: The name of the array of tables (i.e. ``[[ table ]]`)
             comment: Comment line(s) to add at the top of the document
             mode: 'w' (write) or 'a' (append)
-            kwargs: Passed to ``Utils.write``
+            kwargs: Passed to :meth:`typeddfs.utils.Utils.write`
         """
         import tomlkit
         from tomlkit.toml_document import TOMLDocument
 
         comment = [] if comment is None else ([comment] if isinstance(comment, str) else comment)
         df = self.vanilla_reset()
-        data = [df.iloc[i].to_dict() for i in df]
+        data = [df.iloc[i].to_dict() for i in range(len(df))]
         aot_obj = Utils.dicts_to_toml_aot(data)
         doc: TOMLDocument = tomlkit.document()
         for c in comment:
@@ -377,7 +362,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         cls, path_or_buff, hash_sign: bool = False, strip_quotes: bool = False, **kwargs
     ) -> __qualname__:
         r"""
-        Reads a TOML file.
+        Reads an INI file.
 
         .. caution::
 
@@ -387,47 +372,22 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             path_or_buff: Path or buffer
             hash_sign: Allow ``#`` to denote a comment (as well as ``;``)
             strip_quotes: Remove quotation marks ("" or '') surrounding the values
-            kwargs: Passed to ``Utils.read``
+            kwargs: Passed to :meth:`typeddfs.utils.Utils.read`
         """
-        cls._assert_can_write_properties_class()
-        key_col, val_col = cls.get_typing().required_names
-        txt = Utils.read(path_or_buff, **kwargs)
-        keys = []
-        values = []
-        section = ""
-        for i, line in enumerate(txt.splitlines()):
-            try:
-                if (
-                    line.startswith(";")
-                    or hash_sign
-                    and line.startswith("#")
-                    or len(line.strip()) == 0
-                ):
-                    continue
-                line = line.rstrip()
-                if line.startswith("["):
-                    # treat [ ] (with spaces) as the global key
-                    section = line.lstrip("[").rstrip("]").strip()
-                    continue
-                key, value = section.split("=")
-                key, value = key.strip(), value.strip()
-                if strip_quotes:
-                    value = value.strip("'" + '"')
-                if section != "":
-                    key = section + "." + key
-                keys.append(key)
-                values.append(value)
-            except ValueError:
-                raise ValueError(f"Malformed line {i}: '{line}'")
-        df = pd.DataFrame({key_col: keys, val_col: values})
-        return cls.convert(df)
+        return cls._read_properties_like(
+            None,
+            None,
+            {";", "#"} if hash_sign else {";"},
+            strip_quotes,
+            path_or_buff,
+            **kwargs,
+        )
 
     def to_ini(
         self,
-        path_or_buff,
+        path_or_buff=None,
         comment: Union[None, str, Sequence[str]] = None,
         mode: str = "w",
-        quote: bool = False,
         **kwargs,
     ) -> __qualname__:
         r"""
@@ -440,32 +400,23 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Args:
             path_or_buff: Path or buffer
             comment: Comment line(s) to add at the top of the document
-            quote: Surround string values in double quotation marks
             mode: 'w' (write) or 'a' (append)
-            kwargs: Passed to ``Utils.write``
+            kwargs: Passed to :meth:`typeddfs.utils.Utils.write`
         """
-        comment = [] if comment is None else ([comment] if isinstance(comment, str) else comment)
-        self.__class__._assert_can_write_properties_class()
-        self._assert_can_write_properties_instance()
-        df = self.vanilla_reset()
-        key_col, val_col = self.__class__.get_typing().required_names
-        should_quote = (
-            quote and not Utils.is_numeric_dtype(val_col) and not Utils.is_bool_dtype(val_col)
+        return self._to_properties_like(
+            None,
+            None,
+            "=",
+            ";",
+            path_or_buff,
+            mode,
+            comment,
+            **kwargs,
         )
-        lines = comment
-        section = ""
-        for k, v in zip(df[key_col], df[val_col]):
-            if "." in k:
-                k, s = str(k).split(".", 1)
-                if s != section:
-                    lines.append(f"[{s}]")
-            line = f'{k} = "{v}"' if should_quote else f"{k} = {v}"
-            lines.append(line)
-        return Utils.write(path_or_buff, os.linesep.join(lines), mode=mode, **kwargs)
 
     def to_lines(
         self,
-        path_or_buff,
+        path_or_buff=None,
         mode: str = "w",
         **kwargs,
     ) -> Optional[str]:
@@ -481,7 +432,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Args:
             path_or_buff: Path or buffer
             mode: Write ('w') or append ('a')
-            kwargs: Passed to ``to_csv``
+            kwargs: Passed to ``pd.DataFrame.to_csv``
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
@@ -513,7 +464,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
         Args:
             path_or_buff: Path or buffer
-            kwargs: Passed to ``read_csv``; May include 'comment', 'encoding', 'skip_blank_lines', and 'line_terminator'
+            kwargs: Passed to ``pd.DataFrame.read_csv``
+                    E.g. 'comment', 'encoding', 'skip_blank_lines', and 'line_terminator'
         """
         kwargs = dict(kwargs)
         kwargs.setdefault("skip_blank_lines", True)
@@ -546,7 +498,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
     def to_fwf(
         self,
-        path_or_buff,
+        path_or_buff=None,
         mode: str = "w",
         colspecs: Optional[Sequence[Tuple[int, int]]] = None,
         widths: Optional[Sequence[int]] = None,
@@ -577,6 +529,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             float_format: Format string for floating point numbers
             date_format: Format string for datetime objects
             decimal: Character recognized as decimal separator. E.g. use ‘,’ for European data.
+            kwargs: Passed to :meth:`typeddfs.utils.Utils.write`
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
@@ -667,7 +620,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
                 pass
         return cls._convert_typed(df)
 
-    def to_flexwf(self, path_or_buff, sep: str = "|||", mode: str = "w", **kwargs) -> Optional[str]:
+    def to_flexwf(
+        self, path_or_buff=None, sep: str = "|||", mode: str = "w", **kwargs
+    ) -> Optional[str]:
         """
         Writes a fixed-width formatter, optionally with a delimiter, which can be multiple characters.
 
@@ -720,7 +675,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def read_xlsx(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
         """
         Reads XLSX Excel files.
-        Prefer this method over :py.meth:`read_excel`.
+        Prefer this method over :meth:`read_excel`.
         """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
@@ -728,7 +683,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def to_xlsx(self, excel_writer, *args, **kwargs) -> Optional[str]:
         """
         Writes XLSX Excel files.
-        Prefer this method over :py.meth:`write_excel`.
+        Prefer this method over :meth:`write_excel`.
         """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
@@ -738,7 +693,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def read_xls(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
         """
         Reads legacy XLS Excel files.
-        Prefer this method over :py.meth:`read_excel`.
+        Prefer this method over :meth:`read_excel`.
         """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
@@ -746,7 +701,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def to_xls(self, excel_writer, *args, **kwargs) -> Optional[str]:
         """
         Reads legacy XLS Excel files.
-        Prefer this method over :py.meth:`write_excel`.
+        Prefer this method over :meth:`write_excel`.
         """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
@@ -757,7 +712,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         """
         Reads XLSB Excel files.
         This is a relatively uncommon format.
-        Prefer this method over :py.meth:`read_excel`.
+        Prefer this method over :meth:`read_excel`.
         """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
@@ -766,7 +721,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         """
         Writes XLSB Excel files.
         This is a relatively uncommon format.
-        Prefer this method over :py.meth:`write_excel`.
+        Prefer this method over :meth:`write_excel`.
         """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
@@ -776,7 +731,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def read_ods(cls, io, sheet_name: _SheetNamesOrIndices = 0, **kwargs) -> __qualname__:
         """
         Reads OpenDocument ODS/ODT files.
-        Prefer this method over :py.meth:`read_excel`.
+        Prefer this method over :meth:`read_excel`.
         """
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
@@ -784,7 +739,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def to_ods(self, ods_writer, *args, **kwargs) -> Optional[str]:
         """
         Writes OpenDocument ODS/ODT files.
-        Prefer this method over :py.meth:`write_excel`.
+        Prefer this method over :meth:`write_excel`.
         """
         # ignore the deprecated option, for symmetry with read_
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
@@ -833,7 +788,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return cls._convert_typed(df)
 
     # noinspection PyFinal,PyMethodOverriding
-    def to_xml(self, path_or_buf, *args, **kwargs) -> Optional[str]:
+    def to_xml(self, path_or_buf=None, *args, **kwargs) -> Optional[str]:
         # Pandas's to_xml and read_xml have two buggy properties:
         # 1. Unnamed indices are called "index"
         #    for to_xml, but not read_xml -- so they're not inverses.
@@ -855,7 +810,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return df.to_xml(path_or_buf, *args, **kwargs)
 
     # noinspection PyFinal,PyMethodOverriding
-    def to_json(self, path_or_buf, *args, **kwargs) -> Optional[str]:
+    def to_json(self, path_or_buf=None, *args, **kwargs) -> Optional[str]:
         df = self.vanilla_reset()
         return df.to_json(path_or_buf, *args, **kwargs)
 
@@ -923,22 +878,12 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             old_size = None
         reset = self.vanilla_reset()
         for c in reset.columns:
-            if reset[c].dtype in [
-                np.byte,
-                np.ubyte,
-                np.short,
-                np.ushort,
-                np.single,
-                np.int32,
-                np.intc,
-            ]:
+            if reset[c].dtype in [np.ubyte, np.ushort]:
                 reset[c] = reset[c].astype(np.intc)
-            elif reset[c].dtype in [np.intc, np.uintc]:
+            elif reset[c].dtype == np.uintc:
                 reset[c] = reset[c].astype(np.long)
-            elif reset[c].dtype in [np.half, np.float16, np.single, np.float32]:
+            elif reset[c].dtype == np.half:
                 reset[c] = reset[c].astype(np.float32)
-            elif reset[c].dtype in [np.double, np.float64]:
-                reset[c] = reset[c].astype(np.float64)
         try:
             return reset.to_parquet(path_or_buf, *args, **kwargs)
         except BaseException:
@@ -957,7 +902,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def read_tsv(cls, *args, **kwargs) -> __qualname__:
         """
         Reads tab-separated data.
-        See  :py.meth:`read_csv` for more info.
+        See  :meth:`read_csv` for more info.
         """
         kwargs = {k: v for k, v in kwargs.items() if k != "sep"}
         return cls.read_csv(*args, sep="\t", **kwargs)
@@ -998,7 +943,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def to_tsv(self, *args, **kwargs) -> Optional[str]:
         """
         Writes tab-separated data.
-        See :py.meth:`to_csv` for more info.
+        See :meth:`to_csv` for more info.
         """
         return self.to_csv(*args, sep="\t", **kwargs)
 
@@ -1028,7 +973,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         return df.to_html(*args, **kwargs)
 
     def to_rst(
-        self, path_or_none: Optional[PathLike], style: str = "simple", mode: str = "w"
+        self, path_or_none: Optional[PathLike] = None, style: str = "simple", mode: str = "w"
     ) -> Optional[str]:
         """
         Writes a reStructuredText table.
@@ -1173,6 +1118,95 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
 
+    @classmethod
+    def _read_properties_like(
+        cls,
+        unescape_keys,
+        unescape_values,
+        comment_chars: Set[str],
+        strip_quotes: bool,
+        path_or_buff,
+        **kwargs,
+    ) -> __qualname__:
+        r"""
+        Reads a .properties-like file.
+        """
+        cls._assert_can_write_properties_class()
+        if len(cls.get_typing().required_names) == 2:
+            key_col, val_col = cls.get_typing().required_names
+        else:
+            key_col, val_col = "key", "value"
+        txt = Utils.read(path_or_buff, **kwargs)
+        keys = []
+        values = []
+        section = ""
+        for i, line in enumerate(txt.splitlines()):
+            try:
+                line = line.strip()
+                if any((line.startswith(c) for c in comment_chars)) or len(line.strip()) == 0:
+                    continue
+                if line.startswith("["):
+                    # treat [ ] (with spaces) as the global key
+                    section = line.lstrip("[").rstrip("]").strip()
+                    continue
+                key, value = line.split("=")
+                key, value = key.strip(), value.strip()
+                if unescape_keys is not None:
+                    key = unescape_keys(key)
+                if value.endswith("\\"):
+                    raise ValueError(f"Ends with \\; continued lines are not yet supported")
+                if unescape_values is not None:
+                    value = unescape_values(value)
+                if strip_quotes:
+                    value = value.strip('"')
+                if section != "":
+                    key = section + "." + key
+                keys.append(key)
+                values.append(value)
+            except ValueError:
+                raise ValueError(f"Malformed line {i}: '{line}'")
+        df = pd.DataFrame({key_col: keys, val_col: values})
+        return cls.convert(df)
+
+    def _to_properties_like(
+        self,
+        escape_keys,
+        escape_values,
+        sep: str,
+        comment_char: str,
+        path_or_buff=None,
+        mode: str = "w",
+        comment: Union[None, str, Sequence[str]] = None,
+        **kwargs,
+    ) -> Optional[str]:
+        r"""
+        Writes a .properties-like file.
+        """
+        comment = [] if comment is None else ([comment] if isinstance(comment, str) else comment)
+        self.__class__._assert_can_write_properties_class()
+        self._assert_can_write_properties_instance()
+        df = self.vanilla_reset()
+        if len(self.__class__.get_typing().required_names) == 2:
+            key_col, val_col = self.__class__.get_typing().required_names
+        else:
+            key_col, val_col = "key", "value"
+        df.columns = [key_col, val_col]
+        df = df.sort_values(key_col)  # essential
+        lines = [comment_char.lstrip(comment_char).lstrip() + " " + c for c in comment]
+        section = ""
+        for k, v in zip(df[key_col], df[val_col]):
+            if "." in k:
+                k, s = str(k).split(".", 1)
+                s, k = k.strip(), s.strip()
+                if s != section:
+                    lines.append(f"[{s}]")
+            if escape_keys:
+                k = escape_keys(k)
+            if escape_values:
+                v = escape_values(v)
+            lines.append(k + " " + sep + " " + v.strip('"'))
+        return Utils.write(path_or_buff, os.linesep.join(lines), mode=mode, **kwargs)
+
     def _assert_can_write_properties_instance(self) -> None:
         df = self.vanilla_reset()
         cols = df.columns
@@ -1184,13 +1218,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     @classmethod
     def _assert_can_write_properties_class(cls) -> None:
         req_names = cls.get_typing().required_names
-        if len(req_names) != 2:
+        if len(req_names) not in [0, 2]:
             raise UnsupportedOperationError(
-                f"Cannot write key/value: {len(req_names)} names != 2: {req_names}"
-            )
-        if not cls.get_typing().more_indices_allowed or not cls.get_typing().more_columns_allowed:
-            raise UnsupportedOperationError(
-                f"Cannot write key/value: extra columns / index levels permitted"
+                f"Cannot write key/value: {len(req_names)} names: {req_names}"
             )
 
     @classmethod
