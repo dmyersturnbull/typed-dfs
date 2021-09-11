@@ -83,7 +83,7 @@ class TestDataclasses:
         t = TypedDfBuilder("T").require("animal", dtype=str).reserve("age", dtype=int).build()
         df = t.from_dataclass_instances([Dc("cat", 1), Dc("kitten", 2)])
         assert len(df) == 2
-        assert df.values.tolist() == [["cat", 1], ["kitten", 2]]
+        assert df.to_numpy().tolist() == [["cat", 1], ["kitten", 2]]
 
     def test_read_instances_empty(self):
         t = TypedDfBuilder("T").require("animal", dtype=str).build()

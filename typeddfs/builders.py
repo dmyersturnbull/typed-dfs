@@ -158,7 +158,7 @@ class _GenericBuilder:
         self._verifications.extend(conditions)
         return self
 
-    def remap_suffixes(self, **kwargs) -> __qualname__:
+    def suffix(self, **kwargs) -> __qualname__:
         """
         Makes read_files and write_files interpret a filename suffix differently.
         Suffixes like .gz, .zip, etc. are also included for text formats that are provided.
@@ -172,6 +172,8 @@ class _GenericBuilder:
             This builder for chaining
         """
         for suffix, fmt in kwargs.items():
+            if not suffix.startswith("."):
+                suffix = "." + suffix
             fmt = FileFormat.of(fmt)
             for s in fmt.compressed_variants(suffix):
                 self._remapped_suffixes[s] = fmt

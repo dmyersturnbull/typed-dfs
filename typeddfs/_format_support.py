@@ -7,10 +7,11 @@ fastparquet = None
 tables = None
 openpyxl = None
 pyxlsb = None
+tomlkit = None
 
 
 def _import():
-    global pyarrow, fastparquet, tables, openpyxl, pyxlsb
+    global pyarrow, fastparquet, tables, openpyxl, pyxlsb, tomlkit
     try:
         import pyarrow
     except ImportError:  # pragma: no cover
@@ -36,6 +37,11 @@ def _import():
     except ImportError:  # pragma: no cover
         pyxlsb = None
 
+    try:
+        import tomlkit
+    except ImportError:  # pragma: no cover
+        tomlkit = None
+
 
 class _DfFormatSupport:
     """
@@ -60,6 +66,7 @@ class _DfFormatSupport:
         self._has_xls = openpyxl is not None
         self._has_ods = openpyxl is not None
         self._has_xlsb = pyxlsb is not None
+        self._has_toml = tomlkit is not None
 
     @property
     def has_feather(self) -> bool:
@@ -89,6 +96,10 @@ class _DfFormatSupport:
     def has_xlsb(self) -> bool:
         return self._has_xlsb
 
+    @property
+    def has_toml(self) -> bool:
+        return self._has_toml
+
     @classmethod
     def reload(cls) -> None:
         """
@@ -113,4 +124,4 @@ class _DfFormatSupport:
 DfFormatSupport = _DfFormatSupport()
 
 
-__all__ = ["DfFormatSupport"]
+__all__ = ["DfFormatSupport", "tomlkit", "pyarrow", "fastparquet", "tables", "openpyxl", "pyxlsb"]

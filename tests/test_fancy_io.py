@@ -244,7 +244,7 @@ class TestReadWrite:
         df2 = df.read_flexwf(buf)
         assert df.column_names() == df2.column_names()
         assert df.index_names() == df2.index_names()
-        assert df.values.tolist() == df2.values.tolist()
+        assert df.to_numpy().tolist() == df2.values.tolist()
 
     def test_read_write_flexwf_fancy_delimiter(self):
         df = Col1([0.3, 0.4, 0.5], columns=["abc"])
@@ -254,7 +254,7 @@ class TestReadWrite:
         df2 = df.read_flexwf(buf)
         assert df.column_names() == df2.column_names()
         assert df.index_names() == df2.index_names()
-        assert df.values.tolist() == df2.values.tolist()
+        assert df.to_numpy().tolist() == df2.values.tolist()
 
     def test_tabulate(self):
         df = Col1(["a", "puppy", "and", "a", "parrot"], columns=["abc"])
@@ -271,27 +271,27 @@ class TestReadWrite:
 
     def test_read_empty_csv(self):
         df = Untyped({})
-        assert df.values.tolist() == []
+        assert df.to_numpy().tolist() == []
         with tmpfile(".csv") as path:
             df.to_csv(path)
             df2 = Untyped.read_csv(path)
-        assert df.values.tolist() == df2.values.tolist()
+        assert df.to_numpy().tolist() == df2.values.tolist()
 
     def test_read_empty_txt(self):
         df = Untyped({})
-        assert df.values.tolist() == []
+        assert df.to_numpy().tolist() == []
         with tmpfile(".lines") as path:
             df.to_csv(path)
             df2 = Untyped.read_lines(path)
-        assert df.values.tolist() == df2.values.tolist()
+        assert df.to_numpy().tolist() == df2.values.tolist()
 
     def test_read_empty_xml(self):
         df = Untyped({})
-        assert df.values.tolist() == []
+        assert df.to_numpy().tolist() == []
         with tmpfile(".xml") as path:
             df.to_csv(path)
             df2 = Untyped.read_lines(path)
-        assert df.values.tolist() == df2.values.tolist()
+        assert df.to_numpy().tolist() == df2.values.tolist()
 
     def test_pass_io_options(self):
         t = TypedDfBuilder("a").reserve("x", "y").add_write_kwargs(FileFormat.csv, sep="&").build()

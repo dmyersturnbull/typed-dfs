@@ -13,9 +13,11 @@ XLSM, XLTX, XLTM, XLS, and XLSB files (which support macros).
 
 You can disable reading and writing these formats with `.secure()` in the builders.
 For example: `TypedDfs.typed("MyDf").secure().build()`.
-This will also disable sha-1 and md5 as choices for sha1sum-style file hashes.
 These files can be added with `.write_file(df, file_hash=True)`
 and verified with `.read_file(path, check_hash="file")`.
+.secure() will also disable sha-1 and md5 as choices for sha1sum-style file hashes,
+and reading from http://.
+You can still read directly from buffers.
 
 ### 📫 How to report
 

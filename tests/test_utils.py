@@ -72,6 +72,9 @@ class TestUtils:
         names, z = Utils.guess_natsort_alg(np.bool)
         assert names == {"INT", "SIGNED"}
         assert z == ns.INT | ns.SIGNED
+        names, z = Utils.guess_natsort_alg(np.bool_)
+        assert names == {"INT", "SIGNED"}
+        assert z == ns.INT | ns.SIGNED
 
     def test_guess_natsort_alg_float(self):
         names, z = Utils.guess_natsort_alg(float)

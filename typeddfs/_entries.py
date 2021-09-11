@@ -22,7 +22,8 @@ from typeddfs.df_errors import (
     ValueNotUniqueError,
     VerificationFailedError,
 )
-from typeddfs.file_formats import FileFormat
+from typeddfs.file_formats import FileFormat, CompressionFormat
+from typeddfs.checksums import Checksums
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 from typeddfs.utils import Utils
@@ -61,8 +62,10 @@ class TypedDfs:
     NotSingleColumnError = NotSingleColumnError
     ClashError = ClashError
     FileFormat = FileFormat
+    CompressionFormat = CompressionFormat
     FinalDf = FinalDf
     Utils = Utils
+    Checksums = Checksums
     FrozeList = FrozeList
     FrozeSet = FrozeSet
     FrozeDict = FrozeDict
@@ -176,4 +179,20 @@ class TypedDfs:
         return New
 
 
-__all__ = ["FinalDf", "TypedDfs"]
+typed = TypedDfs.typed
+untyped = TypedDfs.untyped
+matrix = TypedDfs.matrix
+affinity_matrix = TypedDfs.affinity_matrix
+
+
+__all__ = [
+    "FinalDf",
+    "TypedDfs",
+    "Utils",
+    "Checksums",
+    "FrozeSet",
+    "FrozeDict",
+    "FrozeList",
+    "FileFormat",
+    "CompressionFormat",
+]

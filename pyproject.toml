@@ -101,6 +101,7 @@ openpyxl                 = {version=">=3", optional=true}
 pyxlsb                   = {version=">=1", optional=true}
 html5lib                 = {version=">=1", optional=true}
 beautifulsoup4           = {version=">=4", optional=true}
+tomlkit                  = {version=">=0.7", optional=true}
 
 
 [tool.poetry.dev-dependencies]
@@ -124,13 +125,14 @@ tomlkit                  = ">=0.7, <1.0"
 [tool.poetry.extras]
 feather = ["pyarrow"]
 parquet = ["pyarrow"]  # fastparquet will also work
+toml = ["tomlkit"]
 xml = ["lxml"]
 excel = ["openpyxl", "defusedxml"]
 xlsb = ["pyxlsb"]
 #hdf5    = ["tables"]
 html = ["html5lib", "beautifulsoup4"]
-main = ["pyarrow", "lxml", "openpyxl", "defusedxml"]
-all = ["pyarrow", "lxml", "openpyxl", "defusedxml", "pyxlsb", "html5lib", "beautifulsoup4"]
+main = ["pyarrow", "lxml", "openpyxl", "defusedxml", "toml"]
+all = ["pyarrow", "lxml", "openpyxl", "defusedxml", "pyxlsb", "html5lib", "beautifulsoup4", "toml"]
 
 
 #########################################################################################

@@ -1,6 +1,6 @@
 # Check out https://pre-commit.com/ for documentation
 # and https://pre-commit.com/hooks.html for more hooks
-minimum_pre_commit_version: 2.13.0
+minimum_pre_commit_version: 2.15.0
 repos:
   # --- Built-in hooks --
   - hooks:
@@ -42,5 +42,5 @@ repos:
     hooks:
       - id: prettier
         stages: [commit]
-        exclude: ^recipes/.*
+        exclude: README.md
     rev: v2.3.1

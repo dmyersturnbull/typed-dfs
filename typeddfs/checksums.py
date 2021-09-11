@@ -4,6 +4,7 @@ Tools for shasum-like files.
 from __future__ import annotations
 
 import hashlib
+from collections import UserDict
 from pathlib import Path
 from typing import Optional, Mapping
 
@@ -23,6 +24,12 @@ from typeddfs.df_errors import (
 
 _hex_pattern = regex.compile(r"[A-Ha-h0-9]+", flags=regex.V1)
 _hashsum_file_sep = regex.compile(r" [ *]", flags=regex.V1)
+
+
+class ChecksumMapping(UserDict[Path, str]):
+    def __getitem__(self, path: Path) -> str:
+        path = path.resolve()
+        return super().__getitem__(path)
 
 
 class Checksums:
@@ -253,7 +260,7 @@ class Checksums:
         return alg.hexdigest()
 
     @classmethod
-    def parse_hash_file_resolved(cls, path: Path) -> Mapping[Path, str]:
+    def parse_hash_file_resolved(cls, path: Path) -> ChecksumMapping:
         """
         Reads a hash file.
 
@@ -262,10 +269,12 @@ class Checksums:
         Returns:
             A mapping from resolved ``Path`` instances to their hex hashes
         """
-        return {
-            Path(path.parent, *k.split("/")).resolve(): v
-            for k, v in cls.parse_hash_file_generic(path).items()
-        }
+        return ChecksumMapping(
+            {
+                Path(path.parent, *k.split("/")).resolve(): v
+                for k, v in cls.parse_hash_file_generic(path).items()
+            }
+        )
 
     @classmethod
     def parse_hash_file_generic(
@@ -400,4 +409,4 @@ class Checksums:
             )
 
 
-__all__ = ["Checksums"]
+__all__ = ["Checksums", "ChecksumMapping"]

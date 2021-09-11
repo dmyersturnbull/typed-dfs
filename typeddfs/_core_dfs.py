@@ -278,6 +278,40 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         )
         return self.__class__._change(df)
 
+    # noinspection PyFinal
+    def asfreq(self, *args, **kwargs) -> __qualname__:
+        return super().asfreq(*args, **kwargs)
+
+    # noinspection PyFinal
+    def shift(self, *args, **kwargs) -> __qualname__:
+        return super().shift(*args, **kwargs)
+
+    # noinspection PyFinal
+    def tz_localize(self, *args, **kwargs) -> __qualname__:
+        return super().tz_localize(*args, **kwargs)
+
+    # noinspection PyFinal
+    def tz_convert(self, *args, **kwargs) -> __qualname__:
+        return super().tz_convert(*args, **kwargs)
+
+    # noinspection PyFinal
+    def to_timestamp(self, *args, **kwargs) -> __qualname__:
+        return super().to_timestamp(*args, **kwargs)
+
+    # noinspection PyFinal
+    def to_period(self, *args, **kwargs) -> __qualname__:
+        return super().to_period(*args, **kwargs)
+
+    # noinspection PyFinal
+    def convert_dtypes(self, *args, **kwargs) -> __qualname__:
+        df = super().convert_dtypes(*args, **kwargs)
+        return self.__class__._change(df)
+
+    # noinspection PyFinal
+    def infer_objects(self, *args, **kwargs) -> __qualname__:
+        df = super().infer_objects(*args, **kwargs)
+        return self.__class__._change(df)
+
     def dropna(self, *args, **kwargs) -> __qualname__:
         self._no_inplace(kwargs)
         df = super().dropna(*args, **kwargs)
@@ -302,8 +336,12 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         df = super().append(*args, **kwargs)
         return self.__class__._change(df)
 
-    def transpose(self, *args, copy: bool = False) -> __qualname__:
-        df = super().transpose(*args, copy=copy)
+    def transpose(self, *args, **kwargs) -> __qualname__:
+        df = super().transpose(*args, **kwargs)
+        return self.__class__._change(df)
+
+    def truncate(self, *args, **kwargs) -> __qualname__:
+        df = super().truncate(*args, **kwargs)
         return self.__class__._change(df)
 
     # noinspection PyFinal

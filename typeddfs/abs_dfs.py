@@ -243,17 +243,11 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         """
         if sep not in {"=", ":", " "}:
             raise ValueError(f"Bad sep {sep}; must be '=', ':', or ' '")
+        self.__class__._assert_can_write_properties_class()
+        self._assert_can_write_properties_instance()
         kwargs = dict(kwargs)
         kwargs["header"] = None
         df = self.vanilla_reset()
-        if len(df.columns) != 2:
-            raise UnsupportedOperationError(
-                f"Cannot write {len(df.columns)} columns ({df}) to properties"
-            )
-        if not Utils.is_string_dtype(df.dtypes[0]):
-            raise UnsupportedOperationError(
-                f"Cannot write {df.columns[0]} with key dtype {df.dtypes[0]}"
-            )
         df[df.columns[0]] = df[df.columns[0]].map(Utils.property_key_escape)
         df[df.columns[1]] = df[df.columns[1]].map(Utils.property_value_escape)
         return df.to_csv(
@@ -273,12 +267,13 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         .. caution::
 
             This is provided as a preview. It may have issues and may change.
-            It currently does not support continued lines (ending with an odd number of backslahses).
+            It currently does not support continued lines (ending with an odd number of backslashes).
 
         Args:
             path_or_buff: Path or buffer
             kwargs: Passed to ``read_csv``; avoid setting
         """
+        cls._assert_can_write_properties_class()
         kwargs = dict(kwargs)
         kwargs.setdefault("skip_blank_lines", True)
         kwargs["header"] = None
@@ -308,6 +303,165 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             raise ValueError(f"Some rows end with \\; continued lines are not yet supported")
         df.columns = cls.get_typing().required_names
         return cls._convert_typed(df)
+
+    @classmethod
+    def read_toml(
+        cls, path_or_buff, aot: Optional[str] = "row", aot_only: bool = True, **kwargs
+    ) -> __qualname__:
+        r"""
+        Reads a TOML file.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+
+        Args:
+            path_or_buff: Path or buffer
+            aot: The name of the array of tables (i.e. ``[[ table ]]`)
+                 If None, finds the unique outermost TOML key, implying ``aot_only``.
+            aot_only: Fail if any outermost keys other than the AOT are found
+            kwargs: Passed to ``Utils.read``
+        """
+        import tomlkit
+
+        txt = Utils.read(path_or_buff, **kwargs)
+        data = tomlkit.loads(txt)
+        if len(data.keys()) == 0:
+            return cls.new_df()
+        if aot_only and len(data.keys()) > 1 or aot is None:
+            raise ValueError(f"Multiple outermost TOML keys: {data.keys()}")
+        if aot is None:
+            aot = next(iter(data.keys()))
+        data = data[aot]
+        df = pd.DataFrame(data)
+        return cls._convert_typed(df)
+
+    def to_toml(
+        self,
+        path_or_buff,
+        aot: str = "row",
+        comment: Union[None, str, Sequence[str]] = None,
+        mode: str = "w",
+        **kwargs,
+    ) -> __qualname__:
+        r"""
+        Writes a TOML file.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+
+        Args:
+            path_or_buff: Path or buffer
+            aot: The name of the array of tables (i.e. ``[[ table ]]`)
+            comment: Comment line(s) to add at the top of the document
+            mode: 'w' (write) or 'a' (append)
+            kwargs: Passed to ``Utils.write``
+        """
+        import tomlkit
+        from tomlkit.toml_document import TOMLDocument
+
+        comment = [] if comment is None else ([comment] if isinstance(comment, str) else comment)
+        df = self.vanilla_reset()
+        data = [df.iloc[i].to_dict() for i in df]
+        aot_obj = Utils.dicts_to_toml_aot(data)
+        doc: TOMLDocument = tomlkit.document()
+        for c in comment:
+            doc.add(tomlkit.comment(c))
+        doc[aot] = aot_obj
+        txt = tomlkit.dumps(doc)
+        return Utils.write(path_or_buff, txt, mode=mode, **kwargs)
+
+    @classmethod
+    def read_ini(
+        cls, path_or_buff, hash_sign: bool = False, strip_quotes: bool = False, **kwargs
+    ) -> __qualname__:
+        r"""
+        Reads a TOML file.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+
+        Args:
+            path_or_buff: Path or buffer
+            hash_sign: Allow ``#`` to denote a comment (as well as ``;``)
+            strip_quotes: Remove quotation marks ("" or '') surrounding the values
+            kwargs: Passed to ``Utils.read``
+        """
+        cls._assert_can_write_properties_class()
+        key_col, val_col = cls.get_typing().required_names
+        txt = Utils.read(path_or_buff, **kwargs)
+        keys = []
+        values = []
+        section = ""
+        for i, line in enumerate(txt.splitlines()):
+            try:
+                if (
+                    line.startswith(";")
+                    or hash_sign
+                    and line.startswith("#")
+                    or len(line.strip()) == 0
+                ):
+                    continue
+                line = line.rstrip()
+                if line.startswith("["):
+                    # treat [ ] (with spaces) as the global key
+                    section = line.lstrip("[").rstrip("]").strip()
+                    continue
+                key, value = section.split("=")
+                key, value = key.strip(), value.strip()
+                if strip_quotes:
+                    value = value.strip("'" + '"')
+                if section != "":
+                    key = section + "." + key
+                keys.append(key)
+                values.append(value)
+            except ValueError:
+                raise ValueError(f"Malformed line {i}: '{line}'")
+        df = pd.DataFrame({key_col: keys, val_col: values})
+        return cls.convert(df)
+
+    def to_ini(
+        self,
+        path_or_buff,
+        comment: Union[None, str, Sequence[str]] = None,
+        mode: str = "w",
+        quote: bool = False,
+        **kwargs,
+    ) -> __qualname__:
+        r"""
+        Writes an INI file.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+
+        Args:
+            path_or_buff: Path or buffer
+            comment: Comment line(s) to add at the top of the document
+            quote: Surround string values in double quotation marks
+            mode: 'w' (write) or 'a' (append)
+            kwargs: Passed to ``Utils.write``
+        """
+        comment = [] if comment is None else ([comment] if isinstance(comment, str) else comment)
+        self.__class__._assert_can_write_properties_class()
+        self._assert_can_write_properties_instance()
+        df = self.vanilla_reset()
+        key_col, val_col = self.__class__.get_typing().required_names
+        should_quote = (
+            quote and not Utils.is_numeric_dtype(val_col) and not Utils.is_bool_dtype(val_col)
+        )
+        lines = comment
+        section = ""
+        for k, v in zip(df[key_col], df[val_col]):
+            if "." in k:
+                k, s = str(k).split(".", 1)
+                if s != section:
+                    lines.append(f"[{s}]")
+            line = f'{k} = "{v}"' if should_quote else f"{k} = {v}"
+            lines.append(line)
+        return Utils.write(path_or_buff, os.linesep.join(lines), mode=mode, **kwargs)
 
     def to_lines(
         self,
@@ -951,7 +1105,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
 
     def _tabulate(self, fmt: Union[str, TableFormat], **kwargs) -> str:
         df = self.vanilla_reset()
-        return tabulate(df.values.tolist(), list(df.columns), tablefmt=fmt, **kwargs)
+        return tabulate(df.to_numpy().tolist(), list(df.columns), tablefmt=fmt, **kwargs)
 
     @classmethod
     def _call_read(
@@ -965,6 +1119,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         fmt = FileFormat.from_path(path, format_map=mp)
         if t.secure and not fmt.is_secure:
             raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
+        # noinspection HttpUrlsUsage
+        if isinstance(path, str) and path.startswith("http://"):
+            raise UnsupportedOperationError(f"Cannot read from http with .secure() enabled")
         fn_name = "read_" + fmt.name
         kwargs = cls._get_read_kwargs(fmt)
         fn = getattr(clazz, fn_name)
@@ -1015,6 +1172,26 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
+
+    def _assert_can_write_properties_instance(self) -> None:
+        df = self.vanilla_reset()
+        cols = df.columns
+        if len(cols) != 2:
+            raise UnsupportedOperationError(
+                f"Cannot write key/value: {len(cols)} columns != 2: {cols}"
+            )
+
+    @classmethod
+    def _assert_can_write_properties_class(cls) -> None:
+        req_names = cls.get_typing().required_names
+        if len(req_names) != 2:
+            raise UnsupportedOperationError(
+                f"Cannot write key/value: {len(req_names)} names != 2: {req_names}"
+            )
+        if not cls.get_typing().more_indices_allowed or not cls.get_typing().more_columns_allowed:
+            raise UnsupportedOperationError(
+                f"Cannot write key/value: extra columns / index levels permitted"
+            )
 
     @classmethod
     def _properties_files_apply(cls) -> bool:

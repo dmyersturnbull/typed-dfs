@@ -23,11 +23,11 @@ class TestBase:
     def test_of(self):
         expected = [[1, 2, 3], [4, 5, 6]]
         df = UntypedDf.convert(pd.DataFrame(sample_data()))
-        assert df.values.tolist() == expected
+        assert df.to_numpy().tolist() == expected
         df = UntypedDf.of(pd.DataFrame(sample_data()))
-        assert df.values.tolist() == expected
+        assert df.to_numpy().tolist() == expected
         df = UntypedDf.of(sample_data())
-        assert df.values.tolist() == expected
+        assert df.to_numpy().tolist() == expected
 
     def test_st(self):
         df = UntypedDf().convert(pd.DataFrame(sample_data()))

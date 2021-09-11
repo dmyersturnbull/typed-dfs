@@ -162,7 +162,7 @@ class TestBuilders:
         t = TypedDfBuilder("a").reserve("x", dtype=np.float32).build()
         df = t.convert(pd.DataFrame([pd.Series(dict(x="0.5"))]))
         assert df.column_names() == ["x"]
-        assert df.values.tolist() == [[0.5]]
+        assert df.to_numpy().tolist() == [[0.5]]
         with pytest.raises(ValueError):
             t.convert(pd.DataFrame([pd.Series(dict(x="kitten"))]))
 
@@ -183,7 +183,7 @@ class TestBuilders:
 
         t = (TypedDfBuilder("a").reserve("x", dtype=np.float32).post(post).verify(cond)).build()
         df = t.convert(pd.DataFrame([pd.Series(dict(x="0.5"))]))
-        assert df.values.tolist() == [[9.5]]
+        assert df.to_numpy().tolist() == [[9.5]]
 
 
 if __name__ == "__main__":

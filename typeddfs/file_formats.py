@@ -152,6 +152,8 @@ _format_map = (
     .text("json", ".json")
     .text("xml", ".xml")
     .text("properties", ".properties")
+    .text("toml", ".toml")
+    .text("ini", ".ini")
     .text("lines", ".lines")
     .text("lines", ".txt")
     .text("lines", ".list")

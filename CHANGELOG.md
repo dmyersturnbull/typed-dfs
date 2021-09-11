@@ -7,7 +7,7 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ### Added
 
-- Preview support for properties files
+- Preview support for .properties, INI, and TOML
 
 ## [0.12.0] - 2021-09-08
 
@@ -17,10 +17,12 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - `Utils.exact_natsort_alg`, `Utils.guess_natsort_alg`, and `Utils.all_natsort_flags`
 - Functions from `pandas.api.types` to `Utils`
 - `DfSupport.reload()`
+- Top-level imports `typed`, `untyped`, etc.
 
 ### Changed
 
 - `DfTyping` is now generic
+- `remap_suffixes()` renamed to `suffix()`
 - `FrozeSet` and `FrozeDict` are now ordered
 - Moved checksum utils to `checksums.py`
 - Moved `DfSupport` to `_format_support.py`

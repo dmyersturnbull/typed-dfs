@@ -6,6 +6,7 @@ from __future__ import annotations
 import collections
 import os
 import sys
+import typing
 from typing import (
     AbstractSet,
     Any,
@@ -18,6 +19,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    Generator,
 )
 
 from natsort import ns, ns_enum
@@ -163,6 +165,54 @@ class Utils:
         return {*_AUTO_DROPPED_NAMES, *_FORBIDDEN_NAMES}
 
     @classmethod
+    def dicts_to_toml_aot(cls, dicts: Sequence[Mapping[str, Any]]):
+        """
+        Make a tomlkit Document consisting of an array of tables ("AOT")
+
+        Args:
+            dicts: A sequence of dictionaries
+
+        Returns:
+            A tomlkit AOT
+        """
+        import tomlkit
+
+        aot = tomlkit.aot()
+        for ser in dicts:
+            tab = tomlkit.table()
+            aot.append(tab)
+            for k, v in ser.items():
+                tab.add(k, v)
+            tab.add(tomlkit.nl())
+        return aot
+
+    @classmethod
+    def dots_to_dict(cls, items: Mapping[str, Any]) -> Mapping[str, Any]:
+        """
+        Make sub-dictionaries from substrings in ``items`` delimited by ``.``.
+        Used for TOML.
+
+        Examples:
+            ``Utils.dots_to_dict({"genus.species": "fruit bat"}) == {"genus": {"species": "fruit bat"}}``
+
+        See Also:
+            :py.meth:`dict_to_dots`
+        """
+        dct = {}
+        cls._un_leaf(dct, items)
+        return dct
+
+    @classmethod
+    def dict_to_dots(cls, items: Mapping[str, Any]) -> Mapping[str, Any]:
+        """
+        Performs the inverse of :py.meth:`dots_to_dict`.
+
+        Examples:
+            ``Utils.dict_to_dots({"genus": {"species": "fruit bat"}}) == {"genus.species": "fruit bat"}``
+        """
+        return dict(cls._re_leaf("", items))
+
+    @classmethod
     def write(cls, path_or_buff, content, *, mode: str = "w", **kwargs) -> Optional[str]:
         """
         Writes using Pandas's ``get_handle``.
@@ -176,17 +226,15 @@ class Utils:
             f.handle.write(content)
 
     @classmethod
-    def read(cls, path_or_buff, content, *, mode: str = "w", **kwargs) -> Optional[str]:
+    def read(cls, path_or_buff, *, mode: str = "w", **kwargs) -> str:
         """
         Reads using Pandas's ``get_handle``.
         By default (unless ``compression=`` is set), infers the compression type from the filename suffix
         (e.g. ``.csv.gz``).
         """
         kwargs = {**dict(compression="infer"), **kwargs}
-        if path_or_buff is None:
-            return content
         with get_handle(path_or_buff, mode, **kwargs) as f:
-            f.handle.write(content)
+            return f.handle.read()
 
     @classmethod
     def get_encoding(cls, encoding: str = "utf-8") -> str:
@@ -226,7 +274,7 @@ class Utils:
             - integers       ==> INT and SIGNED
             - floating-point ==> FLOAT and SIGNED
             - strings        ==> COMPATIBILITYNORMALIZE and GROUPLETTERS
-            - paths          ==> PATH, COMPATIBILITYNORMALIZE, and GROUPLETTERS
+            - datetime       ==> GROUPLETTERS (only affects 'Z' vs. 'z'; shouldn't matter)
 
         Args:
             dtype: Probably from ``pd.Series.dtype``
@@ -238,7 +286,12 @@ class Utils:
         if is_string_dtype(dtype):
             st.update(["COMPATIBILITYNORMALIZE", "GROUPLETTERS"])
             x |= ns_enum.ns.COMPATIBILITYNORMALIZE | ns_enum.ns.GROUPLETTERS
-        if is_integer_dtype(dtype) or is_bool_dtype(dtype):
+        elif is_datetime64_any_dtype(dtype):
+            st.update(["GROUPLETTERS"])
+            x |= ns_enum.ns.GROUPLETTERS
+        elif is_categorical_dtype(dtype):
+            pass
+        elif is_integer_dtype(dtype) or is_bool_dtype(dtype):
             st.update(["INT", "SIGNED"])
             x |= ns_enum.ns.INT | ns_enum.ns.SIGNED
         elif is_float_dtype(dtype):
@@ -341,6 +394,26 @@ class Utils:
             if f in ns_enum.enum_fields and (v & flags) != 0 and f not in ignored:
                 st.add(f)
         return st, flags
+
+    @classmethod
+    def _un_leaf(cls, to: typing.MutableMapping[str, Any], items: Mapping[str, Any]) -> None:
+        keys = {k.split(".", 1) for k in items.keys()}
+        for major_key in keys:
+            of_major_key = {k: v for k, v in items.items() if k.split(".", 1) == major_key}
+            if len(major_key) > 0:
+                to[major_key] = {}
+                cls._un_leaf(to[major_key], of_major_key)
+            else:
+                to[major_key] = of_major_key
+
+    @classmethod
+    def _re_leaf(cls, at: str, items: Mapping[str, Any]) -> Generator[Tuple[str, Any], None, None]:
+        for k, v in items.items():
+            me = at + "." + k
+            if hasattr(v, "items") and hasattr(v, "keys") and hasattr(v, "values"):
+                yield from cls._re_leaf(me, v)
+            else:
+                yield me, v
 
 
 __all__ = ["Utils", "TableFormat"]
