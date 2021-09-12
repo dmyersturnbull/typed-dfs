@@ -62,6 +62,7 @@ class TestFileFormats:
         assert CompressionFormat.strip_suffix("hello.nothing.gz") == Path("hello.nothing")
         assert CompressionFormat.strip_suffix("gz.gz.gz") == Path("gz.gz")
         assert CompressionFormat.strip_suffix(".xz") == Path("")
+        assert CompressionFormat.strip_suffix("hello") == Path("hello")
 
 
 if __name__ == "__main__":

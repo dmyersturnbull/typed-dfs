@@ -165,7 +165,7 @@ class Utils:
     @classmethod
     def dicts_to_toml_aot(cls, dicts: Sequence[Mapping[str, Any]]):
         """
-        Make a tomlkit Document consisting of an array of tables ("AOT")
+        Make a tomlkit Document consisting of an array of tables ("AOT").
 
         Args:
             dicts: A sequence of dictionaries

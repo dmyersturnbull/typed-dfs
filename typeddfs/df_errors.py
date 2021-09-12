@@ -84,7 +84,7 @@ class VerificationFailedError(InvalidDfError):
         key: The key name of the verification that failed
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -97,7 +97,7 @@ class MissingColumnError(InvalidDfError):
         key: The name of the missing column
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -113,7 +113,7 @@ class RowColumnMismatchError(InvalidDfError):
 
     def __init__(
         self, *args, rows: Optional[Sequence[str]] = None, columns: Optional[Sequence[str]] = None
-    ):
+    ):  # pragma: no cover
         super().__init__(*args)
         self.rows = rows
         self.columns = columns
@@ -127,7 +127,7 @@ class UnexpectedColumnError(InvalidDfError):
         key: The name of the unexpected column
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -140,7 +140,7 @@ class UnexpectedIndexNameError(InvalidDfError):
         key: The name of the unexpected index level
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -154,7 +154,9 @@ class ValueNotUniqueError(ValueError):
         values: The set of values
     """
 
-    def __init__(self, *args, key: Optional[str] = None, values: Optional[AbstractSet[str]] = None):
+    def __init__(
+        self, *args, key: Optional[str] = None, values: Optional[AbstractSet[str]] = None
+    ):  # pragma: no cover
         super().__init__(*args)
         self.key = key
         self.values = values
@@ -168,7 +170,7 @@ class NoValueError(ValueError):
         key: The key used for lookup
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -182,7 +184,9 @@ class LengthMismatchError(ValueError):
         lengths: The lengths
     """
 
-    def __init__(self, *args, key: Optional[str] = None, lengths: AbstractSet[int]):
+    def __init__(
+        self, *args, key: Optional[str] = None, lengths: AbstractSet[int]
+    ):  # pragma: no cover
         super().__init__(*args)
         self.key = key
         self.lengths = lengths
@@ -217,7 +221,7 @@ class HashContradictsExistingError(HashWriteError, ValueError):
         key: Optional[str] = None,
         original: Optional[str] = None,
         new: Optional[str] = None,
-    ):
+    ):  # pragma: no cover
         super().__init__(*args)
         self.key = key
         self.original = original
@@ -232,7 +236,7 @@ class HashAlgorithmMissingError(HashWriteError, LookupError):
         key: The missing hash algorithm
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -252,7 +256,9 @@ class HashDidNotValidateError(HashVerificationError):
         expected: The expected hex-encoded hash
     """
 
-    def __init__(self, *args, actual: Optional[str] = None, expected: Optional[str] = None):
+    def __init__(
+        self, *args, actual: Optional[str] = None, expected: Optional[str] = None
+    ):  # pragma: no cover
         super().__init__(*args)
         self.actual = actual
         self.expected = expected
@@ -266,7 +272,7 @@ class HashFileInvalidError(HashVerificationError, ValueError):
         key: The path to the hash file
     """
 
-    def __init__(self, *args, key: Union[None, PurePath, str] = None):
+    def __init__(self, *args, key: Union[None, PurePath, str] = None):  # pragma: no cover
         super().__init__(*args)
         if isinstance(key, PurePath):
             key = str(key)
@@ -281,7 +287,7 @@ class HashFileMissingError(HashVerificationError, FileNotFoundError):
         key: The path or filename of the file corresponding to the expected hash file(s)
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -294,7 +300,7 @@ class HashFilenameMissingError(HashVerificationError, LookupError):
         key: The filename
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -307,7 +313,7 @@ class MultipleHashFilenamesError(HashVerificationError, ValueError):
         key: The filename with duplicate entries
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -320,6 +326,6 @@ class HashFileExistsError(HashVerificationError, FileExistsError):
         key: The existing hash file path or filename
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key

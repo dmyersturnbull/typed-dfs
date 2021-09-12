@@ -39,6 +39,14 @@ class CompressionFormat(enum.Enum):
         return set(cls)
 
     @classmethod
+    def list_non_empty(cls) -> Set[CompressionFormat]:
+        """
+        Returns the set of CompressionFormats, except for ``none``.
+        Works with static type analysis.
+        """
+        return {c for c in cls if c is not cls.none}
+
+    @classmethod
     def of(cls, t: Union[str, CompressionFormat]) -> CompressionFormat:
         """
         Returns a FileFormat from a name (e.g. "gz" or "gzip").
@@ -55,7 +63,7 @@ class CompressionFormat(enum.Enum):
             for f in CompressionFormat.list():
                 if t == f.full_name:
                     return f
-            raise
+            raise  # pragma: no cover
 
     @property
     def full_name(self) -> str:
@@ -93,7 +101,7 @@ class CompressionFormat(enum.Enum):
         Returns a path with any recognized compression suffix (e.g. ".gz") stripped.
         """
         path = Path(path)
-        for c in CompressionFormat:
+        for c in CompressionFormat.list_non_empty():
             if path.name.endswith(c.suffix):
                 return path.parent / path.name[: -len(c.suffix)]
         return path
@@ -400,7 +408,7 @@ class FileFormat(enum.Enum):
         return self is not FileFormat.pickle and not any([s in macros for s in self.suffixes])
 
     @property
-    def can_always_read(self) -> bool:
+    def can_always_read(self) -> bool:  # pragma: no cover
         """
         Returns whether this format can be read as long as typeddfs is installed.
         In other words, regardless of any optional packages.
@@ -408,7 +416,7 @@ class FileFormat(enum.Enum):
         return self.name not in DfFormatSupport.support_map
 
     @property
-    def can_always_write(self) -> bool:
+    def can_always_write(self) -> bool:  # pragma: no cover
         """
         Returns whether this format can be written to as long as typeddfs is installed.
         In other words, regardless of any optional packages.

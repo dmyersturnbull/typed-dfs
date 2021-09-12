@@ -1066,7 +1066,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
         # noinspection HttpUrlsUsage
         if isinstance(path, str) and path.startswith("http://"):
-            raise UnsupportedOperationError(f"Cannot read from http with .secure() enabled")
+            raise UnsupportedOperationError("Cannot read from http with .secure() enabled")
         fn_name = "read_" + fmt.name
         kwargs = cls._get_read_kwargs(fmt)
         fn = getattr(clazz, fn_name)
@@ -1154,7 +1154,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
                 if unescape_keys is not None:
                     key = unescape_keys(key)
                 if value.endswith("\\"):
-                    raise ValueError(f"Ends with \\; continued lines are not yet supported")
+                    raise ValueError("Ends with \\; continued lines are not yet supported")
                 if unescape_values is not None:
                     value = unescape_values(value)
                 if strip_quotes:

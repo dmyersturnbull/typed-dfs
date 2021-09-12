@@ -322,6 +322,9 @@ class TestReadWrite:
 
     def test_read_write_insecure(self):
         t = TypedDfBuilder("a").secure().build()
+        with pytest.raises(UnsupportedOperationError):
+            # noinspection HttpUrlsUsage
+            t.read_file("http://google.com")  # nosec
         df = t.new_df()
         insecure = [f for f in FileFormat.list() if not f.is_secure]
         for fmt in insecure:

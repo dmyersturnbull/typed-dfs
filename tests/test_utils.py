@@ -69,7 +69,7 @@ class TestUtils:
         names, z = Utils.guess_natsort_alg(np.int32)
         assert names == {"INT", "SIGNED"}
         assert z == ns.INT | ns.SIGNED
-        names, z = Utils.guess_natsort_alg(np.bool)
+        names, z = Utils.guess_natsort_alg(bool)
         assert names == {"INT", "SIGNED"}
         assert z == ns.INT | ns.SIGNED
         names, z = Utils.guess_natsort_alg(np.bool_)

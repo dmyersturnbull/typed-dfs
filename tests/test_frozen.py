@@ -25,6 +25,12 @@ class TestBuilders:
         with pytest.raises(KeyError):
             x.req(5)
 
+    def unhashable_list(self):
+        x: FrozeList = Utils.freeze([[1]])
+        y: FrozeList = Utils.freeze([[1]])
+        assert hash(x) == 1
+        assert {x} != {y}
+
     def test_set(self):
         x: FrozeSet = Utils.freeze({1, 2, 3})
         assert isinstance(x, FrozeSet)

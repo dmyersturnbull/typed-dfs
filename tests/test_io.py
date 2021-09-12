@@ -6,14 +6,12 @@ import pytest
 from lxml.etree import XMLSyntaxError  # nosec
 
 from typeddfs.df_errors import NoValueError
-
 from typeddfs.untyped_dfs import UntypedDf
 
 from . import (
     Trivial,
     Ind1NonStrict as Ind1,
     Ind2NonStrict as Ind2,
-    Col2NonStrict as Col2,
     Ind2Col2NonStrict as Ind2Col2,
     sample_data,
     sample_data_ind2_col2_pd_na,
