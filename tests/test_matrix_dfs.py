@@ -51,11 +51,12 @@ class TestMatrixDfs:
         with pytest.raises(IntCastingNaNError):
             matrix_type.convert(df)
 
-    def test_matrix_bad_cols(self):
-        matrix_type = MatrixDfBuilder("T").dtype(np.int32).build()
+    def test_matrix_int_names(self):
+        matrix_type = AffinityMatrixDfBuilder("T").dtype(np.int32).build()
+        # noinspection PyTypeChecker
         df = pd.DataFrame([[11, 12], [21, 22]], columns=[1, 2], index=[1, 2])
-        with pytest.raises(InvalidDfError):
-            matrix_type.convert(df)
+        df: AffinityMatrixDf = matrix_type.convert(df)
+        assert df.rows == df.cols
 
     def test_condition_pass(self):
         matrix_type = MatrixDfBuilder("T").verify(lambda d: len(d) == 2).build()

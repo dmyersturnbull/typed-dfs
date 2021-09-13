@@ -50,6 +50,8 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         df.index.name = "row"
         if t.value_dtype is not None:
             df = df.astype(t.value_dtype)
+        df.index = df.index.astype(str)
+        df.columns = df.columns.astype(str)
         # now change the class
         df.__class__ = cls
         # noinspection PyProtectedMember
