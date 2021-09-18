@@ -207,7 +207,7 @@ class _GenericBuilder:
         which can be called with ``file_hash=False`` and/or ``dir_hash=False``.
 
         Args:
-            alg: The name of the algorithm in :py:mod:`hashlib`;
+            alg: The name of the algorithm in ``hashlib``;
                  The final name will ignore any hyphens and be converted to lowercase,
                  and the suffix will be ``"." + alg``.
             file: Alongside a file ``"my_file.csv.gz"``,

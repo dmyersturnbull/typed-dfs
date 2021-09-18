@@ -415,9 +415,9 @@ class FileFormat(_Enum):
         Returns whether this format meets some requirements.
 
         Args:
-            supported: :py.attr:`can_read` and :py.attr:`can_write` are True
-            secure: :py.attr:`is_secure` is True
-            recommended: :py.attr:`is_recommended` is True
+            supported: :attr:`can_read` and :attr:`can_write` are True
+            secure: :attr:`is_secure` is True
+            recommended: :attr:`is_recommended` is True
         """
         return (
             (not secure or self.is_secure)

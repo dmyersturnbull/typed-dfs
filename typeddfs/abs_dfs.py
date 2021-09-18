@@ -244,7 +244,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             path_or_buff: Path or buffer
             comment: Comment line(s) to add at the top of the document
             mode: Write ('w') or append ('a')
-            kwargs: Passed to :py.meth:`typeddfs.utils.Utils.write`
+            kwargs: Passed to :meth:`typeddfs.utils.Utils.write`
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file

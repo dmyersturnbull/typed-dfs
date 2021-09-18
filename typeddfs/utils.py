@@ -133,22 +133,6 @@ class Utils:
         return v
 
     @classmethod
-    def natsort(
-        cls,
-        lst: typing.Iterable[T],
-        dtype: Type[T],
-        *,
-        alg: Union[None, int, Set[str]] = None,
-        reverse: bool = False,
-    ) -> Sequence[T]:
-        if alg is None:
-            _, alg = Utils.guess_natsort_alg(dtype)
-        else:
-            _, alg = Utils.exact_natsort_alg(alg)
-        lst = list(lst)
-        return natsorted(lst, alg=alg, reverse=reverse)
-
-    @classmethod
     def describe_dtype(cls, t: Type[Any]) -> Optional[str]:
         """
         Returns a string name for a Pandas-supported dtype.
@@ -200,20 +184,32 @@ class Utils:
 
     @classmethod
     def property_key_escape(cls, s: str) -> str:
+        """
+        Escapes a key in a .property file.
+        """
         p = regex.compile(r"([ =:\\])", flags=regex.V1)
         return p.sub(r"\\\1", s)
 
     @classmethod
     def property_key_unescape(cls, s: str) -> str:
+        """
+        Un-escapes a key in a .property file.
+        """
         p = regex.compile(r"\\([ =:\\])", flags=regex.V0)
         return p.sub(r"\1", s)
 
     @classmethod
     def property_value_escape(cls, s: str) -> str:
+        """
+        Escapes a value in a .property file.
+        """
         return s.replace("\\", "\\\\")
 
     @classmethod
     def property_value_unescape(cls, s: str) -> str:
+        """
+        Un-escapes a value in a .property file.
+        """
         return s.replace("\\\\", "\\")
 
     @classmethod
@@ -316,6 +312,35 @@ class Utils:
         return encoding
 
     @classmethod
+    def natsort(
+        cls,
+        lst: typing.Iterable[T],
+        dtype: Type[T],
+        *,
+        alg: Union[None, int, Set[str]] = None,
+        reverse: bool = False,
+    ) -> Sequence[T]:
+        """
+        Perform a natural sort consistent with the type ``dtype``.
+        Uses `natsort <https://pypi.org/project/natsort>`_.
+
+        See Also:
+            :meth:`guess_natsort_alg`
+
+        Args:
+            lst: A sequence of things to sort
+            dtype: The type; must be a subclass of each element in ``lst``
+            alg: A specific natsort algorithm or set of flags
+            reverse: Sort in reverse (e.g. Z to A or 9 to 1)
+        """
+        if alg is None:
+            _, alg = Utils.guess_natsort_alg(dtype)
+        else:
+            _, alg = Utils.exact_natsort_alg(alg)
+        lst = list(lst)
+        return natsorted(lst, alg=alg, reverse=reverse)
+
+    @classmethod
     def all_natsort_flags(cls) -> Mapping[str, int]:
         """
         Simply returns the mapping between natsort flag names and their int values.
@@ -407,27 +432,33 @@ class Utils:
     @classmethod
     def table_formats(cls) -> Sequence[str]:
         """
-        Returns the names of styles for :py:mod`tabulate`.
+        Returns the names of styles for :module:`tabulate`.
         """
         return _table_formats.keys()
 
     @classmethod
     def table_format(cls, fmt: str) -> TableFormat:
         """
-        Gets a :py:mod`tabulate` style by name.
+        Gets a tabulate [1]_ style by name.
 
         Returns:
             A TableFormat, which can be passed as a style
+
+        References:
+            [1] `Tabulate <https://pypi.org/project/tabulate>`_
         """
         return _table_formats[fmt]
 
     @classmethod
     def plain_table_format(cls, sep: str = " ", **kwargs) -> TableFormat:
         """
-        Creates a simple :py:mod`tabulate` style using a column-delimiter ``sep``.
+        Creates a simple tabulate [1]_ style using a column-delimiter ``sep``.
 
         Returns:
-            A TableFormat, which can be passed as a style
+            A tabulate ``TableFormat``, which can be passed as a style
+
+        References:
+            [1] `Tabulate <https://pypi.org/project/tabulate>`_
         """
         defaults = dict(
             lineabove=None,
