@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
-from pandas.errors import IntCastingNaNError
 import pytest
-from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
-from typeddfs.df_errors import VerificationFailedError, InvalidDfError
-from typeddfs.builders import MatrixDfBuilder, AffinityMatrixDfBuilder
+from pandas.errors import IntCastingNaNError
+
+from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder
+from typeddfs.df_errors import InvalidDfError, VerificationFailedError
+from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 
 from . import get_resource, tmpfile
 

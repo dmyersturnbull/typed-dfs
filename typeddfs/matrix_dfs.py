@@ -14,12 +14,8 @@ import pandas as pd
 from numpy.random import RandomState
 
 from typeddfs.base_dfs import BaseDf
-from typeddfs.df_errors import (
-    InvalidDfError,
-    RowColumnMismatchError,
-    VerificationFailedError,
-)
-from typeddfs.df_typing import DfTyping, FINAL_DF_TYPING
+from typeddfs.df_errors import InvalidDfError, RowColumnMismatchError, VerificationFailedError
+from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping
 from typeddfs.typed_dfs import TypedDf
 
 

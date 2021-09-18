@@ -4,12 +4,13 @@ Information about how DataFrame subclasses should be handled.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Sequence, Set, Union, Callable, Type, TypeVar, Generic
+from typing import Any, Callable, Generic, Mapping, Optional, Sequence, Set, Type, TypeVar, Union
 
 from typeddfs._core_dfs import CoreDf
 
+# noinspection PyUnresolvedReferences
+from typeddfs._utils import _FLEXWF_SEP, _TOML_AOT
 from typeddfs.file_formats import FileFormat
-
 
 T = TypeVar("T", bound=CoreDf, covariant=True)
 
@@ -36,6 +37,7 @@ class IoTyping(Generic[T]):
     _read_kwargs: Optional[Mapping[FileFormat, Mapping[str, Any]]] = None
     _write_kwargs: Optional[Mapping[FileFormat, Mapping[str, Any]]] = None
     _secure: bool = False
+    _recommended: bool = False
     _hdf_key: str = "df"
 
     @property
@@ -47,11 +49,39 @@ class IoTyping(Generic[T]):
         return self._hdf_key
 
     @property
+    def toml_aot(self) -> str:
+        """
+        The name of the Array of Tables (AoT) used when reading TOML.
+
+        .. caution::
+            Only checks the read keyword arguments, not write
+        """
+        return self._read_kwargs.get(FileFormat.toml, {}).get("aot", _TOML_AOT)
+
+    @property
+    def flexwf_sep(self) -> str:
+        """
+        The delimiter used when reading "flex-width" format.
+
+        .. caution::
+            Only checks the read keyword arguments, not write
+        """
+        return self._read_kwargs.get(FileFormat.flexwf, {}).get("sep", _FLEXWF_SEP)
+
+    @property
     def secure(self) -> bool:
         """
         Whether to forbid insecure operations and formats.
         """
         return self._secure
+
+    @property
+    def recommended(self) -> bool:
+        """
+        Whether to forbid discouraged formats like fixed-width and HDF5.
+        Excludes all insecure formats.
+        """
+        return self._recommended
 
     @property
     def hash_algorithm(self) -> Optional[str]:
@@ -240,6 +270,14 @@ class DfTyping:
         The sort order is: required index, required columns.
         """
         return [*self.required_index_names, *self.required_columns]
+
+    @property
+    def reserved_names(self) -> Sequence[str]:
+        """
+        Returns all index and column names that are **not** required.
+        The sort order is: reserved index, reserved columns.
+        """
+        return [*self.reserved_index_names, *self.reserved_columns]
 
     @property
     def known_names(self) -> Sequence[str]:

@@ -2,12 +2,13 @@
 Hashable and ordered collections.
 """
 from __future__ import annotations
+
 import functools
 from typing import (
     AbstractSet,
     Dict,
-    Iterator,
     Hashable,
+    Iterator,
     List,
     Mapping,
     MutableMapping,

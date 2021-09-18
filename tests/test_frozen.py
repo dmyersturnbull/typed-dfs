@@ -1,6 +1,6 @@
 import pytest
 
-from typeddfs.frozen_types import FrozeSet, FrozeDict, FrozeList
+from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
 from typeddfs.utils import Utils
 
 

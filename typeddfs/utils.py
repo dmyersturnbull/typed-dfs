@@ -7,10 +7,12 @@ import collections
 import os
 import sys
 import typing
+from datetime import datetime, timedelta
 from typing import (
     AbstractSet,
     Any,
     Collection,
+    Generator,
     Iterator,
     Mapping,
     Optional,
@@ -18,47 +20,48 @@ from typing import (
     Set,
     Tuple,
     Type,
+    TypeVar,
     Union,
-    Generator,
 )
 
-from natsort import ns, ns_enum
 import numpy as np
 import regex
+from natsort import natsorted, ns, ns_enum
+from pandas import BooleanDtype, Interval, Period, StringDtype
 
 # noinspection PyProtectedMember
 from pandas.api.types import (
-    is_integer_dtype,
-    is_float_dtype,
-    is_bool_dtype,
-    is_string_dtype,
-    is_categorical_dtype,
-    is_complex_dtype,
-    is_integer,
-    is_float,
     is_bool,
+    is_bool_dtype,
     is_categorical,
+    is_categorical_dtype,
     is_complex,
+    is_complex_dtype,
     is_datetime64_any_dtype,
     is_datetime64tz_dtype,
-    is_period_dtype,
+    is_extension_type,
+    is_float,
+    is_float_dtype,
+    is_integer,
+    is_integer_dtype,
     is_interval,
+    is_interval_dtype,
+    is_number,
     is_numeric_dtype,
     is_object_dtype,
-    is_number,
-    is_interval_dtype,
-    is_extension_type,
+    is_period_dtype,
     is_scalar,
+    is_string_dtype,
 )
 from pandas.io.common import get_handle
 
 # noinspection PyProtectedMember
 from tabulate import DataRow, TableFormat, _table_formats
 
-from typeddfs._utils import _DEFAULT_HASH_ALG, _AUTO_DROPPED_NAMES, _FORBIDDEN_NAMES
+from typeddfs._utils import _AUTO_DROPPED_NAMES, _DEFAULT_HASH_ALG, _FORBIDDEN_NAMES
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
 
-
+T = TypeVar("T")
 _control_chars = regex.compile(r"\p{C}", flags=regex.V1)
 
 
@@ -128,6 +131,64 @@ class Utils:
             return FrozeDict(v)
         hash(v)  # let it raise an AttributeError
         return v
+
+    @classmethod
+    def natsort(
+        cls,
+        lst: typing.Iterable[T],
+        dtype: Type[T],
+        *,
+        alg: Union[None, int, Set[str]] = None,
+        reverse: bool = False,
+    ) -> Sequence[T]:
+        if alg is None:
+            _, alg = Utils.guess_natsort_alg(dtype)
+        else:
+            _, alg = Utils.exact_natsort_alg(alg)
+        lst = list(lst)
+        return natsorted(lst, alg=alg, reverse=reverse)
+
+    @classmethod
+    def describe_dtype(cls, t: Type[Any]) -> Optional[str]:
+        """
+        Returns a string name for a Pandas-supported dtype.
+
+        Args:
+            t: Any Python type
+
+        Returns:
+            A string like "floating-point" or "zoned datetime".
+            Returns ``None`` if no good name is found or if ``t`` is ``None``.
+        """
+        from pandas import Int8Dtype
+
+        if cls.is_bool_dtype(t) or issubclass(t, BooleanDtype):
+            return "bool"
+        elif (
+            cls.is_datetime64tz_dtype(t)
+            or cls.is_datetime64_any_dtype(t)
+            or issubclass(t, datetime)
+        ):
+            return "datetime"
+        elif cls.is_period_dtype(t) or issubclass(t, Period):
+            return "time period"
+        elif issubclass(t, timedelta):
+            return "time delta"
+        elif cls.is_interval_dtype(t) or issubclass(t, Interval):
+            return "interval"
+        elif cls.is_integer_dtype(t):
+            return "integer"
+        elif cls.is_float_dtype(t):
+            return "floating-point"
+        elif cls.is_complex_dtype(t):
+            return "complex number"
+        elif cls.is_numeric_dtype(t):
+            return "numeric"
+        elif cls.is_categorical_dtype(t):
+            return "categorical"
+        elif cls.is_string_dtype(t) or t is StringDtype:
+            return "string"
+        return None
 
     @classmethod
     def default_hash_algorithm(cls) -> str:
@@ -284,9 +345,6 @@ class Utils:
         if is_string_dtype(dtype):
             st.update(["COMPATIBILITYNORMALIZE", "GROUPLETTERS"])
             x |= ns_enum.ns.COMPATIBILITYNORMALIZE | ns_enum.ns.GROUPLETTERS
-        elif is_datetime64_any_dtype(dtype):
-            st.update(["GROUPLETTERS"])
-            x |= ns_enum.ns.GROUPLETTERS
         elif is_categorical_dtype(dtype):
             pass
         elif is_integer_dtype(dtype) or is_bool_dtype(dtype):

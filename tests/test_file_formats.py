@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from typeddfs.df_errors import FilenameSuffixError
-from typeddfs.file_formats import FileFormat, CompressionFormat
+from typeddfs.file_formats import CompressionFormat, FileFormat
 
 
 class TestFileFormats:

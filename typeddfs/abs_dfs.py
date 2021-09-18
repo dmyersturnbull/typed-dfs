@@ -20,12 +20,13 @@ from typeddfs._core_dfs import CoreDf
 from typeddfs._utils import _FAKE_SEP, PathLike
 from typeddfs.checksums import Checksums
 from typeddfs.df_errors import (
+    FormatDiscouragedError,
+    FormatInsecureError,
     NonStrColumnError,
     NotSingleColumnError,
-    ValueNotUniqueError,
     NoValueError,
-    FormatInsecureError,
     UnsupportedOperationError,
+    ValueNotUniqueError,
 )
 from typeddfs.df_typing import DfTyping
 from typeddfs.file_formats import FileFormat
@@ -1062,14 +1063,12 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         mp = FileFormat.suffix_map()
         mp.update(t.remap_suffixes)
         fmt = FileFormat.from_path(path, format_map=mp)
-        if t.secure and not fmt.is_secure:
-            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
         # noinspection HttpUrlsUsage
         if isinstance(path, str) and path.startswith("http://"):
             raise UnsupportedOperationError("Cannot read from http with .secure() enabled")
-        fn_name = "read_" + fmt.name
+        cls._check_io_ok(path, fmt)
         kwargs = cls._get_read_kwargs(fmt)
-        fn = getattr(clazz, fn_name)
+        fn = getattr(clazz, "read_" + fmt.name)
         return fn(path, **kwargs)
 
     def _call_write(
@@ -1081,11 +1080,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         mp = FileFormat.suffix_map()
         mp.update(t.remap_suffixes)
         fmt = FileFormat.from_path(path, format_map=mp)
-        if t.secure and not fmt.is_secure:
-            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
-        fn_name = "to_" + fmt.name
+        self._check_io_ok(path, fmt)
         kwargs = cls._get_write_kwargs(fmt)
-        fn = getattr(self, fn_name)
+        fn = getattr(self, "to_" + fmt.name)
         return fn(path, **kwargs)
 
     @classmethod
@@ -1104,6 +1101,14 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
+
+    @classmethod
+    def _check_io_ok(cls, path: Path, fmt: FileFormat):
+        t = cls.get_typing().io
+        if t.secure and not fmt.is_secure:
+            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
+        if t.recommended and not fmt.is_recommended:
+            raise FormatDiscouragedError(f"Discouraged format {fmt} forbidden by typing")
 
     @classmethod
     def _get_write_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:

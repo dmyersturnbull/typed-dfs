@@ -1,13 +1,13 @@
 import abc
-from typing import Any, Iterable, Mapping, Sequence, Union, Generator, Tuple, Set
+from typing import Any, Generator, Iterable, Mapping, Sequence, Set, Tuple, Union
 
 import pandas as pd
-from pandas.core.frame import DataFrame as _InternalDataFrame
 from natsort import natsorted
-from typeddfs.utils import Utils
+from pandas.core.frame import DataFrame as _InternalDataFrame
 
 from typeddfs._pretty_dfs import PrettyDf
 from typeddfs.df_errors import NoValueError, UnsupportedOperationError, ValueNotUniqueError
+from typeddfs.utils import Utils
 
 
 class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
@@ -90,7 +90,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         return self.__class__._change(self[cols + [c for c in self.columns if c not in cols]])
 
     def sort_natural(
-        self, column: str, alg: Union[None, int, Set[str]] = None, reverse: bool = False
+        self, column: str, *, alg: Union[None, int, Set[str]] = None, reverse: bool = False
     ) -> __qualname__:
         """
         Calls ``natsorted`` on a single column.
@@ -115,7 +115,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         df = df.sort_values("__sort").drop_cols(["__sort"])
         return self.__class__._change(df)
 
-    def sort_natural_index(self, alg: int = None, reverse: bool = False) -> __qualname__:
+    def sort_natural_index(self, *, alg: int = None, reverse: bool = False) -> __qualname__:
         """
         Calls natsorted on this index. Works for multi-index too.
 

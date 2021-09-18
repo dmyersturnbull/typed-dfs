@@ -6,21 +6,20 @@ from __future__ import annotations
 import hashlib
 from collections import UserDict
 from pathlib import Path
-from typing import Optional, Mapping
+from typing import Mapping, Optional
 
 import regex
 
 from typeddfs._utils import _DEFAULT_HASH_ALG
 from typeddfs.df_errors import (
+    HashAlgorithmMissingError,
+    HashContradictsExistingError,
+    HashDidNotValidateError,
+    HashFileExistsError,
+    HashFileMissingError,
     HashFilenameMissingError,
     MultipleHashFilenamesError,
-    HashFileMissingError,
-    HashContradictsExistingError,
-    HashFileExistsError,
-    HashAlgorithmMissingError,
-    HashDidNotValidateError,
 )
-
 
 _hex_pattern = regex.compile(r"[A-Ha-h0-9]+", flags=regex.V1)
 _hashsum_file_sep = regex.compile(r" [ *]", flags=regex.V1)

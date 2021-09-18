@@ -9,16 +9,15 @@ from typing import Any, Callable, Optional, Sequence, Type, Union
 
 import pandas as pd
 
-from typeddfs.checksums import Checksums
-from typeddfs.utils import Utils
-
+from typeddfs._utils import _AUTO_DROPPED_NAMES, _DEFAULT_HASH_ALG, _FORBIDDEN_NAMES, _PICKLE_VR
 from typeddfs.base_dfs import BaseDf
+from typeddfs.checksums import Checksums
 from typeddfs.df_errors import ClashError, DfTypeConstructionError
 from typeddfs.df_typing import DfTyping, IoTyping
 from typeddfs.file_formats import FileFormat
-from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
+from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 from typeddfs.typed_dfs import TypedDf
-from typeddfs._utils import _AUTO_DROPPED_NAMES, _FORBIDDEN_NAMES, _DEFAULT_HASH_ALG
+from typeddfs.utils import Utils
 
 logger = logging.getLogger("typeddfs")
 
@@ -64,12 +63,13 @@ class _GenericBuilder:
         self._index_series_name = False
         self._column_series_name = False
         self._secure = False
+        self._recommended = False
         self._req_hash: Optional = False
         self._req_order: Optional = False
         # make these use an explicit version
         # the user can override if needed
-        self.add_read_kwargs("pickle", protocol=5)
-        self.add_write_kwargs("pickle", protocol=5)
+        self.add_read_kwargs("pickle", protocol=_PICKLE_VR)
+        self.add_write_kwargs("pickle", protocol=_PICKLE_VR)
 
     def subclass(self, clazz: Type[Any]) -> __qualname__:
         """
@@ -235,6 +235,17 @@ class _GenericBuilder:
         self._secure = True
         return self
 
+    def recommended_only(self) -> __qualname__:
+        """
+        Bans IO with non-recommended formats.
+        This includes all insecure formats along with fixed-width, HDF5, INI, TOML, .properties, etc.
+
+        Returns:
+            This builder for chaining
+        """
+        self._recommended = True
+        return self
+
     def encoding(self, encoding: str = "utf8") -> __qualname__:
         """
         Has pandas-defined text read/write functions use UTF-8.
@@ -312,6 +323,7 @@ class _GenericBuilder:
             _save_hash_file=self._hash_file,
             _save_hash_dir=self._hash_dir,
             _secure=self._secure,
+            _recommended=self._recommended,
         )
 
         _typing = DfTyping(

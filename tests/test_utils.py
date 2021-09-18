@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from natsort import ns
 
-from typeddfs.utils import Utils, TableFormat
+from typeddfs.utils import TableFormat, Utils
 
 
 class TestUtils:

@@ -11,7 +11,7 @@ from pathlib import Path
 from typeddfs._entries import FinalDf, TypedDfs
 from typeddfs.base_dfs import BaseDf
 from typeddfs.file_formats import FileFormat
-from typeddfs.matrix_dfs import MatrixDf, AffinityMatrixDf
+from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 

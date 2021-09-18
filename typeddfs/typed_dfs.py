@@ -4,14 +4,12 @@ Defines DataFrames with convenience methods and that enforce invariants.
 from __future__ import annotations
 
 import abc
-from dataclasses import (
-    Field,
-    dataclass,
-    make_dataclass,
-    fields as dataclass_fields,
-    asdict as dataclass_asdict,
-)
-from typing import Sequence, Union, Type, Any, Optional, Mapping, Tuple
+from dataclasses import Field
+from dataclasses import asdict as dataclass_asdict
+from dataclasses import dataclass
+from dataclasses import fields as dataclass_fields
+from dataclasses import make_dataclass
+from typing import Any, Mapping, Optional, Sequence, Tuple, Type, Union
 
 import pandas as pd
 
@@ -23,7 +21,7 @@ from typeddfs.df_errors import (
     UnexpectedIndexNameError,
     VerificationFailedError,
 )
-from typeddfs.df_typing import DfTyping, FINAL_DF_TYPING
+from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping
 from typeddfs.untyped_dfs import UntypedDf
 
 

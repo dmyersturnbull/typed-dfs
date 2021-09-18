@@ -4,16 +4,12 @@ import pytest
 from typeddfs.abs_dfs import AbsDf
 from typeddfs.untyped_dfs import UntypedDf
 
-from . import (
-    Ind1NonStrict as Ind1,
-    Ind1Col1NonStrict as Ind1Col1,
-    Ind2NonStrict as Ind2,
-    Ind2Col2NonStrict as Ind2Col2,
-    Ind2Col2Reserved1,
-    Trivial,
-    sample_data,
-    sample_data_str,
-)
+from . import Ind1Col1NonStrict as Ind1Col1
+from . import Ind1NonStrict as Ind1
+from . import Ind2Col2NonStrict as Ind2Col2
+from . import Ind2Col2Reserved1
+from . import Ind2NonStrict as Ind2
+from . import Trivial, sample_data, sample_data_str
 
 
 class TestTyped:

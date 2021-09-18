@@ -2,7 +2,7 @@
 Exceptions used by typeddfs.
 """
 from pathlib import PurePath
-from typing import Optional, AbstractSet, Sequence, Union
+from typing import AbstractSet, Optional, Sequence, Union
 
 
 class UnsupportedOperationError(Exception):
@@ -29,6 +29,19 @@ class FilenameSuffixError(UnsupportedOperationError):
 class FormatInsecureError(UnsupportedOperationError):
     """
     A requested format is less secure than required or requested.
+
+    Attributes:
+        key: The problematic format name
+    """
+
+    def __init__(self, *args, key: Optional[str] = None):
+        super().__init__(*args)
+        self.key = key
+
+
+class FormatDiscouragedError(UnsupportedOperationError):
+    """
+    A requested format is not recommended.
 
     Attributes:
         key: The problematic format name

@@ -17,6 +17,18 @@ _SENTINEL = _Sentinel()
 _DEFAULT_HASH_ALG = "sha256"
 
 
+_PICKLE_VR = 5
+
+
+_FLEXWF_SEP = r"|||"
+
+
+_HDF_KEY = "df"
+
+
+_TOML_AOT: str = "row"
+
+
 _FAKE_SEP = "\u2008"  # 6-em space; very unlikely to occur
 
 

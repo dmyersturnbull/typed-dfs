@@ -5,15 +5,16 @@ from typing import Set, Type
 import pandas as pd
 import pytest
 
-from typeddfs.checksums import Checksums
-from typeddfs.abs_dfs import AbsDf
 from typeddfs import BaseDf, TypedDf
+from typeddfs.abs_dfs import AbsDf
 from typeddfs.builders import TypedDfBuilder
+from typeddfs.checksums import Checksums
 from typeddfs.df_errors import (
     FilenameSuffixError,
+    FormatDiscouragedError,
+    FormatInsecureError,
     NonStrColumnError,
     NotSingleColumnError,
-    FormatInsecureError,
     UnsupportedOperationError,
 )
 from typeddfs.file_formats import DfFormatSupport, FileFormat
@@ -32,8 +33,8 @@ from . import (
     Untyped,
     UntypedEmpty,
     logger,
-    tmpfile,
     tmpdir,
+    tmpfile,
 )
 
 gen = random.SystemRandom()
@@ -53,8 +54,16 @@ def get_req_ext(*, lines: bool, properties: bool) -> Set[str]:
         ".feather",
         ".snappy",
         ".parquet",
-        ".xlsx",
+        ".xla",
+        ".xlam",
+        ".xlm",
         ".xls",
+        ".xlsb",
+        ".xlsm",
+        ".xlsx",
+        ".xlt",
+        ".xltm",
+        ".xltx",
         ".ods",
         ".odf",
         ".odt",
@@ -321,20 +330,29 @@ class TestReadWrite:
                 df.write_file(path / "b.csv")
 
     def test_read_write_insecure(self):
-        t = TypedDfBuilder("a").secure().build()
+        secure_type = TypedDfBuilder("a").secure().build()
+        bad_type = TypedDfBuilder("a").recommended_only().build()
         with pytest.raises(UnsupportedOperationError):
             # noinspection HttpUrlsUsage
-            t.read_file("http://google.com")  # nosec
-        df = t.new_df()
-        insecure = [f for f in FileFormat.list() if not f.is_secure]
-        for fmt in insecure:
+            secure_type.read_file("http://google.com")  # nosec
+        secure = secure_type.new_df()
+        bad = bad_type.new_df()
+        for fmt in FileFormat:
             for suffix in fmt.suffixes:
                 try:
                     with tmpfile(suffix) as path:
-                        with pytest.raises(FormatInsecureError):
-                            t.read_file(path)
-                        with pytest.raises(FormatInsecureError):
-                            df.write_file(path)
+                        # should always complain about insecurity FIRST
+                        if not fmt.is_secure:
+                            with pytest.raises(FormatInsecureError):
+                                secure_type.read_file(path)
+                            with pytest.raises(FormatInsecureError):
+                                secure.write_file(path)
+                        path.unlink(missing_ok=True)
+                        if not fmt.is_recommended:
+                            with pytest.raises(FormatDiscouragedError):
+                                bad_type.read_file(path)
+                            with pytest.raises(FormatDiscouragedError):
+                                bad.write_file(path)
                 except Exception:
                     logger.error(f"Failed on suffix {suffix}")
                     raise

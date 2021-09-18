@@ -5,13 +5,13 @@ import pytest
 # noinspection PyProtectedMember
 from typeddfs._pretty_dfs import PrettyDf
 from typeddfs.base_dfs import BaseDf
-from typeddfs.builders import TypedDfBuilder, MatrixDfBuilder
+from typeddfs.builders import MatrixDfBuilder, TypedDfBuilder
 from typeddfs.df_errors import (
     ClashError,
+    DfTypeConstructionError,
     UnexpectedColumnError,
     UnexpectedIndexNameError,
     VerificationFailedError,
-    DfTypeConstructionError,
 )
 from typeddfs.df_typing import DfTyping
 from typeddfs.typed_dfs import TypedDf

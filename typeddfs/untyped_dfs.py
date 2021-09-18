@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from typeddfs.base_dfs import BaseDf
-from typeddfs.df_typing import IoTyping, DfTyping, FINAL_DF_TYPING
+from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping, IoTyping
 
 _empty_io_typing = IoTyping[BaseDf]()
 

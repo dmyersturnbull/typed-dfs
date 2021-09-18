@@ -6,14 +6,28 @@ from __future__ import annotations
 import enum
 from collections import defaultdict
 from pathlib import Path
-from typing import MutableMapping, Mapping, Optional, Set, Union
+from typing import Mapping, MutableMapping, Optional, Set, Union
 
+from typeddfs._format_support import DfFormatSupport
 from typeddfs._utils import PathLike
 from typeddfs.df_errors import FilenameSuffixError
-from typeddfs._format_support import DfFormatSupport
 
 
-class CompressionFormat(enum.Enum):
+class _Enum(enum.Enum):
+    def __repr__(self):
+        return self.name
+
+    def __str__(self):
+        return self.name
+
+    def __new__(cls):
+        value = len(cls.__members__) + 1
+        obj = object.__new__(cls)
+        obj._value_ = value
+        return obj
+
+
+class CompressionFormat(_Enum):
     """
     A compression scheme or no compression: gzip, zip, bz2, xz, and none.
     These are the formats supported by Pandas for read and write.
@@ -24,11 +38,11 @@ class CompressionFormat(enum.Enum):
         CompressionFormat.from_path("myfile.csv")  # CompressionFormat.none
     """
 
-    gz = enum.auto()
-    zip = enum.auto()
-    bz2 = enum.auto()
-    xz = enum.auto()
-    none = enum.auto()
+    gz = ()
+    zip = ()
+    bz2 = ()
+    xz = ()
+    none = ()
 
     @classmethod
     def list(cls) -> Set[CompressionFormat]:
@@ -169,8 +183,16 @@ _format_map = (
     .other("fwf", ".fwf")
     .other("pickle", ".pkl")
     .other("pickle", ".pickle")
+    .other("xlsx", ".xlam")
     .other("xlsx", ".xlsx")
+    .other("xlsx", ".xlsm")
+    .other("xlsx", ".xltm")
+    .other("xlsx", ".xltx")
+    .other("xls", ".xla")
+    .other("xls", ".xlam")
+    .other("xls", ".xlm")
     .other("xls", ".xls")
+    .other("xls", ".xlt")
     .other("xlsb", ".xlsb")
     .other("ods", ".odf")
     .other("ods", ".ods")
@@ -187,7 +209,7 @@ _valid_formats = _format_map.done()
 _rev_valid_formats = _format_map.inverse()
 
 
-class FileFormat(enum.Enum):
+class FileFormat(_Enum):
     """
     A computer-readable format for reading **and** writing of DataFrames in typeddfs.
     This includes CSV, Parquet, ODT, etc. Some formats also include compressed variants.
@@ -201,24 +223,24 @@ class FileFormat(enum.Enum):
         FileFormat.from_path("my_file.xlsx").can_read()    # true if required package is installed
     """
 
-    csv = enum.auto()
-    tsv = enum.auto()
-    json = enum.auto()
-    xml = enum.auto()
-    toml = enum.auto()
-    ini = enum.auto()
-    properties = enum.auto()
-    lines = enum.auto()
-    fwf = enum.auto()
-    flexwf = enum.auto()
-    feather = enum.auto()
-    hdf = enum.auto()
-    ods = enum.auto()
-    parquet = enum.auto()
-    pickle = enum.auto()
-    xls = enum.auto()
-    xlsb = enum.auto()
-    xlsx = enum.auto()
+    csv = ()
+    tsv = ()
+    json = ()
+    xml = ()
+    toml = ()
+    ini = ()
+    properties = ()
+    lines = ()
+    fwf = ()
+    flexwf = ()
+    feather = ()
+    hdf = ()
+    ods = ()
+    parquet = ()
+    pickle = ()
+    xls = ()
+    xlsb = ()
+    xlsx = ()
 
     @classmethod
     def list(cls) -> Set[FileFormat]:
@@ -261,6 +283,8 @@ class FileFormat(enum.Enum):
             FileFormat.tsv,
             FileFormat.json,
             FileFormat.xml,
+            FileFormat.ini,
+            FileFormat.toml,
             FileFormat.properties,
             FileFormat.lines,
             FileFormat.fwf,
@@ -351,6 +375,7 @@ class FileFormat(enum.Enum):
         """
         Returns all formats that can be read on this system.
         Note that the result may depend on whether supporting packages are installed.
+        Includes insecure and discouraged formats.
         """
         return {f for f in cls if f.can_read}
 
@@ -359,6 +384,7 @@ class FileFormat(enum.Enum):
         """
         Returns all formats that can be written to on this system.
         Note that the result may depend on whether supporting packages are installed.
+        Includes insecure and discouraged formats.
         """
         return {f for f in cls if f.can_write}
 
@@ -384,6 +410,21 @@ class FileFormat(enum.Enum):
         else:
             return {suffix}
 
+    def matches(self, *, supported: bool, secure: bool, recommended: bool) -> bool:
+        """
+        Returns whether this format meets some requirements.
+
+        Args:
+            supported: :py.attr:`can_read` and :py.attr:`can_write` are True
+            secure: :py.attr:`is_secure` is True
+            recommended: :py.attr:`is_recommended` is True
+        """
+        return (
+            (not secure or self.is_secure)
+            and (not recommended or self.is_recommended)
+            and (not supported or self.can_read and self.can_write)
+        )
+
     @property
     def suffixes(self) -> Set[str]:
         """
@@ -395,6 +436,23 @@ class FileFormat(enum.Enum):
         return _valid_formats[self.name]
 
     @property
+    def is_recommended(self) -> bool:
+        """
+        Returns whether the format is good.
+        Includes CSV, TSV, Parquet, etc.
+        Excludes all insecure formats along with fixed-width, INI, properties, TOML, and HDF5.
+        """
+        return self not in {
+            FileFormat.fwf,
+            FileFormat.xls,
+            FileFormat.xlsb,
+            FileFormat.hdf,
+            FileFormat.ini,
+            FileFormat.toml,
+            FileFormat.properties,
+        }
+
+    @property
     def is_secure(self) -> bool:
         """
         Returns whether the format does NOT have serious security issues.
@@ -404,7 +462,7 @@ class FileFormat(enum.Enum):
         Note that .xml is treated as secure: Although some parsers are subject to
         entity expansion attacks, good ones are not.
         """
-        macros = {".xlsm", ".xltm", ".xls"}
+        macros = {".xlsm", ".xltm", ".xls", ".xlm", ".xlam", ".xla"}
         return self is not FileFormat.pickle and not any([s in macros for s in self.suffixes])
 
     @property

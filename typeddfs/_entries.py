@@ -8,6 +8,7 @@ from typing import Optional, Type
 import pandas as pd
 
 from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder, TypedDfBuilder
+from typeddfs.checksums import Checksums
 from typeddfs.df_errors import (
     ClashError,
     FilenameSuffixError,
@@ -22,12 +23,11 @@ from typeddfs.df_errors import (
     ValueNotUniqueError,
     VerificationFailedError,
 )
-from typeddfs.file_formats import FileFormat, CompressionFormat
-from typeddfs.checksums import Checksums
+from typeddfs.file_formats import CompressionFormat, FileFormat
+from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 from typeddfs.utils import Utils
-from typeddfs.frozen_types import FrozeList, FrozeSet, FrozeDict
 
 logger = logging.getLogger(Path(__file__).parent.name)
 
