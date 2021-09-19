@@ -33,9 +33,9 @@ class CompressionFormat(_Enum):
     These are the formats supported by Pandas for read and write.
     Provides a few useful functions for calling code.
 
-    Example:
-        CompressionFormat.strip("my_file.csv.gz")  # Path("my_file.csv")
-        CompressionFormat.from_path("myfile.csv")  # CompressionFormat.none
+    Examples:
+        - ``CompressionFormat.strip("my_file.csv.gz")  # Path("my_file.csv")``
+        - ``CompressionFormat.from_path("myfile.csv")  # CompressionFormat.none``
     """
 
     gz = ()
@@ -67,7 +67,7 @@ class CompressionFormat(_Enum):
         Case-insensitive.
 
         Example:
-            CompressionFormat.of("gzip").suffix  # ".gz"
+            ``CompressionFormat.of("gzip").suffix  # ".gz"``
         """
         if isinstance(t, CompressionFormat):
             return t
@@ -217,10 +217,10 @@ class FileFormat(_Enum):
     This is used internally by :meth:`typeddfs.abs_df.read_file`
     and :meth:`typeddfs.abs_df.write_file`, but it may be useful to calling code directly.
 
-    Example:
-        FileFormat.from_path("my_file.csv.gz").is_text()   # True
-        FileFormat.from_path("my_file.csv.gz").can_read()  # always True
-        FileFormat.from_path("my_file.xlsx").can_read()    # true if required package is installed
+    Examples:
+        - ``FileFormat.from_path("my_file.csv.gz").is_text()   # True``
+        - ``FileFormat.from_path("my_file.csv.gz").can_read()  # always True``
+        - ``FileFormat.from_path("my_file.xlsx").can_read()    # true if required package is installed``
     """
 
     csv = ()
@@ -401,6 +401,8 @@ class FileFormat(_Enum):
         Returns all allowed suffixes.
 
         Example:
+            .. code::
+
             FileFormat.json.compressed_variants(".json")
             # {".json", ".json.gz", ".json.zip", ...}
         """

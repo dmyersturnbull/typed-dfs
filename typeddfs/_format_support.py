@@ -1,3 +1,6 @@
+"""
+Handles optional packages required for formats.
+"""
 from __future__ import annotations
 
 from typing import Mapping
@@ -53,8 +56,9 @@ class _DfFormatSupport:
     and :meth:`typeddfs.abs_df.write_file`.
 
     Example:
-        if not DfFormatSupport.has_hdf5:
-            print("No HDF5")
+        HDF support::
+            if not DfFormatSupport.has_hdf5:
+                print("No HDF5")
     """
 
     def __init__(self):
@@ -105,7 +109,9 @@ class _DfFormatSupport:
         """
         Retry importing the packages.
         Some supported formats may appear while others may disappear.
-        This is a global operation.
+
+        .. caution::
+            This is a global operation.
         """
         _import()
 

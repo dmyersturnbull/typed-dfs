@@ -124,7 +124,7 @@ class _GenericBuilder:
             kwargs: Mapping from function names to functions (the keys will be the method names)
 
         Example:
-            add_methods(summary=lambda df: f"{len(df) rows")
+            ``add_methods(summary=lambda df: f"{len(df) rows")``
 
         Returns:
             This builder for chaining
@@ -139,7 +139,7 @@ class _GenericBuilder:
         Mostly useful for factory methods.
 
         Example:
-            add_classmethods(flat_instance=lambda t, value: MyClass(value))
+            ``add_classmethods(flat_instance=lambda t, value: MyClass(value))``
 
         Returns:
             This builder for chaining
@@ -389,7 +389,7 @@ class MatrixDfBuilder(_GenericBuilder):
             Copies, so this builder can be used to create more types without interference.
 
         Raises:
-            DfTypeConstructionError for some errors
+            DfTypeConstructionError: for some errors
         """
         # noinspection PyTypeChecker
         return self._build()
@@ -450,7 +450,7 @@ class TypedDfBuilder(_GenericBuilder):
     A builder pattern for :class:`typeddfs.typed_dfs.TypedDf`.
 
     Example:
-        TypedDfBuilder.typed().require("name").build()
+        ``TypedDfBuilder.typed().require("name").build()``
     """
 
     def __init__(self, name: str, doc: Optional[str] = None):

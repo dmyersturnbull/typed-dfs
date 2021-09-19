@@ -130,15 +130,22 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         Only includes file formats that can be read back in with corresponding ``to`` methods,
         and excludes pickle.
 
-        Supports:
-            - .csv, .tsv, or .tab (optionally with .gz, .zip, .bz2, or .xz)
-            - .json  (optionally with .gz, .zip, .bz2, or .xz)
+        Supports, where text formats permit optional .gz, .zip, .bz2, or .xz:
+            - .csv, .tsv, or .tab
+            - .json
             - .feather
+            - .fwf (fixed-width)
+            . .flexwf (columns aligned but using a delimiter)
             - .parquet or .snappy
-            - .h5 or .hdf
-            - .xlsx or .xls
-            - .txt, .lines, or .list (optionally with .gz, .zip, .bz2, or .xz);
-              see ``to_lines()``
+            - .h5, .hdf, or .hdf5
+            - .xlsx, .xls, and other variants for Excel
+            - .odt and .ods (OpenOffice)
+            - .xml
+            - .toml
+            - .ini
+            - .properties
+            - .pkl and .pickle
+            - .txt, .lines, or .list; see :meth:`to_lines` and :meth:`read_lines
 
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers

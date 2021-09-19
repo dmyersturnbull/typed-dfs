@@ -102,7 +102,7 @@ class TypedDfs:
         Useful to quickly access a function only defined on typeddfs DataFrames.
 
         Example:
-            TypedDfs.wrap(df).write_file("abc.feather")
+            ``TypedDfs.wrap(df).write_file("abc.feather")``
         """
         return FinalDf(df)
 
@@ -120,7 +120,7 @@ class TypedDfs:
             A builder instance (builder pattern) to be used with chained calls
 
         Example:
-            TypedDfs.typed("MyClass").require("name", index=True).build()
+            ``TypedDfs.typed("MyClass").require("name", index=True).build()``
         """
         return TypedDfBuilder(name, doc)
 
@@ -168,7 +168,7 @@ class TypedDfs:
             A class instance
 
         Example:
-            MyClass = TypedDfs.untyped("MyClass")
+            ``MyClass = TypedDfs.untyped("MyClass")``
         """
 
         class New(UntypedDf):

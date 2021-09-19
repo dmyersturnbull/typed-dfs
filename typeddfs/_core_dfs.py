@@ -181,7 +181,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
         Makes a copy that's a normal Pandas DataFrame.
 
         Returns:
-            A shallow copy with its __class__ set to pd.DataFrame
+            A shallow copy with its ``__class__`` set to pd.DataFrame
         """
         df = self.copy()
         df.__class__ = pd.DataFrame

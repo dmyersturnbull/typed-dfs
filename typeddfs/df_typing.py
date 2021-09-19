@@ -85,6 +85,9 @@ class IoTyping(Generic[T]):
 
     @property
     def hash_algorithm(self) -> Optional[str]:
+        """
+        The hash algorithm used for checksums.
+        """
         return self._hash_alg
 
     @property
@@ -176,6 +179,13 @@ class DfTyping:
     @property
     def io(self) -> IoTyping:
         return self._io_typing
+
+    @property
+    def is_strict(self) -> bool:
+        """
+        Returns True if this allows unspecified index levels **or** columns.
+        """
+        return not self._more_columns_allowed and not self._more_index_names_allowed
 
     @property
     def order_dataclass(self) -> bool:

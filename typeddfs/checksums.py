@@ -316,7 +316,7 @@ class Checksums:
         Returns the path required for the per-file hash of ``path``.
 
         Example:
-            Utils.get_hash_file("my_file.txt.gz")  # Path("my_file.txt.gz.sha256")
+            ``Utils.get_hash_file("my_file.txt.gz")  # Path("my_file.txt.gz.sha256")``
         """
         algorithm = cls.get_algorithm(algorithm)
         return path.with_suffix(path.suffix + "." + algorithm)
@@ -327,7 +327,7 @@ class Checksums:
         Returns the path required for the per-file hash of ``path``.
 
         Example:
-            Utils.get_hash_file(Path("my_dir, my_file.txt.gz"))  # Path("my_dir", "my_dir.sha256")
+            ``Utils.get_hash_file(Path("my_dir, my_file.txt.gz"))  # Path("my_dir", "my_dir.sha256")``
         """
         algorithm = cls.get_algorithm(algorithm)
         return path.parent / (path.parent.name + "." + algorithm)
@@ -338,7 +338,7 @@ class Checksums:
         Guesses the hashlib algorithm used from a hash file.
 
         Example:
-            Utils.guess_algorithm("my_file.sha1")  # "sha1"
+            ``Utils.guess_algorithm("my_file.sha1")  # "sha1"``
         """
         algorithm = path.suffix.lstrip(".").lower().replace("-", "")
         try:

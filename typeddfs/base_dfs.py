@@ -54,9 +54,9 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
         is preserved but the DataFrame may no longer be valid under this type's rules.
         This can occur because, for performance, typeddfs does not call ``convert`` on most calls.
 
-        Example:
-            df = MyDf(data).apply(my_fn, axis=1).retype()  # make sure it's still valid
-            df = MyDf(data).groupby(...).retype()  # we maybe changed the index; fix it
+        Examples:
+            - ``df = MyDf(data).apply(my_fn, axis=1).retype()  # make sure it's still valid``
+            - ``df = MyDf(data).groupby(...).retype()  # we maybe changed the index; fix it``
 
         Returns:
             A copy

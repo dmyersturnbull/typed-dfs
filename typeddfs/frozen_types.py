@@ -72,6 +72,13 @@ class FrozeList(Sequence[T], Hashable):
         return default
 
     def req(self, item: T, default: Optional[T] = None) -> T:
+        """
+        Returns the requested list item, falling back to a default.
+        Short for "require".
+
+        Raise:
+            KeyError: If ``item`` is not in this list and ``default`` is ``None``
+        """
         if item in self.__lst:
             return item
         if default is None:
@@ -101,6 +108,8 @@ class FrozeSet(AbstractSet[T], Hashable):
         try:
             self.__hash = hash(tuple(lst))
         except AttributeError:
+            # the hashes will collide, making sets slow
+            # but at least we'll have a hash and thereby not violate the constraint
             self.__hash = 0
 
     def get(self, item: T, default: Optional[T] = None) -> Optional[T]:
@@ -109,6 +118,14 @@ class FrozeSet(AbstractSet[T], Hashable):
         return default
 
     def req(self, item: T, default: Optional[T] = None) -> T:
+        """
+        Returns ``item`` if it is in this set.
+        Short for "require".
+        Falls back to ``default`` if ``default`` is not ``None``.
+
+        Raises:
+            KeyError: If ``item`` is not in this set and ``default`` is ``None``
+        """
         if item in self.__lst:
             return item
         if default is None:
@@ -133,6 +150,13 @@ class FrozeSet(AbstractSet[T], Hashable):
         return self.__lst == self.__make_other(other)
 
     def __lt__(self, other: Union[FrozeSet[T], AbstractSet[T]]):
+        """
+        Compares ``self`` and ``other`` for partial ordering.
+        Sorts ``self`` and ``other``, then compares the two sorted sets.
+
+        Approximately::
+            return list(sorted(self)) < list(sorted(other))
+        """
         other = list(sorted(self.__make_other(other)))
         me = list(sorted(self.__lst))
         return me < other
@@ -179,6 +203,14 @@ class FrozeDict(Mapping[K, V], Hashable):
         return self.__dct.get(key, default)
 
     def req(self, key: K, default: Optional[V] = None) -> V:
+        """
+        Returns the value corresponding to ``key``.
+        Short for "require".
+        Falls back to ``default`` if ``default`` is not None and ``key`` is not in this dict.
+
+        Raise:
+        KeyError: If ``key`` is not in this dict and ``default`` is ``None``
+        """
         if default is None:
             return self.__dct[key]
         return self.__dct.get(key, default)
@@ -208,6 +240,17 @@ class FrozeDict(Mapping[K, V], Hashable):
         raise TypeError(f"Cannot compare to {type(other)}")
 
     def __lt__(self, other: Mapping[K, V]):
+        """
+        Compares this dict to another, with partial ordering.
+
+        The algorithm is:
+            1. Sort ``self`` and ``other`` by keys
+            2. If ``sorted_self < sorted_other``, return ``False``
+            3. If the reverse is true (``sorted_other < sorted_self``), return ``True``
+            4. (The keys are now known to be the same.)
+               For each key, in order: If ``self[key] < other[key]``, return ``True``
+            5. Return ``False``
+        """
         other = self.__make_other(other)
         me = self.__dct
         o_keys = list(sorted(other.keys()))

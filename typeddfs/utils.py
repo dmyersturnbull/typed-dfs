@@ -228,7 +228,8 @@ class Utils:
             dicts: A sequence of dictionaries
 
         Returns:
-            A tomlkit AOT
+            A tomlkit`AoT<https://github.com/sdispater/tomlkit/blob/master/tomlkit/items.py>`_
+            (i.e. ``[[array]]`)
         """
         import tomlkit
 
@@ -247,7 +248,7 @@ class Utils:
         Make sub-dictionaries from substrings in ``items`` delimited by ``.``.
         Used for TOML.
 
-        Examples:
+        Example:
             ``Utils.dots_to_dict({"genus.species": "fruit bat"}) == {"genus": {"species": "fruit bat"}}``
 
         See Also:
@@ -262,7 +263,7 @@ class Utils:
         """
         Performs the inverse of :meth:`dots_to_dict`.
 
-        Examples:
+        Example:
             ``Utils.dict_to_dots({"genus": {"species": "fruit bat"}}) == {"genus.species": "fruit bat"}``
         """
         return dict(cls._re_leaf("", items))
@@ -298,9 +299,9 @@ class Utils:
         Ignores hyphens and lowercases the string.
         Permits these nonstandard shorthands:
 
-          - "platform": use ``sys.getdefaultencoding()`` on the fly
-          - "utf8(bom)": use "utf-8-sig" on Windows; "utf-8" otherwise
-          - "utf16(bom)": use "utf-16-sig" on Windows; "utf-16" otherwise
+          - ``"platform"``: use ``sys.getdefaultencoding()`` on the fly
+          - ``"utf8(bom)"``: use ``"utf-8-sig"`` on Windows; ``"utf-8"`` otherwise
+          - ``"utf16(bom)"``: use ``"utf-16-sig"`` on Windows; ``"utf-16"`` otherwise
         """
         encoding = encoding.lower().replace("-", "")
         if encoding == "platform":
@@ -355,10 +356,10 @@ class Utils:
         Guesses a good natsorted flag for the dtype.
 
         Here are some specifics:
-            - integers       ==> INT and SIGNED
-            - floating-point ==> FLOAT and SIGNED
-            - strings        ==> COMPATIBILITYNORMALIZE and GROUPLETTERS
-            - datetime       ==> GROUPLETTERS (only affects 'Z' vs. 'z'; shouldn't matter)
+            - integers       ⇒ INT and SIGNED
+            - floating-point ⇒ FLOAT and SIGNED
+            - strings        ⇒ COMPATIBILITYNORMALIZE and GROUPLETTERS
+            - datetime       ⇒ GROUPLETTERS (only affects 'Z' vs. 'z'; shouldn't matter)
 
         Args:
             dtype: Probably from ``pd.Series.dtype``
@@ -388,11 +389,11 @@ class Utils:
         Gets the flag names and combined ``alg=`` argument for natsort.
 
         Examples:
-            - exact_natsort_alg({"REAL"}) == ({"FLOAT", "SIGNED"}, ns.FLOAT | ns.SIGNED)
-            - exact_natsort_alg({}) == ({}, 0)
-            - exact_natsort_alg(ns.LOWERCASEFIRST) == ({"LOWERCASEFIRST"}, ns.LOWERCASEFIRST)
-            - exact_natsort_alg({"localenum", "numafter"})
-              == ({"LOCALENUM", "NUMAFTER"}, ns.LOCALENUM | ns.NUMAFTER)
+            - ``exact_natsort_alg({"REAL"}) == ({"FLOAT", "SIGNED"}, ns.FLOAT | ns.SIGNED)``
+            - ``exact_natsort_alg({}) == ({}, 0)``
+            - ``exact_natsort_alg(ns.LOWERCASEFIRST) == ({"LOWERCASEFIRST"}, ns.LOWERCASEFIRST)``
+            - ``exact_natsort_alg({"localenum", "numafter"})``
+              ``== ({"LOCALENUM", "NUMAFTER"}, ns.LOCALENUM | ns.NUMAFTER)``
 
         Args:
             flags: Can be either:
@@ -432,7 +433,7 @@ class Utils:
     @classmethod
     def table_formats(cls) -> Sequence[str]:
         """
-        Returns the names of styles for :module:`tabulate`.
+        Returns the names of styles for `tabulate <https://pypi.org/project/tabulate/>`_.
         """
         return _table_formats.keys()
 
