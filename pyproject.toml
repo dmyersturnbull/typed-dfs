@@ -131,8 +131,8 @@ excel = ["openpyxl", "defusedxml"]
 xlsb = ["pyxlsb"]
 #hdf5    = ["tables"]
 html = ["html5lib", "beautifulsoup4"]
-main = ["pyarrow", "lxml", "openpyxl", "defusedxml", "toml"]
-all = ["pyarrow", "lxml", "openpyxl", "defusedxml", "pyxlsb", "html5lib", "beautifulsoup4", "toml"]
+main = ["pyarrow", "lxml", "openpyxl", "defusedxml", "tomlkit"]
+all = ["pyarrow", "lxml", "openpyxl", "defusedxml", "tomlkit", "pyxlsb", "html5lib", "beautifulsoup4"]
 
 
 #########################################################################################

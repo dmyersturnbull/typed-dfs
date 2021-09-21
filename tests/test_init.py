@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -14,6 +15,18 @@ class TestCore:
         df2 = TypedDfs.wrap(df)
         assert not isinstance(df, AbsDf)
         assert isinstance(df2, BaseDf)
+
+    def test_wrap_multilayer(self):
+        # not fully supported yet, but let's check that it's reasonable
+        rows = ["yes", "no", "maybe"]
+        cols = [("animal", "cat"), ("animal", "armadillo", ("person", "matt"))]
+        cols = pd.MultiIndex.from_tuples(cols)
+        df = pd.DataFrame(np.zeros((3, 2)), rows, cols)
+        df = TypedDfs.wrap(df)
+        assert df.column_names() == [
+            ("animal", "cat", np.nan),
+            ("animal", "armadillo", ("person", "matt")),
+        ]
 
     def test_empty_simple(self):
         new = TypedDfs.untyped("a class")

@@ -3,6 +3,17 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.13.4] - 2021-09-21
+
+### Changed
+
+- Small changes in `cli_help`
+
+### Fixed
+
+- extras "all" and "main"
+- docstrings
+
 ## [0.13.3] - 2021-09-18
 
 ### Added
