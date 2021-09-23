@@ -55,6 +55,26 @@ df = Film.read_file("df.csv", attrs=True)
 print(df.attrs)  # e.g. {"timestamp": "2021-04-15T09:32:11Z")
 ```
 
+Make dirs? Don't replace?
+
+```python
+df.write_file("df.csv", mkdirs=True, overwrite=False)  # fails if it already exists
+```
+
+Write a hash (e.g. .sha256sum)?
+
+```python
+df.write_file("df.csv", file_hash=True)
+# check it?
+Film.read_file("df.csv", file_hash=True)  # fails if wrong
+```
+
+Auto-fix your dataframe and check that it conforms?
+
+```python
+Film.of(df)  # fixes dtypes, etc.; fails if a col is missing
+```
+
 ### 🐛 Pandas serialization bugs fixed
 
 Pandas has several issues with serialization.
