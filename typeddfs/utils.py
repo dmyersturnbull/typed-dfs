@@ -8,6 +8,7 @@ import os
 import sys
 import typing
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import (
     AbstractSet,
     Any,
@@ -59,6 +60,7 @@ from pandas.io.common import get_handle
 from tabulate import DataRow, TableFormat, _table_formats
 
 from typeddfs._utils import _AUTO_DROPPED_NAMES, _DEFAULT_HASH_ALG, _FORBIDDEN_NAMES
+from typeddfs.df_errors import WritePermissionsError
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
 
 T = TypeVar("T")
@@ -173,6 +175,48 @@ class Utils:
         elif cls.is_string_dtype(t) or t is StringDtype:
             return "string"
         return None
+
+    @classmethod
+    def verify_can_write_files(cls, *paths: Union[str, Path], missing_ok: bool = False) -> None:
+        """
+        Checks that all files can be written to, to ensure atomicity before operations.
+
+        Args:
+            *paths: The files
+            missing_ok: Don't raise an error if a path doesn't exist
+
+        Returns:
+            WritePermissionsError: If a path is not a file (modulo existence) or doesn't have 'W' set
+        """
+        paths = [Path(p) for p in paths]
+        for path in paths:
+            if path.exists() and not path.is_file():
+                raise WritePermissionsError(f"Path {path} is not a file", key=str(path))
+            if (not missing_ok or path.exists()) and not os.access(path, os.W_OK):
+                raise WritePermissionsError(f"Cannot write to {path}", key=str(path))
+
+    @classmethod
+    def verify_can_write_dirs(cls, *paths: Union[str, Path], missing_ok: bool = False) -> None:
+        """
+        Checks that all directories can be written to, to ensure atomicity before operations.
+
+        Args:
+            *paths: The directories
+            missing_ok: Don't raise an error if a path doesn't exist
+
+        Returns:
+            WritePermissionsError: If a path is not a directory (modulo existence) or doesn't have 'W' set
+        """
+        paths = [Path(p) for p in paths]
+        for path in paths:
+            if path.exists() and not path.is_dir():
+                raise WritePermissionsError(f"Path {path} is not a dir", key=str(path))
+            if missing_ok and not path.exists():
+                continue
+            if not os.access(path, os.W_OK):
+                raise WritePermissionsError(f"{path} lacks write permission", key=str(path))
+            if not os.access(path, os.X_OK):
+                raise WritePermissionsError(f"{path} lacks access permission", key=str(path))
 
     @classmethod
     def default_hash_algorithm(cls) -> str:

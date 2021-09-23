@@ -205,6 +205,16 @@ class LengthMismatchError(ValueError):
         self.lengths = lengths
 
 
+class WritePermissionsError(OSError):
+    """
+    Couldn't write to a file.
+    """
+
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+        super().__init__(*args)
+        self.key = key
+
+
 class HashError(OSError):
     """
     Something went wrong with hash file writing or reading.
@@ -217,9 +227,9 @@ class HashWriteError(HashError):
     """
 
 
-class HashContradictsExistingError(HashWriteError, ValueError):
+class HashExistsError(HashWriteError, ValueError):
     """
-    A hash for the filename already exists in the directory hash list, but they differ.
+    A hash for the filename already exists in the directory hash list.
 
     Attributes:
         key: The filename (excluding parents)
@@ -239,6 +249,18 @@ class HashContradictsExistingError(HashWriteError, ValueError):
         self.key = key
         self.original = original
         self.new = new
+
+
+class HashContradictsExistingError(HashExistsError):
+    """
+    A hash for the filename already exists in the directory hash list, but they differ.
+
+    Attributes:
+        key: The filename (excluding parents)
+        original: Hex hash found listed for the file
+        new: Hex hash that was to be written
+        filename: The filename of the listed file
+    """
 
 
 class HashAlgorithmMissingError(HashWriteError, LookupError):

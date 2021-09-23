@@ -273,6 +273,14 @@ class FileFormat(_Enum):
         }
 
     @property
+    def is_binary(self) -> bool:
+        """
+        Returns whether this format is text-encoded.
+        Note that this does *not* consider whether the file is compressed.
+        """
+        return not self.is_text
+
+    @property
     def is_text(self) -> bool:
         """
         Returns whether this format is text-encoded.

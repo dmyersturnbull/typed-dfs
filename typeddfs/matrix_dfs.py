@@ -273,7 +273,7 @@ class AffinityMatrixDf(_MatrixDf):
         cols = df.columns.tolist()
         t = cls.get_typing()
         if df.rows != df.cols:
-            raise RowColumnMismatchError(f"Rows {rows} but columns {cols}")
+            raise RowColumnMismatchError(f"Rows {rows} but columns {cols}", rows=rows, columns=cols)
         for req in t.verifications:
             value = req(df)
             if value is not None:

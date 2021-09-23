@@ -39,6 +39,23 @@ class IoTyping(Generic[T]):
     _secure: bool = False
     _recommended: bool = False
     _hdf_key: str = "df"
+    _attrs_suffix: str = ".attrs.json"
+    _use_attrs: bool = False
+
+    @property
+    def use_attrs(self) -> bool:
+        """
+        Whether to read and write ``pd.DataFrame.attrs`` when passing ``attrs=None``.
+        """
+        return self._use_attrs
+
+    @property
+    def attrs_suffix(self) -> str:
+        """
+        File filename suffix detailing where to save/load per-DataFrame "attrs" (metadata).
+        Will be appended to the DataFrame filename.
+        """
+        return self._attrs_suffix
 
     @property
     def hdf_key(self) -> str:

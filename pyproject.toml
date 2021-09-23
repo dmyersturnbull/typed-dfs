@@ -16,7 +16,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "typeddfs"
-version = "0.13.4"
+version = "0.14.0"
 description = "Pandas DataFrame subclasses that enforce structure and can self-organize."
 authors = ["Douglas Myers-Turnbull"]
 maintainers = ["dmyersturnbull"]
@@ -63,9 +63,7 @@ release            = "tool.poetry.version"
 pyversions         = "tool.poetry.dependencies"
 devdeps            = "tool.poetry.dev-dependencies"
 linelength         = "tool.black.line-length"
-authors = [
-    "Douglas Myers-Turnbull <github:dmyersturnbull,orcid:0000-0003-3610-4808>"
-]
+authors = ["Douglas Myers-Turnbull <github:dmyersturnbull,orcid:0000-0003-3610-4808>"]
 maintainers = "tool.tyrannosaurus.sources.authors"
 
 [tool.tyrannosaurus.targets]

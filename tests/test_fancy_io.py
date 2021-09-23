@@ -1,5 +1,6 @@
 import io
 import random
+from pathlib import Path
 from typing import Set, Type
 
 import pandas as pd
@@ -387,6 +388,24 @@ class TestReadWrite:
             assert len(hit) == 64
             t.read_file(path, dir_hash=True)
             t.read_file(path, hex_hash=hit)
+
+    def test_attrs(self):
+        meta = None
+        try:
+            t = TypedDfBuilder("a").reserve("x", "y").build()
+            df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
+            df.attrs["fruit"] = "apple"
+            with tmpfile(".csv") as path:
+                df.write_file(path, attrs=True)
+                meta = Path(str(path) + ".attrs.json")
+                assert meta.exists()
+                data = meta.read_text(encoding="utf-8").replace("\n", "").replace("  ", "")
+                assert data == '{"fruit": "apple"}'
+                df = t.read_file(path, attrs=True)
+                assert df.attrs == {"fruit": "apple"}
+        finally:
+            if meta is not None:
+                meta.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

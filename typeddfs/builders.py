@@ -66,6 +66,7 @@ class _GenericBuilder:
         self._recommended = False
         self._req_hash: Optional = False
         self._req_order: Optional = False
+        self._attr_suffix = None
         # make these use an explicit version
         # the user can override if needed
         self.add_read_kwargs("pickle", protocol=_PICKLE_VR)
@@ -96,21 +97,6 @@ class _GenericBuilder:
             This builder for chaining
         """
         self._doc = s
-        return self
-
-    def series_names(
-        self, index: Union[None, bool, str] = False, columns: Union[None, bool, str] = False
-    ) -> __qualname__:
-        """
-        Sets ``pd.DataFrame.index.name`` and/or ``pd.DataFrame.columns.name``.
-        Valid values are ``False`` to not set (default), ``None`` to set to ``None``,
-        or a string to set to.
-
-        Returns:
-            This builder for chaining
-        """
-        self._index_series_name = index
-        self._column_series_name = columns
         return self
 
     def add_methods(
@@ -224,6 +210,26 @@ class _GenericBuilder:
         self._hash_dir = directory
         return self
 
+    def attrs(self, suffix: str = ".attrs.json") -> __qualname__:
+        """
+        Sets ``pd.DataFrame.attrs`` to be read and written by default.
+
+        Args:
+            suffix: Will be appended to the filename of the DataFrame;
+                    must end with .json, .json.gz, etc.
+
+        Returns:
+            This builder for chaining
+
+        Raises:
+            ValueError: If the format is not JSON
+        """
+        fmt = FileFormat.from_path(suffix)
+        if fmt is not FileFormat.json:
+            raise ValueError(f"File format must be JSON ({suffix}")
+        self._attr_suffix = suffix
+        return self
+
     def secure(self) -> __qualname__:
         """
         Bans IO with insecure formats.
@@ -324,6 +330,8 @@ class _GenericBuilder:
             _save_hash_dir=self._hash_dir,
             _secure=self._secure,
             _recommended=self._recommended,
+            _attrs_suffix=".attrs.json" if self._attr_suffix is None else self._attr_suffix,
+            _use_attrs=self._attr_suffix is not None,
         )
 
         _typing = DfTyping(
@@ -457,6 +465,21 @@ class TypedDfBuilder(_GenericBuilder):
         super().__init__(name, doc)
         self._clazz = TypedDf
 
+    def series_names(
+        self, index: Union[None, bool, str] = False, columns: Union[None, bool, str] = False
+    ) -> __qualname__:
+        """
+        Sets ``pd.DataFrame.index.name`` and/or ``pd.DataFrame.columns.name``.
+        Valid values are ``False`` to not set (default), ``None`` to set to ``None``,
+        or a string to set to.
+
+        Returns:
+            This builder for chaining
+        """
+        self._index_series_name = index
+        self._column_series_name = columns
+        return self
+
     def build(self) -> Type[TypedDf]:
         """
         Builds this type.
@@ -575,14 +598,20 @@ class TypedDfBuilder(_GenericBuilder):
         problem_names = [name for name in all_names if name in self._drop]
         if len(problem_names) > 0:
             raise ClashError(
-                f"Required/reserved column/index names {problem_names} are auto-dropped"
+                f"Required/reserved column/index names {problem_names} are auto-dropped",
+                keys=set(problem_names),
             )
 
     def _check(self, names: Sequence[str]) -> None:
         if any([name in _AUTO_DROPPED_NAMES for name in names]):
-            raise ClashError(f"Columns {','.join(_AUTO_DROPPED_NAMES)} are auto-dropped")
+            raise ClashError(
+                f"Columns {','.join(_AUTO_DROPPED_NAMES)} are auto-dropped",
+                keys=_AUTO_DROPPED_NAMES,
+            )
         if any([name in _FORBIDDEN_NAMES for name in names]):
-            raise ClashError(f"{','.join(_FORBIDDEN_NAMES)} are forbidden names")
+            raise ClashError(
+                f"{','.join(_FORBIDDEN_NAMES)} are forbidden names", keys=_FORBIDDEN_NAMES
+            )
         for name in names:
             if name in [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]:
                 raise ClashError(f"Column {name} for {self._name} already exists", keys={name})

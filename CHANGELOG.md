@@ -3,16 +3,25 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.13.4] - 2021-09-21
+## [0.14.0] - unreleased
+
+### Added
+
+- Reading and writing dataset metadata (attrs)
 
 ### Changed
 
-- Small changes in `cli_help`
+- Improved `cli_help`
+- Arguments in `write_file` and `read_file` are now keyword-only
+- Small parts of `Checksums`
 
 ### Fixed
 
+- `write_file` checks for existing hashes and write permissions
+  before attempting to write
 - extras "all" and "main"
-- docstrings
+- docstring rst issues, esp. broken links
+- metadata always passed to custom exceptions
 
 ## [0.13.3] - 2021-09-18
 

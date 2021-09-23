@@ -50,9 +50,32 @@ class DfFormatsHelp(FrozenSet[DfFormatHelp]):
     Help on file formats only.
     """
 
-    def get_text(self) -> str:
+    def get_short_text(self, *, recommended_only: bool = False) -> str:
         """
-        Returns a text listing of allowed file formats.
+        Returns a single-line text listing of allowed file formats.
+
+        Returns:
+            Something like::
+                .csv, .tsv/.tab, .flexwf [optionally .gz, .xz, .zip, or .bz2], .feather, .snappy, ...
+        """
+        fmts = [f for f in self if not recommended_only or f.fmt.is_recommended]
+        text_fmts = Utils.natsort([f.get_text() for f in fmts if f.fmt.is_text], dtype=str)
+        bin_fmts = Utils.natsort([f.get_text() for f in fmts if f.fmt.is_binary], dtype=str)
+        txt = ""
+        if len(text_fmts) > 0:
+            txt += (
+                ", ".join(text_fmts)
+                + " [optionally "
+                + ", ".join([s.name for s in CompressionFormat.list_non_empty()])
+                + "]"
+            )
+        if len(bin_fmts) > 0:
+            txt += (", " if len(text_fmts) > 0 else "") + ", ".join(bin_fmts)
+        return txt
+
+    def get_long_text(self, *, recommended_only: bool = False) -> str:
+        """
+        Returns a multi-line text listing of allowed file formats.
 
         Returns:
             Something like::
@@ -68,7 +91,8 @@ class DfFormatsHelp(FrozenSet[DfFormatHelp]):
         """
         nl = "\n\n"
         bullet = nl + " " * 2 + "- "
-        formats = [f.get_text() + ("" if f.fmt.is_recommended else " [discouraged]") for f in self]
+        fmts = [f for f in self if not recommended_only or f.fmt.is_recommended]
+        formats = [f.get_text() + ("" if f.fmt.is_recommended else " [discouraged]") for f in fmts]
         formats = Utils.natsort(formats, str)
         txt = bullet + bullet.join(formats)
         return f"[[ Supported formats ]]: {txt}"
@@ -87,24 +111,45 @@ class DfHelp:
     def typing(self) -> DfTyping:
         return self.clazz.get_typing()
 
-    def get_typing_text(self) -> str:
+    def get_short_typing_text(self) -> str:
         raise NotImplementedError()
 
-    def get_full_text(self, *, use_doc: bool = True) -> str:
+    def get_long_typing_text(self) -> str:
+        raise NotImplementedError()
+
+    def get_short_text(self, *, use_doc: bool = True, recommended_only: bool = False) -> str:
+        """
+        Returns a multi-line description with compressed text.
+
+        Args:
+            use_doc: Include the docstring of the DataFrame type
+            recommended_only: Only include recommended formats
+        """
+        nl = "\n\n"
+        t = self.get_short_typing_text()
+        return (
+            self.get_header_text(use_doc=use_doc)
+            + ((nl + t) if len(t) > 0 else "")
+            + nl
+            + self.formats.get_short_text()
+        ).replace(nl * 2, nl)
+
+    def get_long_text(self, *, use_doc: bool = True, recommended_only: bool = False) -> str:
         """
         Returns a multi-line text description of the DataFrame.
         Includes its required and optional columns, and supported file formats.
 
         Args:
             use_doc: Include the docstring of the DataFrame type
+            recommended_only: Only include recommended formats
         """
         nl = "\n\n"
-        t = self.get_typing_text()
+        t = self.get_long_typing_text()
         return (
             self.get_header_text(use_doc=use_doc)
             + ((nl + t) if len(t) > 0 else "")
             + nl
-            + self.get_formats_text()
+            + self.formats.get_long_text()
         ).replace(nl * 2, nl)
 
     def get_header_text(self, *, use_doc: bool = True) -> str:
@@ -121,34 +166,32 @@ class DfHelp:
                 This is a big table for big things.
         """
         nl = "\n\n"
-        s = f"Path to a {self.clazz.__name__} file."
+        s = f"A {self.clazz.__name__} file."
         if use_doc and self.clazz.__doc__ is not None:
             s += nl + self.clazz.__doc__
         return s
 
-    def get_formats_text(self) -> str:
-        """
-        Returns a text listing of allowed file formats.
-
-        Returns:
-            Something like::
-                [[ Supported formats ]]:
-
-                .csv[.bz2/.gz/.xz/.zip]: comma-delimited
-
-                .parquet/.snappy: Parquet
-
-                .h5/.hdf/.hdf5: HDF5 (key 'df') [discouraged]
-
-                .pickle/.pkl: Python Pickle [discouraged]
-        """
-        return self.formats.get_text()
-
 
 class TypedDfHelp(DfHelp):
-    def get_typing_text(self) -> str:
+    def get_short_typing_text(self) -> str:
         """
-        Returns a text description of the required and optional columns.
+        Returns a condensed text description of the required and optional columns.
+        """
+        s = ""
+        if len(self.required_cols) > 0:
+            s += f"Requires columns: {', '.join(self.required_cols)}."
+        if len(self.reserved_cols) > 0 and self.typing.is_strict:
+            s += (" " if len(s) > 0 else " ") + f"Permits columns: {', '.join(self.reserved_cols)}"
+        elif len(self.reserved_cols) > 0:
+            s += (
+                (" " if len(s) > 0 else " ")
+                + f"Recognizes columns: {', '.join(self.reserved_cols)}. Additional columns are ignored."
+            )
+        return s
+
+    def get_long_typing_text(self) -> str:
+        """
+        Returns a long text description of the required and optional columns.
         """
         nl = "\n\n"
         bullet = nl + " " * 2 + "- "
@@ -161,7 +204,7 @@ class TypedDfHelp(DfHelp):
             s += f"[[ Optional columns ]]: {bullet}{bullet.join(self.reserved_cols)}"
         if len(s) == 0:
             return s
-        if self.typing.more_columns_allowed or self.typing.more_indices_allowed:
+        if not self.typing.is_strict:
             s += f"{nl}Additional columns are allowed."
         else:
             s += f"{nl}No additional columns are allowed."
@@ -194,22 +237,38 @@ class TypedDfHelp(DfHelp):
 
 
 class MatrixDfHelp(DfHelp):
-    def get_typing_text(self) -> str:
+    def get_short_typing_text(self) -> str:
         """
-        Returns a text description of the required format for a matrix.
+        Returns a short text description of the required format for a matrix.
         """
         t = self.typing
-        return cleandoc(
-            f"""
-            Must contain string column names ("{t.column_series_name}") and row names ("{t.index_series_name}").
+        if t.value_dtype is None:
+            s = "Numeric matrix. "
+        else:
+            s = f"{t.value_dtype.__name__} matrix. "
+        s += f"List row names in the index or a special column 'row'."
+        return s
 
-            Values will be cast to {self.typing.value_dtype.__name__}
-            """
-        )
+    def get_long_typing_text(self) -> str:
+        """
+        Returns a long text description of the required format for a matrix.
+        """
+        t = self.typing
+        s = "Numeric matrix with named rows and columns. "
+        s += f"List row names in the index or a special column 'row'. "
+        if t.value_dtype is not None:
+            s += f"Values are cast to {t.value_dtype.__name__}"
+        return s
 
 
 class UntypedDfHelp(DfHelp):
-    def get_typing_text(self) -> str:
+    def get_long_typing_text(self) -> str:
+        """
+        Returns ``""``.``
+        """
+        return ""
+
+    def get_short_typing_text(self) -> str:
         """
         Returns ``""``.``
         """
@@ -253,7 +312,7 @@ class DfCliHelp:
 
         For example, :attr:`typeddfs.file_formats.FileFormat.ods` is "OpenDocument Spreadsheet".
         """
-        dct = dict(
+        str_dict = dict(
             csv="Comma-delimited",
             tsv="Tab-delimited",
             json="JSON",
@@ -273,7 +332,7 @@ class DfCliHelp:
             properties=".properties",
             lines="Lines (with header)",
         )
-        dct: Mapping[FileFormat, str] = {FileFormat.of(k): v for k, v in dct.items()}
+        dct: Mapping[FileFormat, str] = {FileFormat.of(k): v for k, v in str_dict.items()}
         return DfFormatsHelp((DfFormatHelp(k, v) for k, v in dct.items()))
 
 

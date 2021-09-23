@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import abc
 import csv
+import json
 import os
 from pathlib import Path, PurePath
 from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union
@@ -66,9 +67,11 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def read_file(
         cls,
         path: Union[Path, str],
+        *,
         file_hash: Optional[bool] = None,
         dir_hash: Optional[bool] = None,
         hex_hash: Optional[str] = None,
+        attrs: Optional[bool] = None,
     ) -> __qualname__:
         """
         Reads from a file (or possibly URL), guessing the format from the filename extension.
@@ -104,31 +107,41 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             file_hash: Check against a hash file specific to this file (e.g. <path>.sha1)
             dir_hash: Check against a per-directory hash file
             hex_hash: Check against this hex-encoded hash
+            attrs: Set dataset attributes/metadata (``pd.DataFrame.attrs``) from a JSON file.
+                   If True, uses :attr:`typeddfs.df_typing.DfTyping.attrs_suffix`.
+                   If a str or Path, uses that file.
+                   If None or False, does not set.
 
         Returns:
             An instance of this class
         """
         path = Path(path)
-        algorithm = cls.get_typing().io.hash_algorithm
+        t = cls.get_typing()
+        algorithm = t.io.hash_algorithm
         Checksums.verify_any(
             path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash, algorithm=algorithm
         )
         df = cls._call_read(cls, path)
+        if attrs:
+            attrs_path = path.parent / (path.name + t.io.attrs_suffix)
+            json_data = json.loads(attrs_path.read_text(encoding="utf-8"))
+            df.attrs.update(json_data)
         return cls._convert_typed(df)
 
     def write_file(
         self,
         path: Union[Path, str],
+        *,
         overwrite: bool = True,
         mkdirs: bool = False,
         file_hash: Optional[bool] = None,
         dir_hash: Optional[bool] = None,
+        attrs: Optional[bool] = None,
     ) -> Optional[str]:
         """
         Writes to a file (or possibly URL), guessing the format from the filename extension.
         Delegates to the ``to_*`` functions of this class (e.g. ``to_csv``).
-        Only includes file formats that can be read back in with corresponding ``to`` methods,
-        and excludes pickle.
+        Only includes file formats that can be read back in with corresponding ``to`` methods.
 
         Supports, where text formats permit optional .gz, .zip, .bz2, or .xz:
             - .csv, .tsv, or .tab
@@ -145,7 +158,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             - .ini
             - .properties
             - .pkl and .pickle
-            - .txt, .lines, or .list; see :meth:`to_lines` and :meth:`read_lines
+            - .txt, .lines, or .list; see :meth:`to_lines` and :meth:`read_lines`
 
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
@@ -159,6 +172,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
                        The filename will be the directory name suffixed by the algorithm;
                        (i.e. path.parent/(path.parent.name+"."+algorithm) ).
                        If None, chooses according to ``self.get_typing().io.hash_dir``.
+            attrs: Write dataset attributes/metadata (``pd.DataFrame.attrs``) to a JSON file.
+                   uses :attr:`typeddfs.df_typing.DfTyping.attrs_suffix`.
+                   If None, chooses according to ``self.get_typing().io.use_attrs``.
 
         Returns:
             Whatever the corresponding method on ``pd.to_*`` returns.
@@ -169,24 +185,62 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             ValueError: If the type of a column or index name is non-str
         """
         path = Path(path)
-        if path.exists() and not overwrite:
-            raise FileExistsError(f"File {path} already exists")
+        t = self.__class__.get_typing()
+        file_hash = file_hash is True or file_hash is None and t.io.file_hash
+        dir_hash = dir_hash is True or dir_hash is None and t.io.dir_hash
+        attrs = attrs is True or attrs is None and t.io.use_attrs
+        attrs_path = path.parent / (path.name + t.io.attrs_suffix)
+        file_hash_path = Checksums.get_hash_file(path, algorithm=t.io.hash_algorithm)
+        dir_hash_path = Checksums.get_hash_dir(path, algorithm=t.io.hash_algorithm)
+        # check for overwrite errors now to preserve atomicity
+        if not overwrite:
+            if path.exists():
+                raise FileExistsError(f"File {path} already exists")
+            if file_hash and file_hash_path.exists():
+                raise FileExistsError(f"{file_hash_path} already exists")
+            if dir_hash_path.exists():
+                dir_sums = Checksums.parse_hash_file_resolved(dir_hash_path)
+                if path in dir_sums:
+                    raise
+            if file_hash and file_hash_path.exists():
+                raise FileExistsError(f"{file_hash_path} already exists")
+            if attrs and attrs_path.exists():
+                raise FileExistsError(f"{attrs_path} already exists")
         self._check(self)
         types = set(self.column_names()).union(self.index_names())
         if any((not isinstance(c, str) for c in types)):
             raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
+        # now we're ready to write
         if mkdirs:
             path.parent.mkdir(exist_ok=True, parents=True)
+        # to get a FileNotFoundError instead of a WritePermissionsError:
+        if not mkdirs and not path.parent.exists():
+            raise FileNotFoundError(f"Directory {path.parent} not found")
+        # check for lack of write-ability to any of the files
+        # we had to do this after creating the dirs unfortunately
+        _all_files = [(attrs, attrs_path), (file_hash, file_hash_path), (dir_hash, dir_hash_path)]
+        all_files = [f for a, f in _all_files if a]
+        all_dirs = [f.parent for (a, f) in _all_files]
+        # we need to check both the dirs and the files
+        Utils.verify_can_write_dirs(*all_dirs, missing_ok=False)
+        Utils.verify_can_write_files(*all_files, missing_ok=True)
+        # we verified as much as we can -- finally we can write!!
+        # this writes the main file:
         z = self._call_write(path)
-        file_hash = file_hash is True or file_hash is None and self.get_typing().io.file_hash
-        dir_hash = dir_hash is True or dir_hash is None and self.get_typing().io.dir_hash
+        # write the hashes
+        # this shouldn't fail
         Checksums.add_any_hashes(
             path,
             to_file=file_hash,
             to_dir=dir_hash,
-            algorithm=self.get_typing().io.hash_algorithm,
+            algorithm=t.io.hash_algorithm,
             overwrite=overwrite,
         )
+        # write dataset attributes
+        # this also shouldn't fail
+        if attrs:
+            attrs_data = json.dumps(self.attrs, ensure_ascii=False, indent=2)
+            attrs_path.write_text(attrs_data, encoding="utf-8")
         return z
 
     @classmethod
@@ -1113,9 +1167,11 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
     def _check_io_ok(cls, path: Path, fmt: FileFormat):
         t = cls.get_typing().io
         if t.secure and not fmt.is_secure:
-            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing")
+            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing", key=fmt.name)
         if t.recommended and not fmt.is_recommended:
-            raise FormatDiscouragedError(f"Discouraged format {fmt} forbidden by typing")
+            raise FormatDiscouragedError(
+                f"Discouraged format {fmt} forbidden by typing", key=fmt.name
+            )
 
     @classmethod
     def _get_write_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:

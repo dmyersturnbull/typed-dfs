@@ -358,12 +358,14 @@ class TypedDf(BaseDf, metaclass=abc.ABCMeta):
         for c in set(t.required_index_names):
             if c not in set(df.index.names):
                 raise MissingColumnError(
-                    f"Missing index name {c} (indices are: {set(df.index.names)}; cols are: {set(df.columns.names)}))"
+                    f"Missing index name {c} (indices are: {set(df.index.names)}; cols are: {set(df.columns.names)}))",
+                    key=c,
                 )
         for c in set(t.required_columns):
             if c not in set(df.columns):
                 raise MissingColumnError(
-                    f"Missing column {c} (cols are: {set(df.columns.names)}; indices are: {set(df.index.names)})"
+                    f"Missing column {c} (cols are: {set(df.columns.names)}; indices are: {set(df.index.names)})",
+                    key=c,
                 )
 
     @classmethod
