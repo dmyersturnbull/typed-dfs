@@ -3,7 +3,14 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.14.0] - unreleased
+## [0.14.0] - 2021-09-23
+
+### Changed
+
+- Greatly improved `cli_help`
+- `CoreDf.set_attrs`
+
+## [0.14.0] - 2021-09-23
 
 ### Added
 

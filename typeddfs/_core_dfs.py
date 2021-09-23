@@ -48,6 +48,14 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
                 df[c] = df[c].map(Utils.strip_control_chars)
         return self.__class__._convert_typed(df)
 
+    def set_attrs(self, **attrs) -> __qualname__:
+        """
+        Sets ``pd.DataFrame.attrs``, returning a copy.
+        """ ""
+        df = self.copy()
+        df.attrs.update(attrs)
+        return df
+
     def iter_row_col(self) -> Generator[Tuple[Tuple[int, int], Any], None, None]:
         """
         Iterates over ``((row, col), value)`` tuples.

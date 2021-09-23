@@ -32,8 +32,9 @@ and read and write _any_ format in a single file.
 def hello(df: Film):
     print("read!")
 
-
-df = Film.read_file("input file? [.csv/.tsv/.tab/.feather/.snappy/.json.gz/.h5/...]")
+df = Film.read_file(
+    input("input file? [.csv/.tsv/.tab/.feather/.snappy/.json.gz/.h5/...]")
+)
 hello(df)
 ```
 
@@ -43,6 +44,15 @@ Need dataclasses?
 ```python
 instances = df.to_dataclass_instances()
 Film.from_dataclass_instances(instances)
+```
+
+Want to save metadata?
+
+```python
+df = df.set_attrs(timestamp=datetime.now().isoformat())
+df.write_file("df.csv", attrs=True)  # saved to a corresponding metadata file
+df = Film.read_file("df.csv", attrs=True)
+print(df.attrs)  # e.g. {"timestamp": "2021-04-15T09:32:11Z")
 ```
 
 ### 🐛 Pandas serialization bugs fixed

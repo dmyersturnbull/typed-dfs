@@ -92,7 +92,35 @@ class Utils:
     is_scalar = is_scalar
 
     @classmethod
+    def join_to_str(cls, *items: Any, last: str, sep: str = ", ") -> str:
+        """
+        Joins items to something like "cat, dog, and pigeon" or "cat, dog, or pigeon".
+
+        Args:
+            *items: Items to join; ``str(item) for item in items`` will be used
+            last: Probably "and", "or", "and/or", or ""
+                    Spaces are added/removed as needed if ``suffix`` is alphanumeric
+                    or "and/or", after stripping whitespace off the ends.
+            sep: Used to separate all words; include spaces as desired
+
+        Examples:
+            - ``join_to_str(["cat", "dog", "elephant"], last="and")  # cat, dog, and elephant``
+            - ``join_to_str(["cat", "dog"], last="and")  # cat and dog``
+            - ``join_to_str(["cat", "dog", "elephant"], last="", sep="/")  # cat/dog/elephant``
+        """
+        if last.strip().isalpha() or last.strip() == "and/or":
+            last = last.strip() + " "
+        items = [str(s).strip("'" + '"' + " ") for s in items]
+        if len(items) > 2:
+            return sep.join(items[:-1]) + sep + last + items[-1]
+        else:
+            return (" " + last + " ").join(items)
+
+    @classmethod
     def strip_control_chars(cls, s: str) -> str:
+        """
+        Strips all characters under the Unicode 'Cc' category.
+        """
         return _control_chars.sub("", s)
 
     @classmethod
@@ -135,45 +163,45 @@ class Utils:
         return v
 
     @classmethod
-    def describe_dtype(cls, t: Type[Any]) -> Optional[str]:
+    def describe_dtype(cls, t: Type[Any], *, short: bool = False) -> Optional[str]:
         """
         Returns a string name for a Pandas-supported dtype.
 
         Args:
             t: Any Python type
+            short: Use shorter strings (e.g. "int" instead of "integer")
 
         Returns:
             A string like "floating-point" or "zoned datetime".
             Returns ``None`` if no good name is found or if ``t`` is ``None``.
         """
-        from pandas import Int8Dtype
 
         if cls.is_bool_dtype(t) or issubclass(t, BooleanDtype):
-            return "bool"
+            return "bool" if short else "boolean"
         elif (
             cls.is_datetime64tz_dtype(t)
             or cls.is_datetime64_any_dtype(t)
             or issubclass(t, datetime)
         ):
-            return "datetime"
+            return "datetime" if short else "date and time"
         elif cls.is_period_dtype(t) or issubclass(t, Period):
-            return "time period"
+            return "period" if short else "time period"
         elif issubclass(t, timedelta):
-            return "time delta"
+            return "duration"
         elif cls.is_interval_dtype(t) or issubclass(t, Interval):
             return "interval"
         elif cls.is_integer_dtype(t):
-            return "integer"
+            return "int" if short else "integer"
         elif cls.is_float_dtype(t):
-            return "floating-point"
+            return "float" if short else "floating-point"
         elif cls.is_complex_dtype(t):
-            return "complex number"
+            return "complex" if short else "complex number"
         elif cls.is_numeric_dtype(t):
             return "numeric"
         elif cls.is_categorical_dtype(t):
             return "categorical"
         elif cls.is_string_dtype(t) or t is StringDtype:
-            return "string"
+            return "str" if short else "string"
         return None
 
     @classmethod

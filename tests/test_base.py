@@ -121,6 +121,12 @@ class TestBase:
         expected = [((0, 0), 1), ((0, 1), 2), ((0, 2), 3), ((1, 0), 4), ((1, 1), 5), ((1, 2), 6)]
         assert list(df.iter_row_col()) == expected
 
+    def test_set_attrs(self):
+        df = UntypedDf.convert(pd.DataFrame(sample_data()))
+        df2 = df.set_attrs(animal="fishies")
+        assert df2.attrs == dict(animal="fishies")
+        assert df.attrs == {}
+
 
 if __name__ == "__main__":
     pytest.main()
