@@ -108,7 +108,7 @@ pre-commit               = "^2.14"
 pre-commit-hooks         = "^4.0"
 bandit                   = "^1.7"
 pytest                   = ">=6.2"
-coverage                 = {extras = ["toml"], version = "^5.5"}
+coverage                 = {extras = ["toml"], version = "^6.0"}
 pytest-cov               = "^2.11"
 flake8                   = "^3.9"
 flake8-docstrings        = "^1.5"
