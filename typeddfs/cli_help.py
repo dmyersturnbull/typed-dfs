@@ -300,7 +300,8 @@ class TypedDfHelp(DfHelp):
         lst = []
         for c in which:
             t = self.typing.auto_dtypes.get(c)
-            t = Utils.describe_dtype(t, short=short)
+            if t is not None:
+                t = Utils.describe_dtype(t, short=short)
             if t is None:
                 lst.append(c)
             else:

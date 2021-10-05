@@ -337,6 +337,12 @@ class FileFormat(_Enum):
         """
         if format_map is None:
             format_map = _rev_valid_formats
+        # first, just try treating as a suffix
+        # otherwise, .suffix will strip out everything
+        try:
+            return cls.from_suffix(path, format_map=format_map)
+        except FilenameSuffixError:
+            pass
         path = str(path)
         for c in CompressionFormat.all_suffixes():
             path = path.replace(c, "")
