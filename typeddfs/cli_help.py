@@ -12,7 +12,7 @@ Utils for getting nice CLI help on DataFrame inputs.
 from dataclasses import dataclass
 from typing import FrozenSet, Mapping, Sequence, Type
 
-from typeddfs import TypedDf, MatrixDf
+from typeddfs import MatrixDf, TypedDf
 
 # noinspection PyProtectedMember
 from typeddfs._utils import _FLEXWF_SEP, _HDF_KEY, _PICKLE_VR, _TOML_AOT

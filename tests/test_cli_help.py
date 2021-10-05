@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pandas import Period
 
-from typeddfs import TypedDfs, FileFormat
+from typeddfs import FileFormat, TypedDfs
 from typeddfs.cli_help import DfCliHelp
 
 

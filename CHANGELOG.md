@@ -3,7 +3,20 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.14.0] - 2021-09-23
+## [0.14.3] - 2021-10-05
+
+### Added
+
+- Some new methods to `Checksums`
+- `Checksums` functions can now accept strings
+
+## [0.14.2] - 2021-10-05
+
+### Fixed
+
+- Two minor bugs
+
+## [0.14.1] - 2021-09-23
 
 ### Changed
 
