@@ -4,7 +4,7 @@ import pytest
 from pandas.errors import IntCastingNaNError
 
 from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder
-from typeddfs.df_errors import InvalidDfError, VerificationFailedError
+from typeddfs.df_errors import VerificationFailedError
 from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 
 from . import get_resource, tmpfile

@@ -3,6 +3,16 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.14.4] - 2021-10-12
+
+### Added
+
+- Top-level imports
+
+### Changed
+
+- Moved some docs to readthedocs
+
 ## [0.14.3] - 2021-10-05
 
 ### Added

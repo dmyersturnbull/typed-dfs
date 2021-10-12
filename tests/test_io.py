@@ -184,11 +184,12 @@ class TestReadWrite:
             (".xlsx", "xlsx"),
             (".xls", "xls"),
             (".xlsb", "xlsb"),
+            (".xml", "xml"),
             (".ods", "ods"),
             (".pickle", "pickle"),
         ]:
-            with tmpfile(suffix) as path:
-                for dtype in dtypes:
+            for dtype in dtypes:
+                with tmpfile(suffix) as path:
                     try:
                         df = Ind2Col2.convert(Ind2Col2(sample_data_ind2_col2_pd_na())).astype(dtype)
                         assert list(df.index.names) == ["qqq", "rrr"]
@@ -200,6 +201,39 @@ class TestReadWrite:
                     except Exception:
                         logger.error(f"Failed on path {path}, dtype {dtype}")
                         raise
+
+    """
+    # TODO: waiting for upsteam: https://github.com/dmyersturnbull/typed-dfs/issues/46
+    def test_raw_to_xml(self):
+        dtypes = [
+            pd.StringDtype(),
+            pd.BooleanDtype(),
+            pd.Float64Dtype(),
+            pd.Float32Dtype(),
+            pd.Int64Dtype(),
+            pd.UInt64Dtype(),
+            pd.Int32Dtype(),
+            pd.UInt32Dtype(),
+            pd.Int16Dtype(),
+            pd.UInt16Dtype(),
+            pd.Int8Dtype(),
+            pd.UInt8Dtype(),
+            pd.StringDtype(),
+        ]
+        data = [
+            pd.Series({"abc": 1, "xyz": pd.NA}),
+            pd.Series({"abc": pd.NA, "xyz": 0}),
+        ]
+        failed = {}
+        for dtype in dtypes:
+            df = pd.DataFrame(data).astype(dtype)
+            try:
+                df.to_xml()
+            except TypeError as e:
+                logger.error(dtype, exc_info=True)
+                failed[str(dtype)] = str(e)
+        assert failed == [], f"Failed on dtypes: {failed}"
+    """
 
     def test_xml(self):
         with tmpfile(".xml.gz") as path:

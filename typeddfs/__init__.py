@@ -21,6 +21,7 @@ from typeddfs._entries import (
     MatrixDf,
     TypedDf,
     TypedDfs,
+    UntypedDf,
     Utils,
     affinity_matrix,
     example,

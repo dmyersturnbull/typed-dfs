@@ -62,6 +62,7 @@ class TypedDfs:
     NonStrColumnError = NonStrColumnError
     NotSingleColumnError = NotSingleColumnError
     ClashError = ClashError
+    VerificationFailedError = VerificationFailedError
     FileFormat = FileFormat
     CompressionFormat = CompressionFormat
     FinalDf = FinalDf
@@ -208,4 +209,5 @@ __all__ = [
     "AffinityMatrixDf",
     "FinalDf",
     "BaseDf",
+    "UntypedDf",
 ]
