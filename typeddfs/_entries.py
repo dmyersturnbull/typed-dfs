@@ -7,6 +7,7 @@ from typing import Optional, Type
 
 import pandas as pd
 
+from typeddfs.base_dfs import BaseDf
 from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder, TypedDfBuilder
 from typeddfs.checksums import Checksums
 from typeddfs.df_errors import (
@@ -25,6 +26,7 @@ from typeddfs.df_errors import (
 )
 from typeddfs.file_formats import CompressionFormat, FileFormat
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
+from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 from typeddfs.utils import Utils
@@ -55,7 +57,6 @@ class TypedDfs:
     MissingColumnError = MissingColumnError
     UnexpectedColumnError = UnexpectedColumnError
     UnexpectedIndexNameError = UnexpectedIndexNameError
-    ExtraConditionFailedError = VerificationFailedError
     UnsupportedOperationError = UnsupportedOperationError
     FilenameSuffixError = FilenameSuffixError
     NonStrColumnError = NonStrColumnError
@@ -183,10 +184,11 @@ typed = TypedDfs.typed
 untyped = TypedDfs.untyped
 matrix = TypedDfs.matrix
 affinity_matrix = TypedDfs.affinity_matrix
+wrap = TypedDfs.wrap
+example = TypedDfs.example
 
 
 __all__ = [
-    "FinalDf",
     "TypedDfs",
     "Utils",
     "Checksums",
@@ -195,4 +197,15 @@ __all__ = [
     "FrozeList",
     "FileFormat",
     "CompressionFormat",
+    "typed",
+    "untyped",
+    "matrix",
+    "affinity_matrix",
+    "wrap",
+    "example",
+    "TypedDf",
+    "MatrixDf",
+    "AffinityMatrixDf",
+    "FinalDf",
+    "BaseDf",
 ]

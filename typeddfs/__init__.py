@@ -3,20 +3,35 @@ Metadata and top-level declarations for typeddfs.
 """
 from __future__ import annotations
 
-import logging
-from importlib.metadata import PackageNotFoundError
+import logging as __logging
+from importlib.metadata import PackageNotFoundError as __PackageNotFoundError
 from importlib.metadata import metadata as __load
 from pathlib import Path
 
-from typeddfs._entries import FinalDf, TypedDfs
-from typeddfs.base_dfs import BaseDf
-from typeddfs.file_formats import FileFormat
-from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
-from typeddfs.typed_dfs import TypedDf
-from typeddfs.untyped_dfs import UntypedDf
+from typeddfs._entries import (
+    AffinityMatrixDf,
+    BaseDf,
+    Checksums,
+    CompressionFormat,
+    FileFormat,
+    FinalDf,
+    FrozeDict,
+    FrozeList,
+    FrozeSet,
+    MatrixDf,
+    TypedDf,
+    TypedDfs,
+    Utils,
+    affinity_matrix,
+    example,
+    matrix,
+    typed,
+    untyped,
+    wrap,
+)
 
-logger = logging.getLogger(Path(__file__).parent.name)
-pkg = Path(__file__).absolute().parent.name
+logger = __logging.getLogger(Path(__file__).parent.name)
+__pkg = Path(__file__).absolute().parent.name
 metadata = None
 try:
     metadata = __load(Path(__file__).parent.name)
@@ -31,17 +46,5 @@ try:
     __author__ = metadata["author"]
     __maintainer__ = metadata["maintainer"]
     __contact__ = metadata["maintainer"]
-except PackageNotFoundError:  # pragma: no cover
-    logger.error(f"Could not load package metadata for {pkg}. Is it installed?")
-
-
-__all__ = [
-    "BaseDf",
-    "UntypedDf",
-    "TypedDf",
-    "FinalDf",
-    "MatrixDf",
-    "AffinityMatrixDf",
-    "TypedDfs",
-    "FileFormat",
-]
+except __PackageNotFoundError:  # pragma: no cover
+    logger.error(f"Could not load package metadata for {__pkg}. Is it installed?")
