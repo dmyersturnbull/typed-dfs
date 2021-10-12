@@ -184,10 +184,10 @@ class TestReadWrite:
             (".xlsx", "xlsx"),
             (".xls", "xls"),
             (".xlsb", "xlsb"),
-            (".xml", "xml"),
             (".ods", "ods"),
             (".pickle", "pickle"),
         ]:
+            # TODO: include xml
             for dtype in dtypes:
                 with tmpfile(suffix) as path:
                     try:

@@ -9,7 +9,12 @@ from typing import Any, Callable, Optional, Sequence, Type, Union
 
 import pandas as pd
 
-from typeddfs._utils import _AUTO_DROPPED_NAMES, _DEFAULT_HASH_ALG, _FORBIDDEN_NAMES, _PICKLE_VR
+from typeddfs._utils import (
+    _AUTO_DROPPED_NAMES,
+    _DEFAULT_HASH_ALG,
+    _FORBIDDEN_NAMES,
+    _PICKLE_VR,
+)
 from typeddfs.base_dfs import BaseDf
 from typeddfs.checksums import Checksums
 from typeddfs.df_errors import ClashError, DfTypeConstructionError
@@ -42,6 +47,7 @@ class _GenericBuilder:
         self._classes = []
         self._remapped_suffixes = {}
         self._encoding = "utf8"
+        self._errors = "strict"
         self._read_kwargs = defaultdict(dict)
         self._write_kwargs = defaultdict(dict)
         self._methods = {}
@@ -272,8 +278,7 @@ class _GenericBuilder:
         Returns:
             This builder for chaining
         """
-        encoding = encoding.lower().replace("-", "")
-        self._encoding = encoding
+        self._encoding = encoding.lower().replace("-", "")
         return self
 
     def add_read_kwargs(self, fmt: Union[FileFormat, str], **kwargs) -> __qualname__:

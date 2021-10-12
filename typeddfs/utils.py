@@ -374,6 +374,7 @@ class Utils:
           - ``"platform"``: use ``sys.getdefaultencoding()`` on the fly
           - ``"utf8(bom)"``: use ``"utf-8-sig"`` on Windows; ``"utf-8"`` otherwise
           - ``"utf16(bom)"``: use ``"utf-16-sig"`` on Windows; ``"utf-16"`` otherwise
+          - ``"utf32(bom)"``: use ``"utf-32-sig"`` on Windows; ``"utf-32"`` otherwise
         """
         encoding = encoding.lower().replace("-", "")
         if encoding == "platform":
@@ -382,7 +383,31 @@ class Utils:
             encoding = "utf-8-sig" if os.name == "nt" else "utf-8"
         if encoding == "utf16(bom)":
             encoding = "utf-16-sig" if os.name == "nt" else "utf-16"
+        if encoding == "utf32(bom)":
+            encoding = "utf-32-sig" if os.name == "nt" else "utf-32"
         return encoding
+
+    @classmethod
+    def get_encoding_errors(cls, errors: Optional[str]) -> Optional[str]:
+        """
+        Returns the value passed as``errors=`` in ``open``.
+        Raises:
+            ValueError: If invalid
+        """
+        if errors is None:
+            return "strict"
+        if errors in (
+            "strict",
+            "ignore",
+            "replace",
+            "xmlcharrefreplace",
+            "backslashreplace",
+            "namereplace",
+            "surrogateescape",
+            "surrogatepass",
+        ):
+            return errors
+        raise ValueError(f"Invalid value {errors} for errors")
 
     @classmethod
     def natsort(

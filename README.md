@@ -77,7 +77,7 @@ Auto-fix your dataframe and check that it conforms?
 Film.of(df)  # fixes dtypes, etc.; fails if a col is missing
 ```
 
-[Read the docs 📚](https://typed-dfs.readthedocs.io/en/stable/) for more info.
+**[Read the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more info and examples.
 
 ### 🐛 Pandas serialization bugs fixed
 
@@ -94,10 +94,6 @@ Depending on the format and columns, these issues occur:
 - writing a file and reading it back results in a different DataFrame,
 - you can’t write fixed-width format,
 - and the platform text encoding being used rather than utf-8.
-
-### 🎁️ New methods, etc.
-
-Docs coming soon...
 
 All of the normal DataFrame methods are available.
 Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce requirements.

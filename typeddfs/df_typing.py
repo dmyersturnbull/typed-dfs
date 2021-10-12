@@ -4,13 +4,25 @@ Information about how DataFrame subclasses should be handled.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Mapping, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from typeddfs._core_dfs import CoreDf
 
 # noinspection PyUnresolvedReferences
 from typeddfs._utils import _FLEXWF_SEP, _TOML_AOT
 from typeddfs.file_formats import FileFormat
+from typeddfs.utils import Utils
 
 T = TypeVar("T", bound=CoreDf, covariant=True)
 
@@ -142,6 +154,10 @@ class IoTyping(Generic[T]):
         See the docs in ``TypedDfs.typed().encoding`` for details.
         """
         return self._text_encoding
+
+    @property
+    def is_text_encoding_utf(self) -> bool:
+        return Utils.get_encoding(self._text_encoding) in ["utf-8", "utf-16", "utf-32"]
 
     @property
     def read_kwargs(self) -> Mapping[FileFormat, Mapping[str, Any]]:
