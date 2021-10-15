@@ -10,7 +10,9 @@ import inspect
 import os
 import sys
 import typing
-from datetime import datetime, timedelta, tzinfo
+from datetime import date, datetime
+from datetime import time as _time
+from datetime import timedelta, tzinfo
 from decimal import Decimal
 from pathlib import Path
 from typing import (
@@ -33,6 +35,7 @@ from typing import (
     Union,
     ValuesView,
 )
+from uuid import UUID
 
 import numpy as np
 import orjson
@@ -605,38 +608,52 @@ class Utils:
         Raise:
             TypeError: If none of those options worked
         """
-        if (
+        if obj is None:
+            return obj  # we should never get here, but this seems safer
+        elif isinstance(obj, (str, int, float, datetime, date, _time, UUID)):
+            return obj  # we should never get here, but let's be safe
+        elif (
             isinstance(obj, Decimal)
             or isinstance(obj, complex)
             or isinstance(obj, np.complexfloating)
         ):
             return str(obj)
-        if isinstance(obj, (AbstractSet, Sequence, KeysView, ValuesView)):
-            return list(obj)
-        if isinstance(obj, (Mapping, ItemsView)):
-            return dict(obj)
-        if isinstance(obj, enum.Enum):
+        elif isinstance(obj, enum.Enum):
             return obj.name
-        if isinstance(obj, bytes):
+        elif isinstance(obj, bytes):
             return base64.b64decode(obj)
-        if isinstance(obj, ByteString):
+        elif isinstance(obj, ByteString):
             return base64.b64decode(bytes(obj))
-        if isinstance(obj, tzinfo):
+        elif isinstance(obj, tzinfo):
             return obj.tzname(datetime.now(tz=obj))
-        if isinstance(obj, tuple) and hasattr(obj, "_asdict"):
+        elif isinstance(obj, (AbstractSet, Sequence, KeysView, ValuesView)):
+            return list(obj)
+        elif isinstance(obj, (Mapping, ItemsView)):
+            return dict(obj)
+        elif isinstance(obj, tuple) and hasattr(obj, "_asdict"):
             # namedtuple
             return obj._asdict()
-        if inspect.isclass(obj) or inspect.ismodule(obj):
+        elif inspect.isclass(obj) or inspect.ismodule(obj):
             return obj.__qualname__
         raise TypeError
 
     @classmethod
-    def new_orjson_default(cls, *fallbacks: Optional[Callable[[Any], Any]]) -> Callable[[Any], Any]:
+    def orjson_new_default(
+        cls,
+        *fallbacks: Optional[Callable[[Any], Any]],
+        first: Optional[Callable[[Any], Any]] = orjson_default,
+        last: Optional[Callable[[Any], Any]] = str,
+    ) -> Callable[[Any], Any]:
         """
         Creates a new method to be passed as ``default=`` to ``orjson.dumps``.
         Tries, in order: :meth:`orjson_default`, ``fallbacks``, then ``str``.
+
+        Args:
+            first: Try this first
+            fallbacks: Tries these, in order, after ``first``, skipping any None
+            last: Use this as the last resort; consider ``str`` or ``repr``
         """
-        then = [cls.orjson_default, *[f for f in fallbacks if f is not None]]
+        then = [f for f in [first, *fallbacks] if f is not None]
 
         def _default(obj):
             for t in then:
@@ -644,9 +661,11 @@ class Utils:
                     return t(obj)
                 except TypeError:
                     pass
-            return str(obj)
+                if last is None:
+                    raise TypeError
+                return last(obj)
 
-        _default.__name__ = f"default({len(fallbacks)})"
+        _default.__name__ = f"default({', '.join([t.__name__ for t in then])})"
         return _default
 
     @classmethod
@@ -655,7 +674,7 @@ class Utils:
         data: Union[Sequence[Any], Mapping[Any, Any]],
         *,
         preserve_inf: bool = True,
-        default=None,
+        default: Optional[Callable[[Any], Any]] = None,
         sort: bool = False,
     ) -> str:
         """
@@ -665,7 +684,8 @@ class Utils:
         Args:
             data: List or mapping
             preserve_inf: Preserve infinite values with :meth:`orjson_preserve_inf`
-            default: Fall back to this function if :meth:`orjson_default`
+            default: Fall back to this function;
+                      uses :meth:`orjson_new_default()` by default
             sort: Sort keys with ``orjson.OPT_SORT_KEYS``
         """
         option = orjson.OPT_UTC_Z | orjson.OPT_INDENT_2
@@ -690,7 +710,8 @@ class Utils:
         Args:
             data: List or mapping
             preserve_inf: Preserve infinite values with :meth:`orjson_preserve_inf`
-            default: Fall back to this function if :meth:`orjson_default`
+            default: Fall back to this function;
+                      uses :meth:`orjson_new_default()` by default
             sort: Sort keys with ``orjson.OPT_SORT_KEYS``
         """
         option = orjson.OPT_UTC_Z
@@ -699,9 +720,7 @@ class Utils:
         return cls._orjson_dump(data, fix=preserve_inf, default=default, option=option)
 
     @classmethod
-    def orjson_preserve_inf(
-        cls, data: Union[Sequence[Any], Mapping[Any, Any]]
-    ) -> Union[Sequence[Any], Mapping[Any, Any]]:
+    def orjson_preserve_inf(cls, data: Any) -> Any:
         """
         Recursively replaces infinite float and numpy values with strings.
         Orjson encodes NaN, inf, and +inf as JSON null.
@@ -736,13 +755,14 @@ class Utils:
         data: Union[Sequence[Any], Mapping[Any, Any]],
         *,
         fix: bool = True,
-        default=None,
-        option=0,
+        default: Optional[Callable[[Any], Any]] = None,
+        option: int = 0,
     ) -> bytes:
-        _default = cls.new_orjson_default(default)
+        if default is None:
+            default = cls.orjson_new_default()
         if fix:
             data = cls.orjson_preserve_inf(data)
-        return orjson.dumps(data, default=_default, option=option)
+        return orjson.dumps(data, default=default, option=option)
 
     @classmethod
     def _ns_info_from_int_flag(cls, flags: int) -> Tuple[Set[str], int]:

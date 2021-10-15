@@ -15,7 +15,7 @@ class TestBuilders:
         assert Checksums.get_algorithm("sha-256") == "sha256"
 
     def test_update(self):
-        assert Checksums.get_updated_hashes({}, {}) == ChecksumMappingOpt({})
+        assert Checksums().get_updated_hashes({}, {}) == ChecksumMappingOpt({})
         original = {Path("cat"): "0x5", "ok": "0x63"}
         update = {"cat": None, "other": "wads"}
         expected = {
@@ -23,16 +23,16 @@ class TestBuilders:
             Path("ok").resolve(): "0x63",
             Path("other").resolve(): "wads",
         }
-        assert Checksums.get_updated_hashes(original, update) == ChecksumMappingOpt(expected)
+        assert Checksums().get_updated_hashes(original, update) == ChecksumMappingOpt(expected)
         with pytest.raises(HashExistsError):
-            Checksums.get_updated_hashes({"x": "5"}, {"x": "5"}, overwrite=False)
-        assert Checksums.get_updated_hashes({"x": "5"}, {"x": "5"}, overwrite=None) == {
+            Checksums().get_updated_hashes({"x": "5"}, {"x": "5"}, overwrite=False)
+        assert Checksums().get_updated_hashes({"x": "5"}, {"x": "5"}, overwrite=None) == {
             Path("x").resolve(): "5"
         }
         with pytest.raises(HashContradictsExistingError):
-            Checksums.get_updated_hashes({"x": "5"}, {"x": "4"}, overwrite=None)
+            Checksums().get_updated_hashes({"x": "5"}, {"x": "4"}, overwrite=None)
         with pytest.raises(HashFilenameMissingError):
-            Checksums.get_updated_hashes({}, {"x": "4"}, missing_ok=False)
+            Checksums().get_updated_hashes({}, {"x": "4"}, missing_ok=False)
 
 
 if __name__ == "__main__":

@@ -12,69 +12,53 @@
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/dmyersturnbull/typed-dfs/?branch=main)
 [![Created with Tyrannosaurus](https://img.shields.io/badge/Created_with-Tyrannosaurus-0000ff.svg)](https://github.com/dmyersturnbull/tyrannosaurus)
 
-Pandas DataFrame subclasses that self-organize and read/write correctly.
+Pandas DataFrame subclasses that self-organize and serialize robustly.
 
 ```python
 Film = TypedDfs.typed("Film").require("name", "studio", "year").build()
 df = Film.read_csv("file.csv")
 assert df.columns.tolist() == ["name", "studio", "year"]
+type(df)  # Film
 ```
 
-Your types will remember how they’re supposed to be read,
-including dtypes, columns for set_index, and custom requirements.
-Then you can stop passing index_cols=, header=, set_index, and astype each time you read.
-Instead, `read_csv`, `read_parquet`, ..., will just work.
+Your types remember how to be read,
+including columns, dtypes, indices, and custom requirements.
+No index_cols=, header=, set_index, or astype needed.
 
-You can also document your functions clearly,
-and read and write _any_ format in a single file.
+**Read and write any format:**
 
 ```python
-def hello(df: Film):
-    print("read!")
-
-
-df = Film.read_file(
-    input("input file? [.csv/.tsv/.tab/.feather/.snappy/.json.gz/.h5/...]")
-)
-hello(df)
+path = input("input file? [.csv/.tsv/.tab/.json/.xml.bz2/.feather/.snappy.h5/...]")
+df = Film.read_file(path)
 ```
 
-You can read/write TOML, INI, .properties, fixed-width format, and any compressed variants.
-
-Need dataclasses?
+**Need dataclasses?**
 
 ```python
 instances = df.to_dataclass_instances()
 Film.from_dataclass_instances(instances)
 ```
 
-Want to save metadata?
+**Save metadata?**
 
 ```python
-df = df.set_attrs(timestamp=datetime.now().isoformat())
-df.write_file("df.csv", attrs=True)  # saved to a corresponding metadata file
+df = df.set_attrs(dataset="piano")
+df.write_file("df.csv", attrs=True)
 df = Film.read_file("df.csv", attrs=True)
-print(df.attrs)  # e.g. {"timestamp": "2021-04-15T09:32:11Z")
+print(df.attrs)  # e.g. {"dataset": "piano")
 ```
 
-Make dirs? Don't replace?
+**Make dirs? Don't overwrite?**
 
 ```python
-df.write_file("df.csv", mkdirs=True, overwrite=False)  # fails if it already exists
+df.write_file("df.csv", mkdirs=True, overwrite=False)
 ```
 
-Write a hash (e.g. .sha256sum)?
+**Write and verify checksum?**
 
 ```python
 df.write_file("df.csv", file_hash=True)
-# check it?
-Film.read_file("df.csv", file_hash=True)  # fails if wrong
-```
-
-Auto-fix your dataframe and check that it conforms?
-
-```python
-Film.of(df)  # fixes dtypes, etc.; fails if a col is missing
+df = Film.read_file("df.csv", file_hash=True)  # fails if wrong
 ```
 
 **[Read the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more info and examples.
@@ -94,10 +78,10 @@ Depending on the format and columns, these issues occur:
 - writing a file and reading it back results in a different DataFrame,
 - you can’t write fixed-width format,
 - and the platform text encoding being used rather than utf-8.
+- invalid JSON is written via the built-in json library
 
-All of the normal DataFrame methods are available.
-Use `.untyped()` or `.vanilla()` to make a detyped copy that doesn’t enforce requirements.
-Use `.of(df)` to convert a DataFrame to your type.
+All standard DataFrame methods remain available.
+Use `.untyped()` or `.vanilla()` if needed, and `.of(df)` for the inverse.
 
 ### 💔 Limitations
 

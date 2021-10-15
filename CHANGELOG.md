@@ -3,7 +3,7 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.14.5] - 2021-10-14
+## [0.15.0] - 2021-10-16
 
 ### Added
 
@@ -12,12 +12,15 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ### Changed
 
+- Checksums now holds the encoding
 - `use_filename=False` by default (was `None`)
 - attrs now written with `orjson` and custom default
+- orjson is now required
 
 ### Fixed
 
 - `attrs=True` less brittle
+- Pandas >= 1.3 is explicitly required; this was already effectively true
 
 ## [0.14.4] - 2021-10-12
 

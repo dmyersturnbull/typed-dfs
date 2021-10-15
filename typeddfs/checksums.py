@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import os
 from collections import UserDict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Optional, Sequence, Union
 
@@ -59,19 +60,19 @@ class ChecksumMappingOpt(UserDict[Path, Optional[str]]):
         return f"{v} *{path.name}"
 
 
+@dataclass(frozen=True, repr=True, order=True)
 class Checksums:
-    @classmethod
-    def default_algorithm(cls) -> str:
+    alg: str = _DEFAULT_HASH_ALG
+
+    def default_algorithm(self) -> str:
         return _DEFAULT_HASH_ALG
 
-    @classmethod
     def add_any_hashes(
-        cls,
+        self,
         path: PathLike,
         *,
         to_file: bool,
         to_dir: bool,
-        algorithm: str = _DEFAULT_HASH_ALG,
         overwrite: Optional[bool] = True,
     ) -> Optional[str]:
         """
@@ -81,60 +82,49 @@ class Checksums:
             path: Path to the file to hash
             to_file: Whether to save a per-file hash
             to_dir: Whether to save a per-dir hash
-            algorithm: The algorithm
             overwrite: If True, overwrite the file hash and any entry in the dir hash.
                        If False, never overwrite either.
                        If None, never overwrite, but ignore if equal to any existing entries.
         """
         path = Path(path)
-        algorithm = cls.get_algorithm(algorithm)
-        hash_file_path = cls.get_hash_file(path, algorithm=algorithm)
-        hash_dir_path = cls.get_hash_dir(path, algorithm=algorithm)
+        hash_file_path = self.get_hash_file(path)
+        hash_dir_path = self.get_hash_dir(path)
         if to_file and hash_file_path.exists() and overwrite is False:  # check first -- save time
             raise HashFileExistsError(f"Hash file {path} already exists", key=str(path))
         if not to_file and not to_dir:
             return None
-        digest = cls.calc_hash(path, algorithm=algorithm)
+        digest = self.calc_hash(path)
         if to_file:
-            cls._add_file_hash(path, hash_file_path, digest, overwrite=overwrite, dry_run=False)
+            self._add_file_hash(path, hash_file_path, digest, overwrite=overwrite, dry_run=False)
         if to_dir:
-            cls.append_dir_hashes(hash_dir_path, {path: digest}, overwrite=overwrite)
+            self.append_dir_hashes(hash_dir_path, {path: digest}, overwrite=overwrite)
         return digest
 
-    @classmethod
-    def add_file_hash(
-        cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG, overwrite: bool = True
-    ) -> str:
+    def add_file_hash(self, path: PathLike, *, overwrite: bool = True) -> str:
         """
         Calculates the hash of ``path`` and adds it to a file ``path+"."+alg``.
 
         Args:
             path: The path to a file to compute the hash of (in binary mode)
-            algorithm: The name of the hashlib algorithm
             overwrite: If False, error if the hash file already exists
 
         Returns:
             The hex-encoded hash
         """
         path = Path(path)
-        algorithm = cls.get_algorithm(algorithm)
-        hash_path = path.with_suffix(path.suffix + f".{algorithm}")
+        hash_path = path.with_suffix(path.suffix + f".{self.alg}")
         if hash_path.exists() and not overwrite:  # check first -- save time
             raise HashFileExistsError(f"Hash file {path} already exists", key=str(path))
-        digest = cls.calc_hash(path)
-        cls._add_file_hash(path, hash_path, digest, overwrite=overwrite, dry_run=False)
+        digest = self.calc_hash(path)
+        self._add_file_hash(path, hash_path, digest, overwrite=overwrite, dry_run=False)
         return digest
 
-    @classmethod
-    def append_dir_hash(
-        cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG, overwrite: Optional[bool] = True
-    ) -> str:
+    def append_dir_hash(self, path: PathLike, *, overwrite: Optional[bool] = True) -> str:
         """
         Calculates the hash of ``path`` and appends it to a file ``dir/(dir+"."+alg)``.
 
         Args:
             path: The path to a file to compute the hash of (in binary mode)
-            algorithm: The name of the hashlib algorithm
             overwrite: If True, overwrite the file hash and any entry in the dir hash.
                        If False, never overwrite either.
                        If None, never overwrite, but ignore if equal to any existing entries.
@@ -143,21 +133,17 @@ class Checksums:
             The hex-encoded hash
         """
         path = Path(path)
-        hash_path = cls.get_hash_dir(path, algorithm=algorithm)
-        digest = cls.calc_hash(path)
-        cls.append_dir_hashes(hash_path, {path: digest}, overwrite=overwrite)
+        hash_path = self.get_hash_dir(path)
+        digest = self.calc_hash(path)
+        self.append_dir_hashes(hash_path, {path: digest}, overwrite=overwrite)
         return digest
 
-    @classmethod
-    def verify_hash_from_hex(
-        cls, path: PathLike, expected: str, *, algorithm: str = _DEFAULT_HASH_ALG
-    ) -> Optional[str]:
+    def verify_hash_from_hex(self, path: PathLike, expected: str) -> Optional[str]:
         """
         Verifies a hash directly from a hex string.
         """
         path = Path(path)
-        algorithm = cls.get_algorithm(algorithm)
-        actual = cls.calc_hash(path, algorithm=algorithm)
+        actual = self.calc_hash(path)
         if actual != expected:
             raise HashDidNotValidateError(
                 f"Hash for {path}: calculated {actual} != expected {expected}",
@@ -166,34 +152,30 @@ class Checksums:
             )
         return actual
 
-    @classmethod
     def verify_any(
-        cls,
+        self,
         path: PathLike,
         *,
         file_hash: bool,
         dir_hash: bool,
         computed: Optional[str],
-        algorithm: str = _DEFAULT_HASH_ALG,
     ) -> Optional[str]:
         path = Path(path)
         if computed is not None:
-            cls.verify_hash_from_hex(path, computed)
+            self.verify_hash_from_hex(path, computed)
         if file_hash or dir_hash:
-            computed = cls.calc_hash(path, algorithm=algorithm)
-            if file_hash:
-                cls.verify_file_hash(path, algorithm=algorithm, computed=computed)
-            if dir_hash:
-                cls.verify_dir_hash(path, algorithm=algorithm, computed=computed)
+            computed = self.calc_hash(path)
+        if file_hash:
+            self.verify_file_hash(path, computed=computed)
+        if dir_hash:
+            self.verify_dir_hash(path, computed=computed)
         return computed
 
-    @classmethod
     def verify_hash_from_file(
-        cls,
+        self,
         path: PathLike,
         hash_path: Path,
         *,
-        algorithm: Optional[str] = None,
         computed: Optional[str] = None,
     ) -> Optional[str]:
         """
@@ -204,27 +186,20 @@ class Checksums:
         Args:
             path: The file to calculate the (binary mode) hash of
             hash_path: The path to the hash file
-            algorithm: The algorithm in hashlib (ignored if ``computed`` is passed)
             computed: A pre-computed hex-encoded hash; if set, do not calculate from ``path``
         """
         path = Path(path)
-        if algorithm is None:
-            algorithm = cls.guess_algorithm(hash_path)
-        else:
-            algorithm = cls.get_algorithm(algorithm)
         if not hash_path.exists():
             raise HashFileMissingError(f"No hash file {hash_path} found", key=str(hash_path))
         if computed is None:
-            computed = cls.calc_hash(path, algorithm=algorithm)
-        cls._verify_file_hash(path, hash_path, computed, use_filename=False)
+            computed = self.calc_hash(path)
+        self._verify_file_hash(path, hash_path, computed, use_filename=False)
         return computed
 
-    @classmethod
     def verify_file_hash(
-        cls,
+        self,
         path: PathLike,
         *,
-        algorithm: str = _DEFAULT_HASH_ALG,
         use_filename: Optional[bool] = False,
         computed: Optional[str] = None,
     ) -> str:
@@ -235,7 +210,6 @@ class Checksums:
 
         Args:
             path: The file to calculate the (binary mode) hash of
-            algorithm: The algorithm in hashlib (ignored if ``computed`` is passed)
             use_filename: If True, require the filename in the hash file to match ``path.name``;
                           If False, ignore the filename but require exactly 1 filename listed
                           If None, use either the single filename or the one for path.name.
@@ -250,26 +224,21 @@ class Checksums:
             HashDidNotValidateError: If the hashes are not equal
         """
         path = Path(path)
-        hash_path = cls.get_hash_file(path, algorithm=algorithm)
-        algorithm = cls.get_algorithm(algorithm)
+        hash_path = self.get_hash_file(path)
         if not hash_path.exists():
             raise HashFileMissingError(f"No hash file {hash_path} found", key=str(hash_path))
         if computed is None:
-            computed = cls.calc_hash(path, algorithm=algorithm)
-        cls._verify_file_hash(path, hash_path, computed, use_filename)
+            computed = self.calc_hash(path)
+        self._verify_file_hash(path, hash_path, computed, use_filename)
         return computed
 
-    @classmethod
-    def verify_dir_hash(
-        cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG, computed: Optional[str] = None
-    ) -> str:
+    def verify_dir_hash(self, path: PathLike, *, computed: Optional[str] = None) -> str:
         """
         Verifies a file against is corresponding per-directory hash file.
         The filename ``path.name`` must be listed in the file.
 
         Args:
             path: The file to calculate the (binary mode) hash of
-            algorithm: The algorithm in hashlib (ignored if ``computed`` is passed)
             computed: A pre-computed hex-encoded hash; if set, do not calculate from ``path``
 
         Returns:
@@ -283,32 +252,28 @@ class Checksums:
                                     the filename is not listed, etc.
         """
         path = Path(path)
-        hash_path = cls.get_hash_dir(path, algorithm=algorithm)
-        algorithm = cls.get_algorithm(algorithm)
+        hash_path = self.get_hash_dir(path)
         if not hash_path.exists():
             raise HashFileMissingError(f"No hash file {hash_path} found", key=str(hash_path))
         if not path.exists():
             raise FileNotFoundError(f"Path {path} not found")
         if computed is None:
-            computed = cls.calc_hash(path, algorithm=algorithm)
-        cls._verify_file_hash(path, hash_path, computed, True)
+            computed = self.calc_hash(path)
+        self._verify_file_hash(path, hash_path, computed, True)
         return computed
 
-    @classmethod
-    def calc_hash(cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG) -> str:
+    def calc_hash(self, path: PathLike) -> str:
         """
         Calculates the hash of a file and returns it, hex-encoded.
         """
         path = Path(path)
-        algorithm = cls.get_algorithm(algorithm)
-        alg = getattr(hashlib, algorithm)()
+        alg = getattr(hashlib, self.alg)()
         with path.open("rb") as f:
             for chunk in iter(lambda: f.read(16 * 1024), b""):
                 alg.update(chunk)
         return alg.hexdigest()
 
-    @classmethod
-    def parse_hash_file_resolved(cls, path: PathLike) -> ChecksumMapping:
+    def parse_hash_file_resolved(self, path: PathLike) -> ChecksumMapping:
         """
         Reads a hash file, resolving each read path.
 
@@ -324,13 +289,12 @@ class Checksums:
         return ChecksumMapping(
             {
                 Path(path.parent, *k.split("/")).resolve(): v
-                for k, v in cls.parse_hash_file_generic(path).items()
+                for k, v in self.parse_hash_file_generic(path).items()
             }
         )
 
-    @classmethod
     def parse_hash_file_generic(
-        cls, path: PathLike, *, forbid_slash: bool = False
+        self, path: PathLike, *, forbid_slash: bool = False
     ) -> Mapping[str, str]:
         """
         Reads a hash file.
@@ -365,20 +329,18 @@ class Checksums:
                 raise ValueError(f"Subdirectory (containing /): {slashed} in {path}")
         return kv
 
-    @classmethod
-    def get_dir_hash(cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG) -> Optional[str]:
+    def get_dir_hash(self, path: PathLike) -> Optional[str]:
         """
         Reads the dir hash corresponding to a file, or None if it does not exist.
         The path is not resolved (symlinks are not followed, and ``path`` is not normalized.)
         """
         path = Path(path)
-        dir_hash = cls.get_hash_dir(path, algorithm=algorithm)
+        dir_hash = self.get_hash_dir(path)
         if dir_hash.exists():
-            return cls.parse_hash_file_generic(dir_hash).get(path.name)
+            return self.parse_hash_file_generic(dir_hash).get(path.name)
         return None
 
-    @classmethod
-    def get_file_hash(cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG) -> Optional[str]:
+    def get_file_hash(self, path: PathLike) -> Optional[str]:
         """
         Reads the hash file corresponding to a file, or None if it does not exist.
         The hash file may only contain 1 entry, and that filename need not match.
@@ -387,17 +349,16 @@ class Checksums:
             MultipleHashFilenamesError: If multiple files are listed in the hash file
         """
         path = Path(path)
-        file_hash = cls.get_hash_file(path, algorithm=algorithm)
+        file_hash = self.get_hash_file(path)
         if file_hash.exists():
-            hashes = cls.parse_hash_file_generic(file_hash, forbid_slash=True)
+            hashes = self.parse_hash_file_generic(file_hash, forbid_slash=True)
             try:
-                return cls._find_entry(path, file_hash, hashes, use_filename=False)
+                return self._find_entry(path, file_hash, hashes, use_filename=False)
             except HashFilenameMissingError:
                 return None
         return None
 
-    @classmethod
-    def get_hash_file(cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG) -> Path:
+    def get_hash_file(self, path: PathLike) -> Path:
         """
         Returns the path required for the per-file hash of ``path``.
 
@@ -405,11 +366,9 @@ class Checksums:
             ``Utils.get_hash_file("my_file.txt.gz")  # Path("my_file.txt.gz.sha256")``
         """
         path = Path(path)
-        algorithm = cls.get_algorithm(algorithm)
-        return path.with_suffix(path.suffix + "." + algorithm)
+        return path.with_suffix(path.suffix + "." + self.alg)
 
-    @classmethod
-    def get_hash_dir(cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG) -> Path:
+    def get_hash_dir(self, path: PathLike) -> Path:
         """
         Returns the path required for the per-directory hash of ``path``.
 
@@ -417,8 +376,7 @@ class Checksums:
             ``Utils.get_hash_file(Path("my_dir, my_file.txt.gz"))  # Path("my_dir", "my_dir.sha256")``
         """
         path = Path(path)
-        algorithm = cls.get_algorithm(algorithm)
-        return path.parent / (path.parent.name + "." + algorithm)
+        return path.parent / (path.parent.name + "." + self.alg)
 
     @classmethod
     def guess_algorithm(cls, path: PathLike) -> str:
@@ -432,17 +390,15 @@ class Checksums:
             ``Utils.guess_algorithm("my_file.sha1")  # "sha1"``
         """
         path = Path(path)
-        algorithm = path.suffix.lstrip(".").lower().replace("-", "")
+        alg = path.suffix.lstrip(".").lower().replace("-", "")
         try:
-            getattr(hashlib, algorithm)
+            getattr(hashlib, alg)
         except AttributeError:
-            raise HashAlgorithmMissingError(
-                f"No hashlib algorithm {algorithm}", key=algorithm
-            ) from None
-        return algorithm
+            raise HashAlgorithmMissingError(f"No hashlib algorithm {alg}", key=alg) from None
+        return alg
 
     @classmethod
-    def get_algorithm(cls, algorithm: str) -> str:
+    def get_algorithm(cls, alg: str) -> str:
         """
         Finds a hash algorithm by name in :mod:`hashlib`.
         Converts to lowercase and removes hyphens.
@@ -450,39 +406,28 @@ class Checksums:
         Raises:
             HashAlgorithmMissingError: If not found
         """
-        algorithm = algorithm.lower().replace("-", "")
+        alg = alg.lower().replace("-", "")
         try:
-            getattr(hashlib, algorithm)
+            getattr(hashlib, alg)
         except AttributeError:
-            raise HashAlgorithmMissingError(
-                f"No hashlib algorithm {algorithm}", key=algorithm
-            ) from None
-        return algorithm
+            raise HashAlgorithmMissingError(f"No hashlib algorithm {alg}", key=alg) from None
+        return alg
 
-    @classmethod
-    def delete_dir_hash(
-        cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG, missing_ok: bool = False
-    ) -> None:
+    def delete_dir_hash(self, path: PathLike, *, missing_ok: bool = False) -> None:
         """
         Strips a single path from a dir hash file.
         Less flexible than :meth:`delete_dir_hashes` and :meth:`update_dir_hashes`.
         """
-        cls.delete_dir_hashes(
-            cls.get_hash_dir(path, algorithm=algorithm), [path], missing_ok=missing_ok
-        )
+        self.delete_dir_hashes(self.get_hash_dir(path), [path], missing_ok=missing_ok)
 
-    @classmethod
-    def delete_file_hash(
-        cls, path: PathLike, *, algorithm: str = _DEFAULT_HASH_ALG, missing_ok: bool = False
-    ) -> None:
+    def delete_file_hash(self, path: PathLike, *, missing_ok: bool = False) -> None:
         """
         Deletes the hash file of a file.
         """
-        cls.get_hash_file(path, algorithm=algorithm).unlink(missing_ok=missing_ok)
+        self.get_hash_file(path).unlink(missing_ok=missing_ok)
 
-    @classmethod
     def delete_dir_hashes(
-        cls,
+        self,
         hash_path: PathLike,
         delete: Iterable[PathLike],
         *,
@@ -493,13 +438,12 @@ class Checksums:
         Strips paths from a dir hash file.
         Like :meth:`update_dir_hashes` but less flexible and only for removing paths.
         """
-        cls.update_dir_hashes(
+        self.update_dir_hashes(
             hash_path, {p: None for p in delete}, missing_ok=missing_ok, overwrite=True, rm=rm
         )
 
-    @classmethod
     def append_dir_hashes(
-        cls,
+        self,
         hash_path: PathLike,
         append: Mapping[PathLike, str],
         *,
@@ -509,11 +453,10 @@ class Checksums:
         Append paths to a dir hash file.
         Like :meth:`update_dir_hashes` but less flexible and only for adding paths.
         """
-        cls.update_dir_hashes(hash_path, append, missing_ok=True, overwrite=overwrite)
+        self.update_dir_hashes(hash_path, append, missing_ok=True, overwrite=overwrite)
 
-    @classmethod
     def update_dir_hashes(
-        cls,
+        self,
         hash_path: PathLike,
         update: Union[Callable[[Path], Optional[PathLike]], Mapping[PathLike, Optional[PathLike]]],
         *,
@@ -540,8 +483,8 @@ class Checksums:
             rm: Delete the file if it contains no more hashes.
         """
         hash_path = Path(hash_path)
-        existing = cls.parse_hash_file_resolved(hash_path) if hash_path.exists() else {}
-        fixed = cls.get_updated_hashes(
+        existing = self.parse_hash_file_resolved(hash_path) if hash_path.exists() else {}
+        fixed = self.get_updated_hashes(
             existing, update, missing_ok=missing_ok, overwrite=overwrite, sort=sort
         )
         if len(fixed) == 0 and rm:
@@ -549,9 +492,8 @@ class Checksums:
         else:
             hash_path.write_text(os.linesep.join(fixed.lines), encoding="utf8")
 
-    @classmethod
     def get_updated_hashes(
-        cls,
+        self,
         existing: Mapping[PathLike, str],
         update: Union[Callable[[Path], Optional[PathLike]], Mapping[PathLike, Optional[PathLike]]],
         *,
@@ -571,7 +513,7 @@ class Checksums:
         fixed = {}
         for p, v in existing.items():
             v_new = update(p) if callable(update) else update.get(p, v)
-            fixed[p] = cls._get_updated_hash(
+            fixed[p] = self._get_updated_hash(
                 path=p,
                 new=v_new,
                 existing=existing,
@@ -581,7 +523,7 @@ class Checksums:
         if not callable(update):
             for p, v in update.items():
                 p = Path(p).resolve()
-                fixed[p] = cls._get_updated_hash(
+                fixed[p] = self._get_updated_hash(
                     path=p,
                     new=v,
                     existing=existing,
@@ -594,23 +536,21 @@ class Checksums:
             fixed = sort(fixed)
         return ChecksumMappingOpt(fixed)
 
-    @classmethod
     def _add_file_hash(
-        cls, path: Path, hash_path: Path, digest: str, *, overwrite: Optional[bool], dry_run: bool
+        self, path: Path, hash_path: Path, digest: str, *, overwrite: Optional[bool], dry_run: bool
     ) -> None:
         path = Path(path)
         if path.exists() and overwrite is False:
             raise HashFileExistsError(f"Hash file {path} already exists")
         if hash_path.exists() and overwrite is None:
-            cls.verify_file_hash(path, computed=digest)
+            self.verify_file_hash(path, computed=digest)
             # it's ok -- they're the same
         txt = f"{digest} *{path.name}"
         if not dry_run:
             hash_path.write_text(txt, encoding="utf-8")
 
-    @classmethod
     def _get_updated_hash(
-        cls,
+        self,
         *,
         path: Path,
         new: Optional[str],
@@ -643,13 +583,12 @@ class Checksums:
                 raise err[0](err[1], key=str(path), original=z, new=new)
         return new
 
-    @classmethod
     def _verify_file_hash(
-        cls, path: Path, hash_path: Path, actual: str, use_filename: Optional[bool]
+        self, path: Path, hash_path: Path, actual: str, use_filename: Optional[bool]
     ) -> None:
         path = Path(path)
-        hashes = cls.parse_hash_file_generic(hash_path)
-        expected = cls._find_entry(path, hash_path, hashes, use_filename=use_filename)
+        hashes = self.parse_hash_file_generic(hash_path)
+        expected = self._find_entry(path, hash_path, hashes, use_filename=use_filename)
         if actual != expected:
             raise HashDidNotValidateError(
                 f"Hash for {path} from {hash_path}: calculated {actual} != expected {expected}",
@@ -657,22 +596,19 @@ class Checksums:
                 expected=expected,
             )
 
-    @classmethod
-    def _find_entry(cls, path: Path, hash_path: Path, hashes, *, use_filename: Optional[bool]):
-        if (use_filename is None or use_filename is True) and path.name in hashes:
+    def _find_entry(self, path: Path, hash_path: Path, hashes, *, use_filename: Optional[bool]):
+        name = path.name
+        if (use_filename is None or use_filename is True) and name in hashes:
             return hashes[path.name]
-        elif not (use_filename is None or use_filename is False) and len(hashes) == 1:
+        elif (use_filename is None or use_filename is False) and len(hashes) == 1:
             return next(iter(hashes.values()))
-        elif len(hashes) > 1:
-            raise MultipleHashFilenamesError(
-                f"{hash_path} contains multiple filenames", key=str(path)
-            )
-        elif len(hashes) == 0:
-            raise HashFilenameMissingError(
-                f"{path} not found in {hash_path} (no hashes listed)", key=str(path)
-            )
+        elif len(hashes) > 1 and use_filename is False:
+            raise MultipleHashFilenamesError(f"{hash_path} contains multiple filenames", key=name)
         else:
-            raise HashFilenameMissingError(f"{path} not found in {hash_path}", key=str(path))
+            raise HashFilenameMissingError(
+                f"{name} not found in {hash_path}" + f" [listed: {', '.join(hashes.keys())}]",
+                key=name,
+            )
 
 
 __all__ = ["Checksums", "ChecksumMapping"]

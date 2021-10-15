@@ -3,6 +3,7 @@ import random
 from pathlib import Path
 from typing import Set, Type
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -365,9 +366,9 @@ class TestReadWrite:
         # \n vs \r\n is an issue, so we can't check the exact hash
         with tmpfile(".csv") as path:
             df.write_file(path, file_hash=True)
-            hash_file = Checksums.get_hash_file(path)
+            hash_file = Checksums().get_hash_file(path)
             assert hash_file.exists()
-            got = Checksums.parse_hash_file_resolved(hash_file)
+            got = Checksums().parse_hash_file_resolved(hash_file)
             assert list(got.keys()) == [path.resolve()]
             hit = got[path.resolve()]
             assert len(hit) == 64
@@ -378,11 +379,11 @@ class TestReadWrite:
         t = TypedDfBuilder("a").reserve("x", "y").build()
         df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
         with tmpfile(".csv") as path:
-            hash_dir = Checksums.get_hash_dir(path)
+            hash_dir = Checksums().get_hash_dir(path)
             hash_dir.unlink(missing_ok=True)
             df.write_file(path, dir_hash=True)
             assert hash_dir.exists()
-            got = Checksums.parse_hash_file_resolved(hash_dir)
+            got = Checksums().parse_hash_file_resolved(hash_dir)
             assert list(got.keys()) == [path.resolve()]
             hit = got[path.resolve()]
             assert len(hit) == 64
@@ -403,6 +404,22 @@ class TestReadWrite:
                 assert data == '{"fruit": "apple"}'
                 df = t.read_file(path, attrs=True)
                 assert df.attrs == {"fruit": "apple"}
+        finally:
+            if meta is not None:
+                meta.unlink(missing_ok=True)
+
+    def test_attrs_hard(self):
+        meta = None
+        try:
+            t = TypedDfBuilder("a").reserve("x", "y").build()
+            df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
+            df.attrs["matrix"] = np.zeros((2, 2))
+            with tmpfile(".csv") as path:
+                df.write_file(path, attrs=True)
+                meta = Path(str(path) + ".attrs.json")
+                assert meta.exists()
+                df = t.read_file(path, attrs=True)
+                assert df.attrs == {"matrix": [["0.0", "0.0"], ["0.0", "0.0"]]}
         finally:
             if meta is not None:
                 meta.unlink(missing_ok=True)

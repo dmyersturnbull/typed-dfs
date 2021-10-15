@@ -118,8 +118,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         path = Path(path)
         t = cls.get_typing()
         algorithm = t.io.hash_algorithm
-        Checksums.verify_any(
-            path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash, algorithm=algorithm
+        Checksums(alg=algorithm).verify_any(
+            path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash
         )
         df = cls._call_read(cls, path)
         if attrs:
@@ -191,8 +191,9 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         attrs = attrs is True or attrs is None and t.io.use_attrs
         attrs_path = path.parent / (path.name + t.io.attrs_suffix)
         attrs_data = Utils.orjson_str(self.attrs)  # make sure it's fine
-        file_hash_path = Checksums.get_hash_file(path, algorithm=t.io.hash_algorithm)
-        dir_hash_path = Checksums.get_hash_dir(path, algorithm=t.io.hash_algorithm)
+        cs = Checksums(alg=t.io.hash_algorithm)
+        file_hash_path = cs.get_hash_file(path)
+        dir_hash_path = cs.get_hash_dir(path)
         # check for overwrite errors now to preserve atomicity
         if not overwrite:
             if path.exists():
@@ -200,7 +201,8 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
             if file_hash and file_hash_path.exists():
                 raise FileExistsError(f"{file_hash_path} already exists")
             if dir_hash_path.exists():
-                dir_sums = Checksums.parse_hash_file_resolved(dir_hash_path)
+                cs = Checksums(alg=t.io.hash_algorithm)
+                dir_sums = cs.parse_hash_file_resolved(dir_hash_path)
                 if path in dir_sums:
                     raise
             if file_hash and file_hash_path.exists():
@@ -230,11 +232,11 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         z = self._call_write(path)
         # write the hashes
         # this shouldn't fail
-        Checksums.add_any_hashes(
+        cs = Checksums(alg=t.io.hash_algorithm)
+        cs.add_any_hashes(
             path,
             to_file=file_hash,
             to_dir=dir_hash,
-            algorithm=t.io.hash_algorithm,
             overwrite=overwrite,
         )
         # write dataset attributes
