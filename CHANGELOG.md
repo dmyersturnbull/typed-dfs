@@ -3,6 +3,22 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.14.5] - 2021-10-14
+
+### Added
+
+- New functions in `Checksums`
+- JSON encoding functions in `Utils`
+
+### Changed
+
+- `use_filename=False` by default (was `None`)
+- attrs now written with `orjson` and custom default
+
+### Fixed
+
+- `attrs=True` less brittle
+
 ## [0.14.4] - 2021-10-12
 
 ### Added

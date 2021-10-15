@@ -1,12 +1,26 @@
 import abc
-from typing import Any, Generator, Iterable, Mapping, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    Generator,
+    Iterable,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import pandas as pd
 from natsort import natsorted
 from pandas.core.frame import DataFrame as _InternalDataFrame
 
 from typeddfs._pretty_dfs import PrettyDf
-from typeddfs.df_errors import NoValueError, UnsupportedOperationError, ValueNotUniqueError
+from typeddfs.df_errors import (
+    NoValueError,
+    UnsupportedOperationError,
+    ValueNotUniqueError,
+)
 from typeddfs.utils import Utils
 
 
@@ -51,7 +65,7 @@ class CoreDf(PrettyDf, metaclass=abc.ABCMeta):
     def set_attrs(self, **attrs) -> __qualname__:
         """
         Sets ``pd.DataFrame.attrs``, returning a copy.
-        """ ""
+        """
         df = self.copy()
         df.attrs.update(attrs)
         return df

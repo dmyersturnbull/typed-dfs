@@ -6,12 +6,12 @@ from __future__ import annotations
 
 import abc
 import csv
-import json
 import os
 from pathlib import Path, PurePath
 from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
+import orjson
 import pandas as pd
 
 # noinspection PyProtectedMember
@@ -124,7 +124,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         df = cls._call_read(cls, path)
         if attrs:
             attrs_path = path.parent / (path.name + t.io.attrs_suffix)
-            json_data = json.loads(attrs_path.read_text(encoding="utf-8"))
+            json_data = orjson.loads(attrs_path.read_text(encoding="utf-8"))
             df.attrs.update(json_data)
         return cls._convert_typed(df)
 
@@ -190,6 +190,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         dir_hash = dir_hash is True or dir_hash is None and t.io.dir_hash
         attrs = attrs is True or attrs is None and t.io.use_attrs
         attrs_path = path.parent / (path.name + t.io.attrs_suffix)
+        attrs_data = Utils.orjson_str(self.attrs)  # make sure it's fine
         file_hash_path = Checksums.get_hash_file(path, algorithm=t.io.hash_algorithm)
         dir_hash_path = Checksums.get_hash_dir(path, algorithm=t.io.hash_algorithm)
         # check for overwrite errors now to preserve atomicity
@@ -239,8 +240,7 @@ class AbsDf(CoreDf, metaclass=abc.ABCMeta):
         # write dataset attributes
         # this also shouldn't fail
         if attrs:
-            attrs_data = json.dumps(self.attrs, ensure_ascii=False, indent=2)
-            attrs_path.write_text(attrs_data, encoding="utf-8")
+            attrs_path.write_text(attrs_data, encoding="utf8")
         return z
 
     @classmethod

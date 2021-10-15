@@ -3,18 +3,26 @@ Tools that could possibly be used outside of typed-dfs.
 """
 from __future__ import annotations
 
+import base64
 import collections
+import enum
+import inspect
 import os
 import sys
 import typing
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
+from decimal import Decimal
 from pathlib import Path
 from typing import (
     AbstractSet,
     Any,
+    ByteString,
+    Callable,
     Collection,
     Generator,
+    ItemsView,
     Iterator,
+    KeysView,
     Mapping,
     Optional,
     Sequence,
@@ -23,9 +31,11 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    ValuesView,
 )
 
 import numpy as np
+import orjson
 import regex
 from natsort import natsorted, ns, ns_enum
 from pandas import BooleanDtype, Interval, Period, StringDtype
@@ -570,6 +580,169 @@ class Utils:
         )
         kwargs = {**defaults, **kwargs}
         return TableFormat(**kwargs)
+
+    @classmethod
+    def orjson_default(cls, obj: Any) -> Any:
+        """
+        Tries to return a serializable result for ``obj``.
+        Meant to be passed as ``default=`` in ``orjson.dumps``.
+        Only encodes types that can always be represented exactly,
+        without any loss of information. For that reason, it does not
+        fall back to calling ``str`` or ``repr`` for unknown types.
+        Handles, at least:
+
+        - ``decimal.Decimal`` → str (scientific notation)
+        - ``complex`` or ``np.complexfloating`` → str (e.g. "(3+1j)")
+        - ``typing.Mapping`` → dict
+        - ``typing.ItemsView`` → dict
+        - ``typing.{AbstractSet,Sequence,...}`` → list
+        - ``enum.Enum`` → str (name)
+        - ``typing.ByteString`` →  str (base-64)
+        - ``datetime.tzinfo`` →  str (timezone name)
+        - ``typing.NamedTuple`` →  dict
+        - type or module →  str (name)
+
+        Raise:
+            TypeError: If none of those options worked
+        """
+        if (
+            isinstance(obj, Decimal)
+            or isinstance(obj, complex)
+            or isinstance(obj, np.complexfloating)
+        ):
+            return str(obj)
+        if isinstance(obj, (AbstractSet, Sequence, KeysView, ValuesView)):
+            return list(obj)
+        if isinstance(obj, (Mapping, ItemsView)):
+            return dict(obj)
+        if isinstance(obj, enum.Enum):
+            return obj.name
+        if isinstance(obj, bytes):
+            return base64.b64decode(obj)
+        if isinstance(obj, ByteString):
+            return base64.b64decode(bytes(obj))
+        if isinstance(obj, tzinfo):
+            return obj.tzname(datetime.now(tz=obj))
+        if isinstance(obj, tuple) and hasattr(obj, "_asdict"):
+            # namedtuple
+            return obj._asdict()
+        if inspect.isclass(obj) or inspect.ismodule(obj):
+            return obj.__qualname__
+        raise TypeError
+
+    @classmethod
+    def new_orjson_default(cls, *fallbacks: Optional[Callable[[Any], Any]]) -> Callable[[Any], Any]:
+        """
+        Creates a new method to be passed as ``default=`` to ``orjson.dumps``.
+        Tries, in order: :meth:`orjson_default`, ``fallbacks``, then ``str``.
+        """
+        then = [cls.orjson_default, *[f for f in fallbacks if f is not None]]
+
+        def _default(obj):
+            for t in then:
+                try:
+                    return t(obj)
+                except TypeError:
+                    pass
+            return str(obj)
+
+        _default.__name__ = f"default({len(fallbacks)})"
+        return _default
+
+    @classmethod
+    def orjson_str(
+        cls,
+        data: Union[Sequence[Any], Mapping[Any, Any]],
+        *,
+        preserve_inf: bool = True,
+        default=None,
+        sort: bool = False,
+    ) -> str:
+        """
+        Serializes to string with orjson, indenting and adding a trailing newline.
+        Uses :meth:`orjson_default` to encode more types than orjson can.
+
+        Args:
+            data: List or mapping
+            preserve_inf: Preserve infinite values with :meth:`orjson_preserve_inf`
+            default: Fall back to this function if :meth:`orjson_default`
+            sort: Sort keys with ``orjson.OPT_SORT_KEYS``
+        """
+        option = orjson.OPT_UTC_Z | orjson.OPT_INDENT_2
+        if sort:
+            option |= orjson.OPT_SORT_KEYS
+        b = cls._orjson_dump(data, fix=preserve_inf, default=default, option=option)
+        return b.decode(encoding="utf8") + "\n"  # adding \n is faster than OPT_APPEND_NEWLINE
+
+    @classmethod
+    def orjson_bytes(
+        cls,
+        data: Union[Sequence[Any], Mapping[Any, Any]],
+        *,
+        preserve_inf: bool = True,
+        default: Optional[Callable[[Any], Any]] = None,
+        sort: bool = False,
+    ) -> bytes:
+        """
+        Serializes to bytes with orjson.
+        Uses :meth:`orjson_default` to encode more types than orjson can.
+
+        Args:
+            data: List or mapping
+            preserve_inf: Preserve infinite values with :meth:`orjson_preserve_inf`
+            default: Fall back to this function if :meth:`orjson_default`
+            sort: Sort keys with ``orjson.OPT_SORT_KEYS``
+        """
+        option = orjson.OPT_UTC_Z
+        if sort:
+            option |= orjson.OPT_SORT_KEYS
+        return cls._orjson_dump(data, fix=preserve_inf, default=default, option=option)
+
+    @classmethod
+    def orjson_preserve_inf(
+        cls, data: Union[Sequence[Any], Mapping[Any, Any]]
+    ) -> Union[Sequence[Any], Mapping[Any, Any]]:
+        """
+        Recursively replaces infinite float and numpy values with strings.
+        Orjson encodes NaN, inf, and +inf as JSON null.
+        This function converts to string as needed to preserve infinite values.
+        Any float scalar (``np.floating`` and ``float``) will be replaced with a string.
+        Any ``np.ndarray``, whether it contains an infinite value or not, will be converted
+        to an ndarray of strings.
+        The returned result may still not be serializable with orjson or :meth:`orjson_bytes`.
+        Trying those methods is the best way to test for serializablity.
+        """
+        if isinstance(data, Mapping):
+            return {str(k): cls.orjson_preserve_inf(v) for k, v in data.items()}
+        elif (
+            isinstance(data, Sequence)
+            and not isinstance(data, str)
+            and not isinstance(data, ByteString)
+        ):
+            if all((isinstance(v, (float, np.floating)) and np.isinf(data)) for v in data):
+                return [str(v) for v in data]
+            else:
+                return [cls.orjson_preserve_inf(v) for v in data]
+        elif isinstance(data, (float, np.floating)) and np.isinf(data):
+            return str(data)
+        elif isinstance(data, np.ndarray):
+            # noinspection PyTypeChecker
+            return data.astype(str).tolist()
+        return data
+
+    @classmethod
+    def _orjson_dump(
+        cls,
+        data: Union[Sequence[Any], Mapping[Any, Any]],
+        *,
+        fix: bool = True,
+        default=None,
+        option=0,
+    ) -> bytes:
+        _default = cls.new_orjson_default(default)
+        if fix:
+            data = cls.orjson_preserve_inf(data)
+        return orjson.dumps(data, default=_default, option=option)
 
     @classmethod
     def _ns_info_from_int_flag(cls, flags: int) -> Tuple[Set[str], int]:
