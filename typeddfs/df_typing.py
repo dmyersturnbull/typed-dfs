@@ -4,6 +4,7 @@ Information about how DataFrame subclasses should be handled.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -12,10 +13,13 @@ from typing import (
     Optional,
     Sequence,
     Set,
+    Tuple,
     Type,
     TypeVar,
     Union,
 )
+
+import pandas as pd
 
 from typeddfs._core_dfs import CoreDf
 from typeddfs.file_formats import FileFormat
@@ -44,7 +48,7 @@ class IoTyping(Generic[T]):
     _hash_alg: Optional[str] = "sha256"
     _save_hash_file: bool = False
     _save_hash_dir: bool = False
-    _remap_suffixes: Mapping[str, FileFormat] = None
+    _remap_suffixes: Optional[Mapping[str, FileFormat]] = None
     _text_encoding: str = "utf-8"
     _read_kwargs: Optional[Mapping[FileFormat, Mapping[str, Any]]] = None
     _write_kwargs: Optional[Mapping[FileFormat, Mapping[str, Any]]] = None
@@ -53,6 +57,11 @@ class IoTyping(Generic[T]):
     _hdf_key: str = "df"
     _attrs_suffix: str = ".attrs.json"
     _use_attrs: bool = False
+    _attrs_json_kwargs: Optional[Mapping[str, Any]] = None
+    _remapped_read_kwargs: Optional[Mapping[str, Any]] = None
+    _remapped_write_kwargs: Optional[Mapping[str, Any]] = None
+    _custom_readers: Optional[Mapping[str, Callable[[Path], pd.DataFrame]]] = None
+    _custom_writers: Optional[Mapping[str, Callable[[pd.DataFrame, Path], None]]] = None
 
     @property
     def use_attrs(self) -> bool:
@@ -68,6 +77,14 @@ class IoTyping(Generic[T]):
         Will be appended to the DataFrame filename.
         """
         return self._attrs_suffix
+
+    @property
+    def attrs_json_kwargs(self) -> Mapping[str, Any]:
+        """
+        Keyword arguments for :class:`typeddfs.json_utils.JsonUtils.encoder`.
+        Used when writing attrs.
+        """
+        return self._attrs_json_kwargs
 
     @property
     def hdf_key(self) -> str:
@@ -182,6 +199,36 @@ class IoTyping(Generic[T]):
             This should rarely be needed
         """
         return _opt_dict(self._write_kwargs)
+
+    @property
+    def read_suffix_kwargs(self) -> Mapping[str, Mapping[str, Any]]:
+        """
+        Per-suffix kwargs into read functions from ``read_file``.
+        Modulo compression (e.g. .tsv is equivalent to .tsv.gz).
+        """
+        return _opt_dict(self._remapped_read_kwargs)
+
+    @property
+    def write_suffix_kwargs(self) -> Mapping[str, Mapping[str, Any]]:
+        """
+        Per-suffix kwargs into read functions from ``write_file``.
+        Modulo compression (e.g. .tsv is equivalent to .tsv.gz).
+        """
+        return _opt_dict(self._remapped_write_kwargs)
+
+    @property
+    def custom_readers(self) -> Mapping[str, Callable[[Path], pd.DataFrame]]:
+        """
+        Mapping from filename suffixes (module compression) to custom reading methods.
+        """
+        return _opt_dict(self._custom_readers)
+
+    @property
+    def custom_writers(self) -> Mapping[str, Callable[[pd.DataFrame, Path], None]]:
+        """
+        Mapping from filename suffixes (module compression) to custom reading methods.
+        """
+        return _opt_dict(self._custom_writers)
 
 
 FINAL_IO_TYPING = IoTyping()

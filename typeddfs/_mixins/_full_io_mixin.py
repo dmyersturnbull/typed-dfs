@@ -20,11 +20,12 @@ from typeddfs._mixins._json_xml_mixin import _JsonXmlMixin
 from typeddfs._mixins._lines_mixin import _LinesMixin
 from typeddfs._mixins._pickle_mixin import _PickleMixin
 from typeddfs.df_errors import (
+    FilenameSuffixError,
     FormatDiscouragedError,
     FormatInsecureError,
     UnsupportedOperationError,
 )
-from typeddfs.file_formats import FileFormat
+from typeddfs.file_formats import CompressionFormat, FileFormat
 from typeddfs.utils import Utils
 
 
@@ -40,10 +41,6 @@ class _FullIoMixin(
     _LinesMixin,
     _PickleMixin,
 ):
-    """
-    DataFrame that supports
-    """
-
     def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
         """
         Outputs a pretty table using the `tabulate <https://pypi.org/project/tabulate/>`_ package.
@@ -56,16 +53,13 @@ class _FullIoMixin(
         clazz,
         path: Union[Path, str],
     ) -> pd.DataFrame:
-        t = cls.get_typing().io
-        mp = FileFormat.suffix_map()
-        mp.update(t.remap_suffixes)
-        fmt = FileFormat.from_path(path, format_map=mp)
+        fmt = cls._get_fmt(path)
         # noinspection HttpUrlsUsage
         if isinstance(path, str) and path.startswith("http://"):
             raise UnsupportedOperationError("Cannot read from http with .secure() enabled")
         cls._check_io_ok(path, fmt)
-        kwargs = cls._get_read_kwargs(fmt)
-        fn = getattr(clazz, "read_" + fmt.name)
+        kwargs = cls._get_read_kwargs(fmt, path)
+        fn = cls._get_io(clazz, path, fmt, cls._get_write_kwargs(fmt, path), "read_")
         return fn(path, **kwargs)
 
     def _call_write(
@@ -73,19 +67,18 @@ class _FullIoMixin(
         path: Union[Path, str],
     ) -> Optional[str]:
         cls = self.__class__
-        t = cls.get_typing().io
-        mp = FileFormat.suffix_map()
-        mp.update(t.remap_suffixes)
-        fmt = FileFormat.from_path(path, format_map=mp)
-        self._check_io_ok(path, fmt)
-        kwargs = cls._get_write_kwargs(fmt)
-        fn = getattr(self, "to_" + fmt.name)
+        fmt = self._get_fmt(path)
+        cls._check_io_ok(path, fmt)
+        kwargs = cls._get_write_kwargs(fmt, path)
+        fn = self._get_io(self, path, fmt, cls._get_write_kwargs(fmt, path), "to_")
         return fn(path, **kwargs)
 
     @classmethod
-    def _get_read_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
+    def _get_read_kwargs(cls, fmt: Optional[FileFormat], path: Path) -> Mapping[str, Any]:
         t = cls.get_typing().io
+        real_suffix = CompressionFormat.strip_suffix(path).suffix
         kwargs = t.read_kwargs.get(fmt, {})
+        kwargs.update(t.read_suffix_kwargs.get(real_suffix, {}))
         if fmt in [
             FileFormat.csv,
             FileFormat.tsv,
@@ -100,27 +93,51 @@ class _FullIoMixin(
         return kwargs
 
     @classmethod
-    def _check_io_ok(cls, path: Path, fmt: FileFormat):
+    def _get_write_kwargs(cls, fmt: Optional[FileFormat], path: Path) -> Mapping[str, Any]:
         t = cls.get_typing().io
-        if t.secure and not fmt.is_secure:
-            raise FormatInsecureError(f"Insecure format {fmt} forbidden by typing", key=fmt.name)
-        if t.recommended and not fmt.is_recommended:
-            raise FormatDiscouragedError(
-                f"Discouraged format {fmt} forbidden by typing", key=fmt.name
-            )
-
-    @classmethod
-    def _get_write_kwargs(cls, fmt: FileFormat) -> Mapping[str, Any]:
-        t = cls.get_typing().io
+        real_suffix = CompressionFormat.strip_suffix(path).suffix
         kwargs = t.write_kwargs.get(fmt, {})
+        kwargs.update(t.write_suffix_kwargs.get(real_suffix, {}))
         if fmt is FileFormat.json:
             # not perfect, but much better than the alternative of failing
             # I don't see a better solution anyway
             kwargs["force_ascii"] = False
-        elif fmt.supports_encoding:  # and IS NOT JSON -- it doesn't use "encoding="
+        elif (
+            fmt is not None and fmt.supports_encoding
+        ):  # and IS NOT JSON -- it doesn't use "encoding="
             encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
         return kwargs
+
+    @classmethod
+    def _get_fmt(cls, path: Path) -> Optional[FileFormat]:
+        t = cls.get_typing().io
+        mp = FileFormat.suffix_map()
+        mp.update(t.remap_suffixes)
+        return FileFormat.from_path_or_none(path, format_map=mp)
+
+    @classmethod
+    def _check_io_ok(cls, path: Path, fmt: Optional[FileFormat]):
+        t = cls.get_typing().io
+        if fmt is not None:
+            if t.secure and not fmt.is_secure:
+                raise FormatInsecureError(
+                    f"Insecure format {fmt} forbidden by typing", key=fmt.name
+                )
+            if t.recommended and not fmt.is_recommended:
+                raise FormatDiscouragedError(
+                    f"Discouraged format {fmt} forbidden by typing", key=fmt.name
+                )
+
+    @classmethod
+    def _get_io(cls, on, path: Path, fmt: FileFormat, custom, prefix: str):
+        if fmt is not None:
+            return getattr(on, prefix + fmt.name)
+        real_suffix = CompressionFormat.strip_suffix(path).suffix
+        try:
+            return custom[real_suffix]
+        except KeyError:
+            raise FilenameSuffixError(f"No format found for suffix (path: {path})") from None
 
 
 __all__ = ["_FullIoMixin"]

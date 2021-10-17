@@ -3,6 +3,17 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.15.1] - unreleased
+
+### Added
+
+- Support for custom formats and per-suffix kwargs
+- Support for json encoding args for .attrs
+
+### Changed
+
+- Simplified `.suffixes` (breaking change to an uncommon function)
+
 ## [0.15.0] - 2021-10-16
 
 ### Added

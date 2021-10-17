@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Any, Callable, Optional, Sequence, Type, Union
+from pathlib import Path
+from typing import Any, Callable, Mapping, Optional, Sequence, Type, Union
 
 import pandas as pd
 
@@ -46,6 +47,8 @@ class _GenericBuilder:
         self._clazz = None
         self._classes = []
         self._remapped_suffixes = {}
+        self._remapped_read_kwargs = {}
+        self._remapped_write_kwargs = {}
         self._encoding = "utf8"
         self._errors = "strict"
         self._read_kwargs = defaultdict(dict)
@@ -73,6 +76,8 @@ class _GenericBuilder:
         self._req_hash: Optional = False
         self._req_order: Optional = False
         self._attr_suffix = None
+        self._attr_json_kwargs = frozenset()
+        self._custom_formats = {}
         # make these use an explicit version
         # the user can override if needed
         self.add_read_kwargs("pickle", protocol=_PICKLE_VR)
@@ -167,28 +172,41 @@ class _GenericBuilder:
         self._verifications.extend(conditions)
         return self
 
-    def suffix(self, **kwargs) -> __qualname__:
+    def suffix(
+        self,
+        suffix: str,
+        fmt: Union[FileFormat, str],
+        *,
+        read: Optional[Mapping[str, Any]] = None,
+        write: Optional[Mapping[str, Any]] = None,
+    ) -> __qualname__:
         """
         Makes read_files and write_files interpret a filename suffix differently.
         Suffixes like .gz, .zip, etc. are also included for text formats that are provided.
 
-        Arguments:
-            kwargs: Pairs of (suffix, format); e.g. remap_suffixes(commas="csv")
-                    These must be names recognized in ``FileFormat``;
-                    See that enum for the list of formats.
+        Args:
+            suffix: e.g. .txt (a prepended '.' is ignored)
+            fmt: The FileFormat used to map to read/write methods
+            read: Custom params to pass to the read function
+            write: Custom params to pass to the write function
 
         Returns:
             This builder for chaining
         """
-        for suffix, fmt in kwargs.items():
-            if not suffix.startswith("."):
-                suffix = "." + suffix
-            fmt = FileFormat.of(fmt)
-            for s in fmt.compressed_variants(suffix):
-                self._remapped_suffixes[s] = fmt
+        if not suffix.startswith("."):
+            suffix = "." + suffix
+        fmt = FileFormat.of(fmt)
+        for s in fmt.compressed_variants(suffix):
+            self._remapped_suffixes[s] = fmt
+        if read is not None:
+            self._remapped_read_kwargs[suffix] = read
+        if write is not None:
+            self._remapped_write_kwargs[suffix] = write
         return self
 
-    def hash(self, alg: str = "sha256", file: bool = True, directory: bool = False) -> __qualname__:
+    def hash(
+        self, *, alg: str = "sha256", file: bool = True, directory: bool = False
+    ) -> __qualname__:
         """
         Write a hash file (e.g. .sha256) alongside files.
         Performed when calling :meth:`typeddfs.abs_dfs.AbsDf.write_file`.
@@ -216,13 +234,26 @@ class _GenericBuilder:
         self._hash_dir = directory
         return self
 
-    def attrs(self, suffix: str = ".attrs.json") -> __qualname__:
+    def attrs(
+        self,
+        *,
+        suffix: str = ".attrs.json",
+        preserve_inf: bool = True,
+        sort: bool = False,
+        indent: bool = True,
+        fallback: Optional[Callable[[Any], Any]] = None,
+    ) -> __qualname__:
         """
         Sets ``pd.DataFrame.attrs`` to be read and written by default.
 
         Args:
             suffix: Will be appended to the filename of the DataFrame;
                     must end with .json, .json.gz, etc.
+            preserve_inf: Convert numpy ``ndarray`` values, ``float("inf")``,
+                          and  ``float("-inf")`` to str when writing JSON
+            sort: Sort JSON before writing
+            indent: Indent JSON before writing
+            fallback: Try this method to serialize to JSON if all others fail
 
         Returns:
             This builder for chaining
@@ -234,6 +265,9 @@ class _GenericBuilder:
         if fmt is not FileFormat.json:
             raise ValueError(f"File format must be JSON ({suffix}")
         self._attr_suffix = suffix
+        self._attr_json_kwargs = frozenset(
+            dict(preserve_inf=preserve_inf, sort=sort, indent=indent, fallbacks=[fallback])
+        )
         return self
 
     def secure(self) -> __qualname__:
@@ -279,6 +313,24 @@ class _GenericBuilder:
             This builder for chaining
         """
         self._encoding = encoding.lower().replace("-", "")
+        return self
+
+    def add_custom_format(
+        self,
+        suffix: str,
+        reader: Callable[[Path], pd.DataFrame],
+        writer: Callable[[pd.DataFrame], Path],
+        *,
+        replace: bool = False,
+    ) -> __qualname__:
+        """
+        Adds custom readers and writers for read_file and write_file.
+        """
+        if not replace:
+            fmt = FileFormat.from_path_or_none(suffix)
+            if fmt is not None:
+                raise ValueError(f"Cannot override suffix {suffix} for format {fmt.name}")
+        self._custom_formats[suffix] = (reader, writer)
         return self
 
     def add_read_kwargs(self, fmt: Union[FileFormat, str], **kwargs) -> __qualname__:
@@ -337,6 +389,9 @@ class _GenericBuilder:
             _recommended=self._recommended,
             _attrs_suffix=".attrs.json" if self._attr_suffix is None else self._attr_suffix,
             _use_attrs=self._attr_suffix is not None,
+            _attrs_json_kwargs=self._attr_json_kwargs,
+            _custom_readers={k: v[0] for k, v in self._custom_formats.items()},
+            _custom_writers={k: v[1] for k, v in self._custom_formats.items()},
         )
 
         _typing = DfTyping(
