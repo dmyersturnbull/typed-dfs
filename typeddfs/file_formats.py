@@ -8,9 +8,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Mapping, MutableMapping, Optional, Set, Union
 
-from typeddfs._format_support import DfFormatSupport
-from typeddfs._utils import PathLike
 from typeddfs.df_errors import FilenameSuffixError
+from typeddfs.utils._format_support import DfFormatSupport
+from typeddfs.utils._utils import PathLike
 
 
 class _Enum(enum.Enum):

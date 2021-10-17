@@ -13,13 +13,13 @@ from dataclasses import dataclass
 from typing import FrozenSet, Mapping, Sequence, Type
 
 from typeddfs import MatrixDf, TypedDf
-
-# noinspection PyProtectedMember
-from typeddfs._utils import _FLEXWF_SEP, _HDF_KEY, _PICKLE_VR, _TOML_AOT
 from typeddfs.abs_dfs import AbsDf
 from typeddfs.df_typing import DfTyping
 from typeddfs.file_formats import CompressionFormat, FileFormat
 from typeddfs.utils import Utils
+
+# noinspection PyProtectedMember
+from typeddfs.utils._utils import _FLEXWF_SEP, _HDF_KEY, _PICKLE_VR, _TOML_AOT
 
 
 @dataclass(frozen=True, repr=True, order=True)

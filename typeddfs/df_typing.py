@@ -18,11 +18,11 @@ from typing import (
 )
 
 from typeddfs._core_dfs import CoreDf
-
-# noinspection PyUnresolvedReferences
-from typeddfs._utils import _FLEXWF_SEP, _TOML_AOT
 from typeddfs.file_formats import FileFormat
 from typeddfs.utils import Utils
+
+# noinspection PyUnresolvedReferences
+from typeddfs.utils._utils import _FLEXWF_SEP, _TOML_AOT
 
 T = TypeVar("T", bound=CoreDf, covariant=True)
 

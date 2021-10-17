@@ -9,7 +9,6 @@ import pandas as pd
 
 from typeddfs.base_dfs import BaseDf
 from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder, TypedDfBuilder
-from typeddfs.checksums import Checksums
 from typeddfs.df_errors import (
     ClashError,
     FilenameSuffixError,
@@ -30,6 +29,7 @@ from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 from typeddfs.utils import Utils
+from typeddfs.utils.checksums import Checksums
 
 logger = logging.getLogger(Path(__file__).parent.name)
 

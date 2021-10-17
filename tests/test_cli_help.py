@@ -3,7 +3,7 @@ import pytest
 from pandas import Period
 
 from typeddfs import FileFormat, TypedDfs
-from typeddfs.cli_help import DfCliHelp
+from typeddfs.utils.cli_help import DfCliHelp
 
 
 class TestExample:

@@ -8,14 +8,15 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 ### Added
 
 - New functions in `Checksums`
-- JSON encoding functions in `Utils`
+- JSON encoding functions in `JsonUtils`
 
 ### Changed
 
-- Checksums now holds the encoding
+- Checksums now holds the encoding (breaking)
 - `use_filename=False` by default (was `None`)
 - attrs now written with `orjson` and custom default
 - orjson is now required
+- internal refactoring
 
 ### Fixed
 

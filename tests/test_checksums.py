@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from typeddfs.checksums import ChecksumMappingOpt, Checksums
 from typeddfs.df_errors import (
     HashContradictsExistingError,
     HashExistsError,
     HashFilenameMissingError,
 )
+from typeddfs.utils.checksums import ChecksumMappingOpt, Checksums
 
 
 class TestBuilders:

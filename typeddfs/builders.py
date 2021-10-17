@@ -9,20 +9,20 @@ from typing import Any, Callable, Optional, Sequence, Type, Union
 
 import pandas as pd
 
-from typeddfs._utils import (
-    _AUTO_DROPPED_NAMES,
-    _DEFAULT_HASH_ALG,
-    _FORBIDDEN_NAMES,
-    _PICKLE_VR,
-)
 from typeddfs.base_dfs import BaseDf
-from typeddfs.checksums import Checksums
 from typeddfs.df_errors import ClashError, DfTypeConstructionError
 from typeddfs.df_typing import DfTyping, IoTyping
 from typeddfs.file_formats import FileFormat
 from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.utils import Utils
+from typeddfs.utils._utils import (
+    _AUTO_DROPPED_NAMES,
+    _DEFAULT_HASH_ALG,
+    _FORBIDDEN_NAMES,
+    _PICKLE_VR,
+)
+from typeddfs.utils.checksums import Checksums
 
 logger = logging.getLogger("typeddfs")
 

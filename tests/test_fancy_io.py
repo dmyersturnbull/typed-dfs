@@ -10,7 +10,6 @@ import pytest
 from typeddfs import BaseDf, TypedDf
 from typeddfs.abs_dfs import AbsDf
 from typeddfs.builders import TypedDfBuilder
-from typeddfs.checksums import Checksums
 from typeddfs.df_errors import (
     FilenameSuffixError,
     FormatDiscouragedError,
@@ -20,6 +19,7 @@ from typeddfs.df_errors import (
     UnsupportedOperationError,
 )
 from typeddfs.file_formats import DfFormatSupport, FileFormat
+from typeddfs.utils.checksums import Checksums
 
 from . import (
     ActuallyEmpty,

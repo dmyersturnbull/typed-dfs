@@ -4,7 +4,7 @@ from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
 from typeddfs.utils import Utils
 
 
-class TestBuilders:
+class TestFrozen:
     def test_list(self):
         x: FrozeList = Utils.freeze([1, 2, 3])
         assert isinstance(x, FrozeList)

@@ -12,7 +12,6 @@ from typing import Callable, Iterable, Mapping, Optional, Sequence, Union
 
 import regex
 
-from typeddfs._utils import _DEFAULT_HASH_ALG, PathLike
 from typeddfs.df_errors import (
     HashAlgorithmMissingError,
     HashContradictsExistingError,
@@ -23,6 +22,7 @@ from typeddfs.df_errors import (
     HashFilenameMissingError,
     MultipleHashFilenamesError,
 )
+from typeddfs.utils._utils import _DEFAULT_HASH_ALG, PathLike
 
 _hex_pattern = regex.compile(r"[A-Ha-h0-9]+", flags=regex.V1)
 _hashsum_file_sep = regex.compile(r" [ *]", flags=regex.V1)
