@@ -14,10 +14,6 @@ from typeddfs.utils._utils import PathLike
 
 
 class _FeatherParquetHdfMixin:
-    """
-    DataFrame that supports
-    """
-
     @classmethod
     def read_feather(cls, *args, **kwargs) -> __qualname__:
         # feather does not support MultiIndex, so reset index and use convert()

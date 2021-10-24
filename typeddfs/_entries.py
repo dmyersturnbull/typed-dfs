@@ -29,6 +29,7 @@ from typeddfs.matrix_dfs import AffinityMatrixDf, MatrixDf
 from typeddfs.typed_dfs import TypedDf
 from typeddfs.untyped_dfs import UntypedDf
 from typeddfs.utils import Utils
+from typeddfs.utils.checksum_models import ChecksumFile, ChecksumMapping
 from typeddfs.utils.checksums import Checksums
 
 logger = logging.getLogger(Path(__file__).parent.name)
@@ -79,6 +80,7 @@ class TypedDfs:
         """
         Creates a new example TypedDf subclass.
         The class has:
+
             - required index "key"
             - required column "value"
             - reserved column "note"
@@ -112,7 +114,7 @@ class TypedDfs:
     def typed(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
         """
         Creates a new type with flexible requirements.
-        The class will enforce contstraints and subclass :class:`typeddfs.typed_dfs.TypedDf`.
+        The class will enforce constraints and subclass :class:`typeddfs.typed_dfs.TypedDf`.
 
         Args:
             name: The name that will be used for the new class
@@ -192,6 +194,8 @@ example = TypedDfs.example
 __all__ = [
     "TypedDfs",
     "Utils",
+    "ChecksumFile",
+    "ChecksumMapping",
     "Checksums",
     "FrozeSet",
     "FrozeDict",

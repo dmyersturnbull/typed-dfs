@@ -30,6 +30,14 @@ class TestUtils:
         assert Utils.strip_control_chars("ℶℶ\u202Cℶℶ") == "ℶℶℶℶ"
         assert Utils.strip_control_chars("\u202C") == ""
 
+    def test_dots_and_dicts(self):
+        dct = dict(abc=dict(xyz="123"), zzz=["456", "789"])
+        dots = {"abc.xyz": "123", "zzz": ["456", "789"]}
+        act_dots = Utils.dict_to_dots(dct)
+        assert act_dots == dots
+        act_dct = Utils.dots_to_dict(act_dots)
+        assert act_dct == dct
+
 
 if __name__ == "__main__":
     pytest.main()

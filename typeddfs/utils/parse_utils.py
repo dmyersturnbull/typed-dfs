@@ -60,7 +60,7 @@ class ParseUtils:
 
         Returns:
             A tomlkit`AoT<https://github.com/sdispater/tomlkit/blob/master/tomlkit/items.py>`_
-            (i.e. ``[[array]]`)
+            (i.e. ``[[array]]``)
         """
         import tomlkit
 
@@ -101,19 +101,19 @@ class ParseUtils:
 
     @classmethod
     def _un_leaf(cls, to: typing.MutableMapping[str, Any], items: Mapping[str, Any]) -> None:
-        keys = {k.split(".", 1) for k in items.keys()}
-        for major_key in keys:
-            of_major_key = {k: v for k, v in items.items() if k.split(".", 1) == major_key}
-            if len(major_key) > 0:
-                to[major_key] = {}
-                cls._un_leaf(to[major_key], of_major_key)
+        for k, v in items.items():
+            if "." not in k:
+                to[k] = v
             else:
-                to[major_key] = of_major_key
+                k0, k1 = k.split(".", 1)
+                if k0 not in to:
+                    to[k0] = {}
+                cls._un_leaf(to[k0], {k1: v})
 
     @classmethod
     def _re_leaf(cls, at: str, items: Mapping[str, Any]) -> Generator[Tuple[str, Any], None, None]:
         for k, v in items.items():
-            me = at + "." + k
+            me = at + "." + k if len(at) > 0 else k
             if hasattr(v, "items") and hasattr(v, "keys") and hasattr(v, "values"):
                 yield from cls._re_leaf(me, v)
             else:

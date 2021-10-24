@@ -366,11 +366,11 @@ class TestReadWrite:
         # \n vs \r\n is an issue, so we can't check the exact hash
         with tmpfile(".csv") as path:
             df.write_file(path, file_hash=True)
-            hash_file = Checksums().get_hash_file(path)
+            hash_file = Checksums().get_filesum_of_file(path)
             assert hash_file.exists()
-            got = Checksums().parse_hash_file_resolved(hash_file)
-            assert list(got.keys()) == [path.resolve()]
-            hit = got[path.resolve()]
+            got = Checksums().load_filesum_of_file(path)
+            assert got.file_path == path
+            hit = got.hash_value
             assert len(hit) == 64
             t.read_file(path, file_hash=True)
             t.read_file(path, hex_hash=hit)
@@ -379,13 +379,13 @@ class TestReadWrite:
         t = TypedDfBuilder("a").reserve("x", "y").build()
         df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
         with tmpfile(".csv") as path:
-            hash_dir = Checksums().get_hash_dir(path)
+            hash_dir = Checksums().get_dirsum_of_file(path)
             hash_dir.unlink(missing_ok=True)
             df.write_file(path, dir_hash=True)
             assert hash_dir.exists()
-            got = Checksums().parse_hash_file_resolved(hash_dir)
-            assert list(got.keys()) == [path.resolve()]
-            hit = got[path.resolve()]
+            got = Checksums().load_dirsum_exact(hash_dir)
+            assert list(got.keys()) == [path]
+            hit = got[path]
             assert len(hit) == 64
             t.read_file(path, dir_hash=True)
             t.read_file(path, hex_hash=hit)

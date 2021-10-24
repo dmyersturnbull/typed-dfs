@@ -13,15 +13,6 @@ from typeddfs.utils import IoUtils, MiscUtils
 
 class _FlexwfMixin:
     @classmethod
-    def read_fwf(cls, *args, **kwargs) -> __qualname__:
-        try:
-            return cls._convert_typed(pd.read_fwf(*args, **kwargs))
-        except pd.errors.EmptyDataError:
-            # TODO: Figure out what EmptyDataError means
-            # df = pd.DataFrame()
-            return cls.new_df()
-
-    @classmethod
     def read_flexwf(
         cls,
         path_or_buff,

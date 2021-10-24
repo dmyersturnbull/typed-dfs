@@ -21,10 +21,10 @@ class MiscUtils:
         Joins items to something like "cat, dog, and pigeon" or "cat, dog, or pigeon".
 
         Args:
-            *items: Items to join; ``str(item) for item in items`` will be used
+            items: Items to join; ``str(item) for item in items`` will be used
             last: Probably "and", "or", "and/or", or ""
-                    Spaces are added/removed as needed if ``suffix`` is alphanumeric
-                    or "and/or", after stripping whitespace off the ends.
+                  Spaces are added/removed as needed if ``suffix`` is alphanumeric
+                  or "and/or", after stripping whitespace off the ends.
             sep: Used to separate all words; include spaces as desired
 
         Examples:
@@ -89,26 +89,20 @@ class MiscUtils:
     @classmethod
     def table_format(cls, fmt: str) -> TableFormat:
         """
-        Gets a tabulate [1]_ style by name.
+        Gets a tabulate style by name.
 
         Returns:
             A TableFormat, which can be passed as a style
-
-        References:
-            [1] `Tabulate <https://pypi.org/project/tabulate>`_
         """
         return _table_formats[fmt]
 
     @classmethod
     def plain_table_format(cls, sep: str = " ", **kwargs) -> TableFormat:
         """
-        Creates a simple tabulate [1]_ style using a column-delimiter ``sep``.
+        Creates a simple tabulate style using a column-delimiter ``sep``.
 
         Returns:
             A tabulate ``TableFormat``, which can be passed as a style
-
-        References:
-            [1] `Tabulate <https://pypi.org/project/tabulate>`_
         """
         defaults = dict(
             lineabove=None,

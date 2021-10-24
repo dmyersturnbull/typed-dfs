@@ -229,7 +229,7 @@ class _GenericBuilder:
         Returns:
             This builder for chaining
         """
-        self._hash_alg = Checksums.get_algorithm(alg)
+        self._hash_alg = Checksums.resolve_algorithm(alg)
         self._hash_file = file
         self._hash_dir = directory
         return self

@@ -1,11 +1,11 @@
-"""
+r"""
 Utils for getting nice CLI help on DataFrame inputs.
 
 .. attention::
     The exact text used in this module are subject to change.
 
 .. note ::
-    Two consecutive newlines (``\\n\\n``) are used to separate sections.
+    Two consecutive newlines (``\n\n``) are used to separate sections.
     This is consistent with a number of formats, including Markdown,
     reStructuredText, and `Typer <https://github.com/tiangolo/typer>`_.
 """
@@ -101,12 +101,12 @@ class DfFormatsHelp(FrozenSet[DfFormatHelp]):
         bullet: str = "- ",
         indent: str = "  ",
     ) -> str:
-        """
+        r"""
         Returns a multi-line text listing of allowed file formats.
 
         Args:
             recommended_only: Skip non-recommended file formats
-            nl: Newline characters; use "\\n", "\\\\n", or " "
+            nl: Newline characters; use "\n", "\\n", or " "
             bullet: Prepended to each item
             indent: Spaces for nested indent
 
@@ -158,13 +158,13 @@ class DfHelp:
     def get_short_text(
         self, *, use_doc: bool = True, recommended_only: bool = False, nl: str = "\n"
     ) -> str:
-        """
+        r"""
         Returns a multi-line description with compressed text.
 
         Args:
             use_doc: Include the docstring of the DataFrame type
             recommended_only: Only include recommended formats
-            nl: Newline characters; use "\\n", "\\\\n", or " "
+            nl: Newline characters; use "\n", "\\n", or " "
         """
         t = self.get_short_typing_text()
         return (
@@ -183,14 +183,14 @@ class DfHelp:
         bullet: str = "- ",
         indent: str = "  ",
     ) -> str:
-        """
+        r"""
         Returns a multi-line text description of the DataFrame.
         Includes its required and optional columns, and supported file formats.
 
         Args:
             use_doc: Include the docstring of the DataFrame type
             recommended_only: Only include recommended formats
-            nl: Newline characters; use "\\n", "\\n\\n", or " "
+            nl: Newline characters; use "\n", "\n\n", or " "
             bullet: Prepended to each item
             indent: Spaces for nested indent
         """
@@ -205,12 +205,12 @@ class DfHelp:
         ).replace(nl * 2, nl)
 
     def get_header_text(self, *, use_doc: bool = True, nl: str = "\n") -> str:
-        """
+        r"""
         Returns a multi-line header of the DataFrame name and docstring.
 
         Args:
             use_doc: Include the docstring, as long as it is not ``None``
-            nl: Newline characters; use "\\n", "\\n\\n", or " "
+            nl: Newline characters; use "\n", "\n\n", or " "
 
         Returns:
             Something like::
@@ -252,11 +252,11 @@ class TypedDfHelp(DfHelp):
     def get_long_typing_text(
         self, *, nl: str = "\n", bullet: str = "- ", indent: str = "  "
     ) -> str:
-        """
+        r"""
         Returns a long text description of the required and optional columns.
 
         Args:
-            nl: Newline characters; use "\\n", "\\n\\n", or " "
+            nl: Newline characters; use "\n", "\n\n", or " "
             bullet: Prepended to each item
             indent: Spaces for nested indent
         """
@@ -320,7 +320,7 @@ class MatrixDfHelp(DfHelp):
         else:
             s = Utils.describe_dtype(t.value_dtype).capitalize()
             s += f" ({t.value_dtype.__name__}) matrix. "
-        s += f"List row names in the index or a special column 'row'."
+        s += "List row names in the index or a special column 'row'."
         return s
 
     def get_long_typing_text(self, *, nl: str = " ") -> str:
@@ -329,7 +329,7 @@ class MatrixDfHelp(DfHelp):
         """
         t = self.typing
         s = "Numeric matrix with named (string-typed) rows and columns." + nl
-        s += f"List row names in the index or a special column 'row'."
+        s += "List row names in the index or a special column 'row'."
         if t.value_dtype is not None:
             s += nl + f"Values are cast to {t.value_dtype.__name__}"
         return s
@@ -338,13 +338,13 @@ class MatrixDfHelp(DfHelp):
 class UntypedDfHelp(DfHelp):
     def get_long_typing_text(self) -> str:
         """
-        Returns ``""``.``
+        Returns ``""``.``.
         """
         return ""
 
     def get_short_typing_text(self) -> str:
         """
-        Returns ``""``.``
+        Returns ``""``.``.
         """
         return ""
 

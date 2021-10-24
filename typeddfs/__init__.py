@@ -11,6 +11,8 @@ from pathlib import Path
 from typeddfs._entries import (
     AffinityMatrixDf,
     BaseDf,
+    ChecksumFile,
+    ChecksumMapping,
     Checksums,
     CompressionFormat,
     FileFormat,

@@ -3,7 +3,7 @@ Tools that could possibly be used outside of typed-dfs.
 """
 from __future__ import annotations
 
-from collections import Set
+from typing import Set
 
 from tabulate import TableFormat
 

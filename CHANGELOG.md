@@ -3,7 +3,7 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.15.1] - unreleased
+## [0.16.0] - 2021-10-23
 
 ### Added
 
@@ -12,7 +12,13 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ### Changed
 
+- `Checksums`
 - Simplified `.suffixes` (breaking change to an uncommon function)
+
+### Fixed
+
+- Duplicate IO methods
+- Checksum path resolution
 
 ## [0.15.0] - 2021-10-16
 

@@ -94,7 +94,7 @@ class _IniLikeMixin:
 
         Args:
             path_or_buff: Path or buffer
-            aot: The name of the array of tables (i.e. ``[[ table ]]`)
+            aot: The name of the array of tables (i.e. ``[[ table ]]``)
                  If None, finds the unique outermost TOML key, implying ``aot_only``.
             aot_only: Fail if any outermost keys other than the AOT are found
             kwargs: Passed to ``Utils.read``
@@ -130,7 +130,7 @@ class _IniLikeMixin:
 
         Args:
             path_or_buff: Path or buffer
-            aot: The name of the array of tables (i.e. ``[[ table ]]`)
+            aot: The name of the array of tables (i.e. ``[[ table ]]``)
             comment: Comment line(s) to add at the top of the document
             mode: 'w' (write) or 'a' (append)
             kwargs: Passed to :meth:`typeddfs.utils.Utils.write`

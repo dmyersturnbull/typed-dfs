@@ -415,7 +415,7 @@ class FileFormat(_Enum):
         Returns all allowed suffixes.
 
         Example:
-            .. code::
+            .. code-block::
 
             FileFormat.json.compressed_variants(".json")
             # {".json", ".json.gz", ".json.zip", ...}

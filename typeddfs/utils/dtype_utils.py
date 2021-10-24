@@ -71,7 +71,6 @@ class DtypeUtils:
             A string like "floating-point" or "zoned datetime".
             Returns ``None`` if no good name is found or if ``t`` is ``None``.
         """
-
         if cls.is_bool_dtype(t) or issubclass(t, BooleanDtype):
             return "bool" if short else "boolean"
         elif (

@@ -107,7 +107,10 @@ class _DataclassMixin:
             unsafe_hash=True,
             order=cls.get_typing().order_dataclass,
         )
-        _get_type = lambda: cls.__class__
+
+        def _get_type(x):
+            return cls.__class__
+
         _get_type.__name__ = "get_df_type"
         clazz.get_df_type = _get_type
 

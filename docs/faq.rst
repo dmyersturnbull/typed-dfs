@@ -13,6 +13,7 @@ There is a final type, defined to have no typing rules, that can be constructed 
 variant via :meth:`typeddfs._entries.TypedDfs.wrap` to give it the additional methods.
 
 .. code-block:: python
+
     from typeddfs import TypedDfs
 
     MyDf = TypedDfs.typed("MyDf").build()
@@ -62,6 +63,7 @@ that the returned DataFrame might not conform to your requirements.
 Call :meth:`typeddfs.abs_dfs.AbsDf.retype` at the end to reorganize and verify.
 
 .. code-block:: python
+
     from typeddfs import TypedDfs
 
     MyDf = TypedDfs.typed("MyDf").require("valid").build()

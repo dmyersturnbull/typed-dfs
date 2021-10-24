@@ -16,8 +16,6 @@ from typeddfs.utils.checksums import Checksums
 
 
 class AbsDf(_FullIoMixin, CoreDf):
-    """"""
-
     @classmethod
     def read_file(
         cls,
@@ -32,7 +30,8 @@ class AbsDf(_FullIoMixin, CoreDf):
         Reads from a file (or possibly URL), guessing the format from the filename extension.
         Delegates to the ``read_*`` functions of this class.
 
-        You can always write and then read back to get the same dataframe::
+        You can always write and then read back to get the same dataframe.
+        .. code-block::
 
             # df is any DataFrame from typeddfs
             # path can use any suffix
@@ -72,10 +71,8 @@ class AbsDf(_FullIoMixin, CoreDf):
         """
         path = Path(path)
         t = cls.get_typing()
-        algorithm = t.io.hash_algorithm
-        Checksums(alg=algorithm).verify_any(
-            path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash
-        )
+        cs = Checksums(alg=t.io.hash_algorithm)
+        cs.verify_any(path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash)
         df = cls._call_read(cls, path)
         if attrs:
             attrs_path = path.parent / (path.name + t.io.attrs_suffix)
@@ -103,7 +100,7 @@ class AbsDf(_FullIoMixin, CoreDf):
             - .json
             - .feather
             - .fwf (fixed-width)
-            . .flexwf (columns aligned but using a delimiter)
+            - .flexwf (columns aligned but using a delimiter)
             - .parquet or .snappy
             - .h5, .hdf, or .hdf5
             - .xlsx, .xls, and other variants for Excel
@@ -124,9 +121,9 @@ class AbsDf(_FullIoMixin, CoreDf):
                        The filename will be path+"."+algorithm.
                        If None, chooses according to ``self.get_typing().io.hash_file``.
             dir_hash: Append a hash for this file into a list.
-                       The filename will be the directory name suffixed by the algorithm;
-                       (i.e. path.parent/(path.parent.name+"."+algorithm) ).
-                       If None, chooses according to ``self.get_typing().io.hash_dir``.
+                      The filename will be the directory name suffixed by the algorithm;
+                      (i.e. path.parent/(path.parent.name+"."+algorithm) ).
+                      If None, chooses according to ``self.get_typing().io.hash_dir``.
             attrs: Write dataset attributes/metadata (``pd.DataFrame.attrs``) to a JSON file.
                    uses :attr:`typeddfs.df_typing.DfTyping.attrs_suffix`.
                    If None, chooses according to ``self.get_typing().io.use_attrs``.
@@ -147,8 +144,8 @@ class AbsDf(_FullIoMixin, CoreDf):
         attrs_path = path.parent / (path.name + t.io.attrs_suffix)
         attrs_data = Utils.json_encoder().as_str(self.attrs)
         cs = Checksums(alg=t.io.hash_algorithm)
-        file_hash_path = cs.get_hash_file(path)
-        dir_hash_path = cs.get_hash_dir(path)
+        file_hash_path = cs.get_filesum_of_file(path)
+        dir_hash_path = cs.get_dirsum_of_file(path)
         # check for overwrite errors now to preserve atomicity
         if not overwrite:
             if path.exists():
@@ -156,10 +153,9 @@ class AbsDf(_FullIoMixin, CoreDf):
             if file_hash and file_hash_path.exists():
                 raise FileExistsError(f"{file_hash_path} already exists")
             if dir_hash_path.exists():
-                cs = Checksums(alg=t.io.hash_algorithm)
-                dir_sums = cs.parse_hash_file_resolved(dir_hash_path)
+                dir_sums = Checksums(alg=t.io.hash_algorithm).load_dirsum_exact(dir_hash_path)
                 if path in dir_sums:
-                    raise
+                    raise FileExistsError(f"Path {path} listed in {dir_hash_path}")
             if file_hash and file_hash_path.exists():
                 raise FileExistsError(f"{file_hash_path} already exists")
             if attrs and attrs_path.exists():
@@ -188,7 +184,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         # write the hashes
         # this shouldn't fail
         cs = Checksums(alg=t.io.hash_algorithm)
-        cs.add_any_hashes(
+        cs.write_any(
             path,
             to_file=file_hash,
             to_dir=dir_hash,

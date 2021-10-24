@@ -13,7 +13,6 @@ from typing import (
     Optional,
     Sequence,
     Set,
-    Tuple,
     Type,
     TypeVar,
     Union,
