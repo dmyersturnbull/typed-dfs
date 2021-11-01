@@ -3,6 +3,18 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.16.1] - 2021-11-01
+
+### Added
+
+- `datasets.py`
+- `FileFormat.split` and related methods
+- `AbsDf.read_url`
+
+### Fixed
+
+- `read_file` uses IOTyping when `attrs=None`
+
 ## [0.16.0] - 2021-10-23
 
 ### Added

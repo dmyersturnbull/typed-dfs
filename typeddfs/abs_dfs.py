@@ -10,12 +10,28 @@ from typing import Optional, Set, Union
 from typeddfs._core_dfs import CoreDf
 from typeddfs._mixins._full_io_mixin import _FullIoMixin
 from typeddfs.df_errors import NonStrColumnError
+from typeddfs.df_typing import DfTyping
 from typeddfs.file_formats import FileFormat
 from typeddfs.utils import Utils
 from typeddfs.utils.checksums import Checksums
 
 
 class AbsDf(_FullIoMixin, CoreDf):
+    @classmethod
+    def read_url(cls, url: str) -> __qualname__:
+        """
+        Reads from a URL, guessing the format from the filename extension.
+        Delegates to the ``read_*`` functions of this class.
+
+        See Also:
+            :meth:`read_file`
+
+        Returns:
+            An instance of this class
+        """
+        df = cls._call_read(cls, url)
+        return cls._convert_typed(df)
+
     @classmethod
     def read_file(
         cls,
@@ -55,6 +71,11 @@ class AbsDf(_FullIoMixin, CoreDf):
             - .flexwf (fixed-but-unspecified-width with an optional delimiter)
             - .txt, .lines, or .list
 
+        See Also:
+            :meth:`read_url`
+            :meth:`write_file`
+
+
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers
                   (because we need a filename).
@@ -70,7 +91,9 @@ class AbsDf(_FullIoMixin, CoreDf):
             An instance of this class
         """
         path = Path(path)
-        t = cls.get_typing()
+        t: DfTyping = cls.get_typing()
+        if attrs is None:
+            attrs = t.io.use_attrs
         cs = Checksums(alg=t.io.hash_algorithm)
         cs.verify_any(path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash)
         df = cls._call_read(cls, path)
@@ -91,7 +114,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         attrs: Optional[bool] = None,
     ) -> Optional[str]:
         """
-        Writes to a file (or possibly URL), guessing the format from the filename extension.
+        Writes to a file, guessing the format from the filename extension.
         Delegates to the ``to_*`` functions of this class (e.g. ``to_csv``).
         Only includes file formats that can be read back in with corresponding ``to`` methods.
 
@@ -111,6 +134,9 @@ class AbsDf(_FullIoMixin, CoreDf):
             - .properties
             - .pkl and .pickle
             - .txt, .lines, or .list; see :meth:`to_lines` and :meth:`read_lines`
+
+        See Also:
+            :meth:`read_file`
 
         Args:
             path: Only path-like strings or pathlib objects are supported, not buffers

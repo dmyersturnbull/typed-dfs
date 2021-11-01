@@ -6,7 +6,7 @@ from __future__ import annotations
 import enum
 from collections import defaultdict
 from pathlib import Path
-from typing import Mapping, MutableMapping, Optional, Set, Union
+from typing import Mapping, MutableMapping, Optional, Set, Tuple, Union
 
 from typeddfs.df_errors import FilenameSuffixError
 from typeddfs.utils._format_support import DfFormatSupport
@@ -119,6 +119,14 @@ class CompressionFormat(_Enum):
             if path.name.endswith(c.suffix):
                 return path.parent / path.name[: -len(c.suffix)]
         return path
+
+    @classmethod
+    def split(cls, path: PathLike) -> Tuple[Path, CompressionFormat]:
+        path = str(path)
+        for c in CompressionFormat.list_non_empty():
+            if path.endswith(c.suffix):
+                return Path(path[: -len(c.suffix)]), c
+        return Path(path), CompressionFormat.none
 
     @classmethod
     def from_path(cls, path: PathLike) -> CompressionFormat:
@@ -303,10 +311,83 @@ class FileFormat(_Enum):
     def of(cls, t: Union[str, FileFormat]) -> FileFormat:
         """
         Returns a FileFormat from an exact name (e.g. "csv").
+
+        See Also:
+            :meth:`from_suffix`
+            :meth:`from_path`
         """
         if isinstance(t, FileFormat):
             return t
         return FileFormat[str(t).strip().lower()]
+
+    @classmethod
+    def strip(
+        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+    ) -> Path:
+        """
+        Strips a recognized, optionally compressed, suffix from ``path``.
+
+        See Also:
+            :meth:`split`
+
+        Example:
+            .. code-block::
+                FileFormat.strip("abc/xyz.csv.gz")  # Path("abc") / "xyz"
+        """
+        base, _, _ = cls.split(path, format_map=format_map)
+        return base
+
+    @classmethod
+    def split(
+        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+    ) -> Tuple[Path, FileFormat, CompressionFormat]:
+        """
+        Splits a path into the base path, format, and compression.
+
+        See Also:
+            :meth:`split_or_none`
+            :meth:`strip`
+            :meth:`from_path`
+
+        Raises:
+            FilenameSuffixError: If the suffix is not found
+
+        Returns:
+            A 3-tuple of (base base excluding suffixes, file format, compression format)
+        """
+        p, fmt, comp = cls.split_or_none(path, format_map=format_map)
+        if fmt is None:
+            raise FilenameSuffixError(f"Suffix for {path} not recognized")
+        return p, fmt, comp
+
+    @classmethod
+    def split_or_none(
+        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+    ) -> Tuple[Path, Optional[FileFormat], CompressionFormat]:
+        """
+        Splits a path into the base path, format, and compression.
+
+        See Also:
+            :meth:`split`
+            :meth:`strip`
+            :meth:`from_path`
+
+        Returns:
+            A 3-tuple of (base base excluding suffixes, file format, compression format)
+        """
+        if format_map is None:
+            format_map = _rev_valid_formats
+        format_map = {k: FileFormat.of(v) for k, v in format_map.items()}
+        path, comp = CompressionFormat.split(path)
+        if not isinstance(comp, CompressionFormat):
+            raise TypeError(f"{comp} is {type(comp)}")
+        path = str(path)
+        fmt = None
+        for f0, f1 in format_map.items():
+            if path.endswith(f0):
+                path = path[: -len(f0)]
+                fmt = f1
+        return Path(path), fmt, comp
 
     @classmethod
     def from_path_or_none(
@@ -327,6 +408,9 @@ class FileFormat(_Enum):
         """
         Guesses a FileFormat from a filename.
 
+        See Also:
+            :meth:`from_suffix`
+
         Args:
             path: A string or :class:`pathlib.Path` to a file.
             format_map: A mapping from suffixes to formats;
@@ -335,19 +419,8 @@ class FileFormat(_Enum):
         Raises:
             typeddfs.df_errors.FilenameSuffixError: If not found
         """
-        if format_map is None:
-            format_map = _rev_valid_formats
-        # first, just try treating as a suffix
-        # otherwise, .suffix will strip out everything
-        try:
-            return cls.from_suffix(path, format_map=format_map)
-        except FilenameSuffixError:
-            pass
-        path = str(path)
-        for c in CompressionFormat.all_suffixes():
-            path = path.replace(c, "")
-        path = Path(path)
-        return cls.from_suffix(path.suffix, format_map=format_map)
+        _, fmt, _ = cls.split(path, format_map=format_map)
+        return fmt
 
     @classmethod
     def from_suffix_or_none(
@@ -367,6 +440,9 @@ class FileFormat(_Enum):
     ) -> FileFormat:
         """
         Returns the FileFormat corresponding to a filename suffix.
+
+        See Also:
+            :meth:`from_path`
 
         Args:
             suffix: E.g. ".csv.gz" or ".feather"

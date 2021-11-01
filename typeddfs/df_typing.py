@@ -3,6 +3,7 @@ Information about how DataFrame subclasses should be handled.
 """
 from __future__ import annotations
 
+from copy import deepcopy as _copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
@@ -61,6 +62,14 @@ class IoTyping(Generic[T]):
     _remapped_write_kwargs: Optional[Mapping[str, Any]] = None
     _custom_readers: Optional[Mapping[str, Callable[[Path], pd.DataFrame]]] = None
     _custom_writers: Optional[Mapping[str, Callable[[pd.DataFrame, Path], None]]] = None
+
+    def copy(self, **kwargs) -> IoTyping:
+        x = _copy(self)
+        for k, v in kwargs.items():
+            if not hasattr(x, k):
+                raise AttributeError(f"No attribute {k}")
+            setattr(x, k, v)
+        return x
 
     @property
     def use_attrs(self) -> bool:
@@ -254,6 +263,14 @@ class DfTyping:
     _columns_to_drop: Optional[Set[str]] = None
     _value_dtype: Optional[Type[Any]] = None
     _order_dclass: bool = True
+
+    def copy(self, **kwargs) -> DfTyping:
+        x = _copy(self)
+        for k, v in kwargs.items():
+            if not hasattr(x, k):
+                raise AttributeError(f"No attribute {k}")
+            setattr(x, k, v)
+        return x
 
     @property
     def io(self) -> IoTyping:

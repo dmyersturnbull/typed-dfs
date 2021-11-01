@@ -9,6 +9,7 @@ import pandas as pd
 
 from typeddfs.base_dfs import BaseDf
 from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder, TypedDfBuilder
+from typeddfs.datasets import ExampleDataframes, LazyDataframe
 from typeddfs.df_errors import (
     ClashError,
     FilenameSuffixError,
@@ -214,4 +215,6 @@ __all__ = [
     "FinalDf",
     "BaseDf",
     "UntypedDf",
+    "ExampleDataframes",
+    "LazyDataframe",
 ]

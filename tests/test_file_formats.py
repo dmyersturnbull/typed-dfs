@@ -31,6 +31,16 @@ class TestFileFormats:
         assert FileFormat.from_suffix_or_none(".csv.gz") is FileFormat.csv
         assert FileFormat.from_suffix_or_none(".what") is None
 
+    def test_split(self):
+        e = (Path("abc") / "xyz", FileFormat.csv, CompressionFormat.gz)
+        assert FileFormat.split("abc/xyz.csv.gz") == e
+        e = (Path("https://google.com/a"), FileFormat.csv, CompressionFormat.none)
+        assert FileFormat.split("https://google.com/a.csv") == e
+        e = (Path("https://google.com/a"), None, CompressionFormat.none)
+        assert FileFormat.split_or_none("https://google.com/a") == e
+        with pytest.raises(FilenameSuffixError):
+            FileFormat.split("https://google.com/x")
+
     def test_from_path(self):
         assert FileFormat.from_path("abc.csv.gz") is FileFormat.csv
         assert FileFormat.from_path("abc.txt.xz") is FileFormat.lines

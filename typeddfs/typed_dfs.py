@@ -235,4 +235,10 @@ class TypedDf(_DataclassMixin, BaseDf, metaclass=abc.ABCMeta):
                     raise UnexpectedIndexNameError(f"Unexpected index name {c}", key=c)
 
 
-__all__ = ["TypedDf", "TypedDfDataclass"]
+class PlainTypedDf(TypedDf):
+    """
+    A trivial TypedDf that behaves like an untyped one.
+    """
+
+
+__all__ = ["TypedDf", "TypedDfDataclass", "PlainTypedDf"]
