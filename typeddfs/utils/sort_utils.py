@@ -12,13 +12,13 @@ from typing import (
     NamedTuple,
     Sequence,
     Set,
-    Tuple,
     Type,
     TypeVar,
     Union,
 )
 
-from natsort import natsorted, ns, ns_enum
+from natsort import natsorted, ns
+from natsort.ns_enum import ns as ns_enum
 
 # noinspection PyProtectedMember
 from pandas.api.types import (
@@ -28,6 +28,8 @@ from pandas.api.types import (
     is_integer_dtype,
     is_string_dtype,
 )
+
+_empty_frozenset = frozenset()
 
 T = TypeVar("T")
 
@@ -70,11 +72,34 @@ class SortUtils:
     @classmethod
     def all_natsort_flags(cls) -> Mapping[str, int]:
         """
-        Simply returns the mapping between natsort flag names and their int values.
-        "Combined" flags such as ``ns.REAL`` are included.
+        Returns all flags defined by natsort, including combined and default flags.
+        Combined flags are, e.g., ``ns_enum.ns.REAL ns_enum.nsFLOAT | ns_enum.ns.SIGNED.``.
+        Default flags are, e.g., ``ns_enum.ns.UNSIGNED``.
+
+        See Also:
+            :meth:`std_natsort_flags`
+
+        Returns:
+            A mapping from flag name to int value
         """
-        # import enum_fields, enum_combos, enum_aliases
-        return dict(ns_enum.enum_fields)
+        return {e.name: e.value for e in ns_enum}
+
+    @classmethod
+    def core_natsort_flags(cls) -> Mapping[str, int]:
+        """
+        Returns natsort flags that are not combinations or defaults.
+
+        See Also:
+            :meth:`all_natsort_flags`
+
+        Returns:
+            A mapping from flag name to int value
+        """
+        # exclude 0 values -- they're defaults
+        # exclude any that are not a power of 2 -- they're combinations
+        # len(ns_enum) is more than the number of core vals, but that's fine
+        good_vals = {int(2 ** i) for i in range(len(ns_enum))}
+        return {e.name: e.value for e in ns_enum if e.value in good_vals}
 
     @classmethod
     def guess_natsort_alg(cls, dtype: Type[Any]) -> NatsortFlagsAndValue:
@@ -96,20 +121,20 @@ class SortUtils:
         st, x = set(), 0
         if is_string_dtype(dtype):
             st.update(["COMPATIBILITYNORMALIZE", "GROUPLETTERS"])
-            x |= ns_enum.ns.COMPATIBILITYNORMALIZE | ns_enum.ns.GROUPLETTERS
+            x |= ns_enum.COMPATIBILITYNORMALIZE | ns_enum.GROUPLETTERS
         elif is_categorical_dtype(dtype):
             pass
         elif is_integer_dtype(dtype) or is_bool_dtype(dtype):
             st.update(["INT", "SIGNED"])
-            x |= ns_enum.ns.INT | ns_enum.ns.SIGNED
+            x |= ns_enum.INT | ns_enum.SIGNED
         elif is_float_dtype(dtype):
             st.update(["FLOAT", "SIGNED"])
-            x |= ns_enum.ns.FLOAT | ns_enum.ns.SIGNED  # same as ns_enum.ns.REAL
+            x |= ns_enum.FLOAT | ns_enum.SIGNED  # same as ns_enum.REAL
         return NatsortFlagsAndValue(st, x)
 
     @classmethod
     def exact_natsort_alg(
-        cls, flags: Union[int, Collection[Union[int, str]]]
+        cls, flags: Union[None, int, Collection[Union[int, str]]]
     ) -> NatsortFlagsAndValue:
         """
         Gets the flag names and combined ``alg=`` argument for natsort.
@@ -136,12 +161,10 @@ class SortUtils:
             flags = {flags}
         if (
             flags is None
-            or isinstance(flags, Collection)
-            and len(flags) == 0
-            or isinstance(flags, int)
-            and flags == 0
+            or (isinstance(flags, Collection) and len(flags) == 0)
+            or (isinstance(flags, int) and flags == 0)
         ):
-            return NatsortFlagsAndValue(set(), 0)
+            return NatsortFlagsAndValue(_empty_frozenset, 0)
         if isinstance(flags, int):
             return cls._ns_info_from_int_flag(flags)
         if isinstance(flags, Collection):
@@ -157,13 +180,10 @@ class SortUtils:
         raise TypeError(f"Unknown type {type(flags)} for {flags}")
 
     @classmethod
-    def _ns_info_from_int_flag(cls, flags: int) -> NatsortFlagsAndValue:
-        ignored = {*dict(ns_enum.enum_aliases).keys(), *dict(ns_enum.enum_combos).keys()}
-        st = set()
-        for f, v in ns_enum.enum_fields.items():
-            if f in ns_enum.enum_fields and (v & flags) != 0 and f not in ignored:
-                st.add(f)
-        return NatsortFlagsAndValue(st, flags)
+    def _ns_info_from_int_flag(cls, val: int) -> NatsortFlagsAndValue:
+        good = cls.core_natsort_flags()
+        st = {k for k, v in good.items() if v & val != 0}
+        return NatsortFlagsAndValue(st, val)
 
 
 __all__ = ["SortUtils"]

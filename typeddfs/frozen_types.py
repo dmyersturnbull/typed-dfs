@@ -32,12 +32,22 @@ class FrozeList(Sequence[T], Hashable):
     Hashable and ordered.
     """
 
+    EMPTY: FrozeList = NotImplemented  # delayed
+
     def __init__(self, lst: Sequence[T]):
         self.__lst = lst if isinstance(lst, list) else list(lst)
         try:
             self.__hash = hash(tuple(lst))
         except AttributeError:
             self.__hash = 0
+
+    @property
+    def is_empty(self) -> bool:  # pragma: no cover
+        return len(self.__lst) == 0
+
+    @property
+    def length(self) -> int:  # pragma: no cover
+        return len(self.__lst)
 
     def __iter__(self) -> Iterator[T]:  # pragma: no cover
         return iter(self.__lst)
@@ -103,6 +113,8 @@ class FrozeSet(AbstractSet[T], Hashable):
     equivalent to those of FrozeDict and FrozeList.
     """
 
+    EMPTY: FrozeSet = NotImplemented  # delayed
+
     def __init__(self, lst: AbstractSet[T]):
         self.__lst = lst if isinstance(lst, set) else set(lst)
         try:
@@ -161,6 +173,14 @@ class FrozeSet(AbstractSet[T], Hashable):
         me = list(sorted(self.__lst))
         return me < other
 
+    @property
+    def is_empty(self) -> bool:  # pragma: no cover
+        return len(self.__lst) == 0
+
+    @property
+    def length(self) -> int:  # pragma: no cover
+        return len(self.__lst)
+
     def __len__(self) -> int:  # pragma: no cover
         return len(self.__lst)
 
@@ -192,12 +212,11 @@ class FrozeDict(Mapping[K, V], Hashable):
     Hashable and ordered.
     """
 
+    EMPTY: FrozeDict = NotImplemented  # delayed
+
     def __init__(self, dct: Mapping[K, V]):
         self.__dct = dct if isinstance(dct, dict) else dict(dct)
         self.__hash = hash(tuple(dct.items()))
-
-    def __iter__(self):  # pragma: no cover
-        return iter(self.__dct)
 
     def get(self, key: K, default: Optional[V] = None) -> Optional[V]:  # pragma: no cover
         return self.__dct.get(key, default)
@@ -223,6 +242,12 @@ class FrozeDict(Mapping[K, V], Hashable):
 
     def values(self) -> ValuesView[V]:  # pragma: no cover
         return self.__dct.values()
+
+    def __iter__(self):  # pragma: no cover
+        return iter(self.__dct)
+
+    def __contains__(self, item: K) -> bool:  # pragma: no cover
+        return item in self.__dct
 
     def __getitem__(self, item: K) -> T:  # pragma: no cover
         return self.__dct[item]
@@ -262,6 +287,14 @@ class FrozeDict(Mapping[K, V], Hashable):
         # keys are equal
         return any((other[k] > me[k] for k in o_keys))
 
+    @property
+    def is_empty(self) -> bool:  # pragma: no cover
+        return len(self.__dct) == 0
+
+    @property
+    def length(self) -> int:  # pragma: no cover
+        return len(self.__dct)
+
     def __len__(self) -> int:
         return len(self.__dct)
 
@@ -282,6 +315,12 @@ class FrozeDict(Mapping[K, V], Hashable):
         elif isinstance(other, Mapping):
             return dict(other)
         raise TypeError(f"Cannot compare to {type(other)}")
+
+
+# for performance, only make these once:
+FrozeList.EMPTY = FrozeList([])
+FrozeSet.EMPTY = FrozeSet(set())
+FrozeDict.EMPTY = FrozeDict({})
 
 
 __all__ = ["FrozeList", "FrozeSet", "FrozeDict"]

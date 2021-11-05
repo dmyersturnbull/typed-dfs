@@ -987,7 +987,7 @@ xml = ["lxml"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "1a8ef8c337a30183683a735aee0e1cb758055b36753a8780e638e2b6ad762976"
+content-hash = "5453aaa50f9560cb11dda490ac347fb2f463720ef6c36b1e6cdca7762fdf1df6"
 
 [metadata.files]
 alabaster = [

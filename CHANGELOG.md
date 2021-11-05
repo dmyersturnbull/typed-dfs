@@ -5,11 +5,21 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ## [0.16.2] - 2021-11-05
 
+### Added
+
+- `EMPTY` class attributes on froze collections
+- `is_empty` and `length` on froze collections
+- `SortUtils.core_natsort_flags`
+
 ### Changed
 
 - `read_file` and `write_file` now call `.resolve` on the paths
 - Renamed ExampleDataframes to ExampleDfs and LazyDataframe to LazyDf
 - Returned tuples are now mainly namedtuples
+
+### Fixed
+
+- Compat with natsort 8 (now required)
 
 ## [0.16.1] - 2021-11-01
 
