@@ -6,11 +6,22 @@ from __future__ import annotations
 import enum
 from collections import defaultdict
 from pathlib import Path
-from typing import Mapping, MutableMapping, Optional, Set, Tuple, Union
+from typing import Mapping, MutableMapping, NamedTuple, Optional, Set, Union
 
 from typeddfs.df_errors import FilenameSuffixError
 from typeddfs.utils._format_support import DfFormatSupport
 from typeddfs.utils._utils import PathLike
+
+
+class BaseFormatCompression(NamedTuple):
+    base: Path
+    format: Optional[FileFormat]
+    compression: CompressionFormat
+
+
+class BaseCompression(NamedTuple):
+    base: Path
+    compression: CompressionFormat
 
 
 class _Enum(enum.Enum):
@@ -121,12 +132,12 @@ class CompressionFormat(_Enum):
         return path
 
     @classmethod
-    def split(cls, path: PathLike) -> Tuple[Path, CompressionFormat]:
+    def split(cls, path: PathLike) -> BaseCompression:
         path = str(path)
         for c in CompressionFormat.list_non_empty():
             if path.endswith(c.suffix):
-                return Path(path[: -len(c.suffix)]), c
-        return Path(path), CompressionFormat.none
+                return BaseCompression(Path(path[: -len(c.suffix)]), c)
+        return BaseCompression(Path(path), CompressionFormat.none)
 
     @classmethod
     def from_path(cls, path: PathLike) -> CompressionFormat:
@@ -340,7 +351,7 @@ class FileFormat(_Enum):
     @classmethod
     def split(
         cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
-    ) -> Tuple[Path, FileFormat, CompressionFormat]:
+    ) -> BaseFormatCompression:
         """
         Splits a path into the base path, format, and compression.
 
@@ -358,12 +369,12 @@ class FileFormat(_Enum):
         p, fmt, comp = cls.split_or_none(path, format_map=format_map)
         if fmt is None:
             raise FilenameSuffixError(f"Suffix for {path} not recognized")
-        return p, fmt, comp
+        return BaseFormatCompression(p, fmt, comp)
 
     @classmethod
     def split_or_none(
         cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
-    ) -> Tuple[Path, Optional[FileFormat], CompressionFormat]:
+    ) -> BaseFormatCompression:
         """
         Splits a path into the base path, format, and compression.
 
@@ -387,7 +398,7 @@ class FileFormat(_Enum):
             if path.endswith(f0):
                 path = path[: -len(f0)]
                 fmt = f1
-        return Path(path), fmt, comp
+        return BaseFormatCompression(Path(path), fmt, comp)
 
     @classmethod
     def from_path_or_none(
@@ -590,4 +601,10 @@ class FileFormat(_Enum):
         return DfFormatSupport.support_map.get(self.name, True)
 
 
-__all__ = ["FileFormat", "CompressionFormat", "DfFormatSupport"]
+__all__ = [
+    "FileFormat",
+    "CompressionFormat",
+    "DfFormatSupport",
+    "BaseCompression",
+    "BaseFormatCompression",
+]

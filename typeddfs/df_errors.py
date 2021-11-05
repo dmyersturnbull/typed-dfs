@@ -364,3 +364,16 @@ class HashFileExistsError(HashVerificationError, FileExistsError):
     def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
+
+
+class HashEntryExistsError(HashVerificationError, FileExistsError):
+    """
+    The file is already listed in the hash dir, and it cannot be overwritten.
+
+    Attributes:
+        key: The existing hash dir path
+    """
+
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+        super().__init__(*args)
+        self.key = key

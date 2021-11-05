@@ -61,6 +61,14 @@ df.write_file("df.csv", file_hash=True)
 df = Film.read_file("df.csv", file_hash=True)  # fails if wrong
 ```
 
+**Example datasets?**
+
+```python
+print(ExampleDataframes.penguins().df)
+#    species     island  bill_length_mm  ...  flipper_length_mm  body_mass_g     sex
+# 0    Adelie  Torgersen            39.1  ...              181.0       3750.0    MALE
+```
+
 **[Read the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more info and examples.
 
 ### 🐛 Pandas serialization bugs fixed

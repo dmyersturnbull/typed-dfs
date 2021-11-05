@@ -93,7 +93,7 @@ class JsonEncoder:
     default: Callable[[Any], Any]
     prep: Optional[Callable[[Any], Any]]
 
-    def as_bytes(self, data: Any) -> bytes:
+    def as_bytes(self, data: Any) -> ByteString:
         if self.prep is not None:
             data = self.prep(data)
         return orjson.dumps(data, default=self.default, option=self.bytes_options)
@@ -107,7 +107,11 @@ class JsonEncoder:
 
 @dataclass(frozen=True, repr=True)
 class JsonDecoder:
-    def from_bytes(self, data: bytes) -> Any:
+    def from_bytes(self, data: ByteString) -> Any:
+        if not isinstance(data, ByteString):
+            raise TypeError(str(type(data)))
+        if not isinstance(data, bytes):
+            data = bytes(data)
         return orjson.loads(data)
 
     def from_str(self, data: str) -> Any:

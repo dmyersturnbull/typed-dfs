@@ -16,7 +16,7 @@ S = TypeVar("S", covariant=True, bound=AbsDf)
 X = TypeVar("X", covariant=True, bound=AbsDf)
 
 
-class LazyDataframe(Generic[T]):
+class LazyDf(Generic[T]):
     """
     A :class:`typeddfs.abs_dfs.AbsDf` that is lazily loaded from a source.
     Create normally via :meth:`from_source`.
@@ -36,17 +36,17 @@ class LazyDataframe(Generic[T]):
     @classmethod
     def from_source(
         cls, source: str, clazz: Type[S] = PlainTypedDf, name: Optional[str] = None
-    ) -> LazyDataframe[S]:
+    ) -> LazyDf[S]:
         p, _, _ = FileFormat.split(source)
         if name is None:
             name = Path(p).name
-        return LazyDataframe(name, source, clazz, None)
+        return LazyDf(name, source, clazz, None)
 
     @classmethod
-    def from_df(cls, df: X, name: Optional[str] = None) -> LazyDataframe[X]:
+    def from_df(cls, df: X, name: Optional[str] = None) -> LazyDf[X]:
         if name is None:
             name = df.__class__.__name__
-        return LazyDataframe(name, "", df.__class__, df)
+        return LazyDf(name, "", df.__class__, df)
 
     @property
     def name(self) -> str:
@@ -65,15 +65,15 @@ class LazyDataframe(Generic[T]):
         return self._df
 
 
-def _get(name: str, t: Type[AbsDf] = PlainTypedDf) -> LazyDataframe:
+def _get(name: str, t: Type[AbsDf] = PlainTypedDf) -> LazyDf:
     url = f"https://raw.githubusercontent.com/mwaskom/seaborn-data/master/{name}.csv"
     if t is None:
         p, _, _ = FileFormat.split(url)
         t = TypedDfBuilder(p.name).build()
-    return LazyDataframe.from_source(url, t)
+    return LazyDf.from_source(url, t)
 
 
-class ExampleDataframes:  # pragma: no cover
+class ExampleDfs:  # pragma: no cover
     """
     DataFrames derived from Seaborn and other sources.
     """
@@ -99,10 +99,10 @@ class ExampleDataframes:  # pragma: no cover
     titanic = _get("titanic")
 
 
-__all__ = ["LazyDataframe", "ExampleDataframes"]
+__all__ = ["LazyDf", "ExampleDfs"]
 
 
 if __name__ == "__main__":  # pragma: no cover
-    dfx = ExampleDataframes.anagrams
+    dfx = ExampleDfs.penguins
     print(dfx.name)
     print(dfx.df)

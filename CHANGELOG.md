@@ -3,6 +3,14 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.16.2] - 2021-11-05
+
+### Changed
+
+- `read_file` and `write_file` now call `.resolve` on the paths
+- Renamed ExampleDataframes to ExampleDfs and LazyDataframe to LazyDf
+- Returned tuples are now mainly namedtuples
+
 ## [0.16.1] - 2021-11-01
 
 ### Added

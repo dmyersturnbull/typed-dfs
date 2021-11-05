@@ -9,7 +9,11 @@ from typing import Optional, Set, Union
 
 from typeddfs._core_dfs import CoreDf
 from typeddfs._mixins._full_io_mixin import _FullIoMixin
-from typeddfs.df_errors import NonStrColumnError
+from typeddfs.df_errors import (
+    HashEntryExistsError,
+    HashFileExistsError,
+    NonStrColumnError,
+)
 from typeddfs.df_typing import DfTyping
 from typeddfs.file_formats import FileFormat
 from typeddfs.utils import Utils
@@ -90,7 +94,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         Returns:
             An instance of this class
         """
-        path = Path(path)
+        path = Path(path).resolve()
         t: DfTyping = cls.get_typing()
         if attrs is None:
             attrs = t.io.use_attrs
@@ -162,7 +166,7 @@ class AbsDf(_FullIoMixin, CoreDf):
             InvalidDfError: If the DataFrame is not valid for this type
             ValueError: If the type of a column or index name is non-str
         """
-        path = Path(path)
+        path = Path(path).resolve()
         t = self.__class__.get_typing()
         file_hash = file_hash is True or file_hash is None and t.io.file_hash
         dir_hash = dir_hash is True or dir_hash is None and t.io.dir_hash
@@ -177,13 +181,13 @@ class AbsDf(_FullIoMixin, CoreDf):
             if path.exists():
                 raise FileExistsError(f"File {path} already exists")
             if file_hash and file_hash_path.exists():
-                raise FileExistsError(f"{file_hash_path} already exists")
+                raise HashFileExistsError(f"{file_hash_path} already exists")
             if dir_hash_path.exists():
                 dir_sums = Checksums(alg=t.io.hash_algorithm).load_dirsum_exact(dir_hash_path)
                 if path in dir_sums:
-                    raise FileExistsError(f"Path {path} listed in {dir_hash_path}")
+                    raise HashEntryExistsError(f"Path {path} listed in {dir_hash_path}")
             if file_hash and file_hash_path.exists():
-                raise FileExistsError(f"{file_hash_path} already exists")
+                raise HashFileExistsError(f"{file_hash_path} already exists")
             if attrs and attrs_path.exists():
                 raise FileExistsError(f"{attrs_path} already exists")
         self._check(self)

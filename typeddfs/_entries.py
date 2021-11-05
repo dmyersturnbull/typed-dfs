@@ -9,7 +9,7 @@ import pandas as pd
 
 from typeddfs.base_dfs import BaseDf
 from typeddfs.builders import AffinityMatrixDfBuilder, MatrixDfBuilder, TypedDfBuilder
-from typeddfs.datasets import ExampleDataframes, LazyDataframe
+from typeddfs.datasets import ExampleDfs, LazyDf
 from typeddfs.df_errors import (
     ClashError,
     FilenameSuffixError,
@@ -193,28 +193,28 @@ example = TypedDfs.example
 
 
 __all__ = [
-    "TypedDfs",
-    "Utils",
+    "AffinityMatrixDf",
+    "BaseDf",
     "ChecksumFile",
     "ChecksumMapping",
     "Checksums",
-    "FrozeSet",
+    "CompressionFormat",
+    "ExampleDfs",
+    "FileFormat",
+    "FinalDf",
     "FrozeDict",
     "FrozeList",
-    "FileFormat",
-    "CompressionFormat",
+    "FrozeSet",
+    "LazyDf",
+    "MatrixDf",
+    "TypedDf",
+    "UntypedDf",
+    "Utils",
+    "affinity_matrix",
+    "example",
+    "matrix",
     "typed",
     "untyped",
-    "matrix",
-    "affinity_matrix",
     "wrap",
-    "example",
-    "TypedDf",
-    "MatrixDf",
-    "AffinityMatrixDf",
-    "FinalDf",
-    "BaseDf",
-    "UntypedDf",
-    "ExampleDataframes",
-    "LazyDataframe",
+    "TypedDfs",
 ]
