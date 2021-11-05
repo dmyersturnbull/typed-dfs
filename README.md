@@ -82,6 +82,7 @@ Pandas has several issues with serialization.
 <details>
 <summary><emph>See: Fixed issues</emph></summary>
 Depending on the format and columns, these issues occur:
+
 - columns being silently added or dropped,
 - errors on either read or write of empty DataFrames,
 - the inability to use DataFrames with indices in Feather,
@@ -93,6 +94,7 @@ Depending on the format and columns, these issues occur:
 - you can’t write fixed-width format,
 - and the platform text encoding being used rather than utf-8.
 - invalid JSON is written via the built-in json library
+  
 </details>
 
 ### 🎁 Other features
@@ -100,7 +102,8 @@ Depending on the format and columns, these issues occur:
 See more in the [guided walkthrough ✏️](https://typed-dfs.readthedocs.io/en/latest/guide.html)
 
 <details>
-  <summary><emph>See: Short feature list</emph></summary>
+<summary><emph>See: Short feature list</emph></summary>
+  
 - Dtype-aware natural sorting
 - UTF-8 by default
 - Near-atomicity of read/write
@@ -111,17 +114,20 @@ See more in the [guided walkthrough ✏️](https://typed-dfs.readthedocs.io/en/
 - Interpreting paths and formats (e.g. `FileFormat.split("dir/myfile.csv.gz").compression  # gz`)
 - Generate good CLI help text for input DataFrames
 - Parse/verify/add/update/delete files in a .shasum-like file
+  
 </details>
 
 ### 💔 Limitations
 
 <details>
   <summary><emph>See: List of limitations</emph></summary>
+  
 - Multi-level columns are not yet supported.
 - Columns and index levels cannot share names.
 - Duplicate column names are not supported. (These are strange anyway.)
 - A typed DF cannot have columns "level_0", "index", or "Unnamed: 0".
 - `inplace` is forbidden in some functions; avoid it or use `.vanilla()`.
+  
 </details>
 
 ### 🔌 Serialization support
@@ -184,6 +190,7 @@ As a shorthand for all formats, use `typeddfs[all]`.
 
 <details>
 <summary><emph>See: serialization notes</emph></summary>
+  
 - † `fastparquet` can be used instead. It is slower but much smaller.
 - Parquet only supports str, float64, float32, int64, int32, and bool.
   Other numeric types are automatically converted during write.
@@ -210,6 +217,7 @@ Feather offers massively better performance over CSV, gzipped CSV, and HDF5
 in read speed, write speed, memory overhead, and compression ratios.
 Parquet typically results in smaller file sizes than Feather at some cost in speed.
 Feather is the preferred format for most cases.
+  
 </details>
 
 ### 🔒 Security
@@ -229,6 +237,7 @@ this is because it receives frequent major version bumps.
 This means that the result of typed-df’s `sort_natural` could change.
 To fix this, pin natsort to a specific major version;
 e.g. `natsort = "^8"` with [Poetry](https://python-poetry.org/) or `natsort>=8,<9` with pip.
+                                                                                   
 </details>
 
 ### 🍁 Contributing
