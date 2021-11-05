@@ -94,6 +94,9 @@ class AbsDf(_FullIoMixin, CoreDf):
         Returns:
             An instance of this class
         """
+        if any((str(path).startswith(x + "://") for x in ["http", "https", "ftp"])):
+            # just save some pain -- better than a weird error in .resolve()
+            raise ValueError(f"Cannot read from URL {path}; use read_url instead")
         path = Path(path).resolve()
         t: DfTyping = cls.get_typing()
         if attrs is None:
@@ -166,6 +169,9 @@ class AbsDf(_FullIoMixin, CoreDf):
             InvalidDfError: If the DataFrame is not valid for this type
             ValueError: If the type of a column or index name is non-str
         """
+        if any((str(path).startswith(x + "://") for x in ["http", "https", "ftp"])):
+            # just save some pain -- better than a weird error in .resolve()
+            raise ValueError(f"Cannot write to URL {path}")
         path = Path(path).resolve()
         t = self.__class__.get_typing()
         file_hash = file_hash is True or file_hash is None and t.io.file_hash

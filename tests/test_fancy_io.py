@@ -336,7 +336,7 @@ class TestReadWrite:
         bad_type = TypedDfBuilder("a").recommended_only().build()
         with pytest.raises(UnsupportedOperationError):
             # noinspection HttpUrlsUsage
-            secure_type.read_file("http://google.com")  # nosec
+            secure_type.read_url("http://google.com")  # nosec
         secure = secure_type.new_df()
         bad = bad_type.new_df()
         for fmt in FileFormat:

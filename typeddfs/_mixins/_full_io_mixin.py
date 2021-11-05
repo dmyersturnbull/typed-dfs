@@ -55,7 +55,7 @@ class _FullIoMixin(
     ) -> pd.DataFrame:
         fmt = cls._get_fmt(path)
         # noinspection HttpUrlsUsage
-        if isinstance(path, str) and path.startswith("http://"):
+        if str(path).startswith("http://"):
             raise UnsupportedOperationError("Cannot read from http with .secure() enabled")
         cls._check_io_ok(path, fmt)
         kwargs = cls._get_read_kwargs(fmt, path)
