@@ -3,7 +3,7 @@
 [![Version status](https://img.shields.io/pypi/status/typeddfs?label=status)](https://pypi.org/project/typeddfs)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python version compatibility](https://img.shields.io/pypi/pyversions/typeddfs?label=Python)](https://pypi.org/project/typeddfs)
-[![Version on Github](https://img.shields.io/github/v/release/dmyersturnbull/typed-dfs?include_prereleases&label=GitHub)](https://github.com/dmyersturnbull/typed-dfs/releases)
+[![Version on GitHub](https://img.shields.io/github/v/release/dmyersturnbull/typed-dfs?include_prereleases&label=GitHub)](https://github.com/dmyersturnbull/typed-dfs/releases)
 [![Version on PyPi](https://img.shields.io/pypi/v/typeddfs?label=PyPi)](https://pypi.org/project/typeddfs)  
 [![Build (Actions)](https://img.shields.io/github/workflow/status/dmyersturnbull/typed-dfs/Build%20&%20test?label=Tests)](https://github.com/dmyersturnbull/typed-dfs/actions)
 [![Coverage (coveralls)](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=main&service=github)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=main)
@@ -30,6 +30,7 @@ No index_cols=, header=, set_index, or astype needed.
 ```python
 path = input("input file? [.csv/.tsv/.tab/.json/.xml.bz2/.feather/.snappy.h5/...]")
 df = Film.read_file(path)
+df.write_file("output.snappy")
 ```
 
 **Need dataclasses?**
@@ -69,13 +70,18 @@ print(ExampleDataframes.penguins().df)
 # 0    Adelie  Torgersen            39.1  ...              181.0       3750.0    MALE
 ```
 
+All standard DataFrame methods remain available.
+Use `.untyped()` or `.vanilla()` if needed, and `.of(df)` for the inverse.
+
 **[Read the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more info and examples.
 
 ### 🐛 Pandas serialization bugs fixed
 
 Pandas has several issues with serialization.
-Depending on the format and columns, these issues occur:
 
+<details>
+<summary><emph>See: Fixed issues</emph></summary>
+Depending on the format and columns, these issues occur:
 - columns being silently added or dropped,
 - errors on either read or write of empty DataFrames,
 - the inability to use DataFrames with indices in Feather,
@@ -87,47 +93,69 @@ Depending on the format and columns, these issues occur:
 - you can’t write fixed-width format,
 - and the platform text encoding being used rather than utf-8.
 - invalid JSON is written via the built-in json library
+</details>
 
-All standard DataFrame methods remain available.
-Use `.untyped()` or `.vanilla()` if needed, and `.of(df)` for the inverse.
+### 🎁 Other features
+
+See more in the [guided walkthrough ✏️](https://typed-dfs.readthedocs.io/en/latest/guide.html)
+
+<details>
+  <summary><emph>See: Short feature list</emph></summary>
+- Dtype-aware natural sorting
+- UTF-8 by default
+- Near-atomicity of read/write
+- Matrix-like typed dataframes and methods (e.g. `matrix.is_symmetric()`)
+- DataFrame-compatible frozen, hashable, ordered collections (dict, list, and set)
+- Serialize JSON robustly, preserving NaN, inf, −inf, enums, timezones, complex numbers, etc.
+- Serialize more formats like TOML and INI
+- Interpreting paths and formats (e.g. `FileFormat.split("dir/myfile.csv.gz").compression  # gz`)
+- Generate good CLI help text for input DataFrames
+- Parse/verify/add/update/delete files in a .shasum-like file
+</details>
 
 ### 💔 Limitations
 
+<details>
+  <summary><emph>See: List of limitations</emph></summary>
 - Multi-level columns are not yet supported.
 - Columns and index levels cannot share names.
 - Duplicate column names are not supported. (These are strange anyway.)
 - A typed DF cannot have columns "level_0", "index", or "Unnamed: 0".
 - `inplace` is forbidden in some functions; avoid it or use `.vanilla()`.
+</details>
 
 ### 🔌 Serialization support
 
-Like Pandas, TypedDfs can read and write to various formats.
-It provides the methods `read_file` and `write_file`, which guess the format from the
-filename extension. For example, `df.write_file("myfile.snappy)` writes Parquet files,
-and `df.write_file("myfile.tab.gz")` writes a gzipped, tab-delimited file.
-The `read_file` method works the same way: `MyDf.read_file("myfile.feather")` will
-read an Apache Arrow Feather file, and `MyDf.read_file("myfile.json.gzip")`reads
-a gzipped JSON file. You can pass keyword arguments to those functions.
+TypedDfs provides the methods `read_file` and `write_file`, which guess the format from the
+filename extension. For example, this will convert a gzipped, tab-delimited file to Feather:
 
-Serialization is provided through Pandas, and some formats require additional packages.
-Pandas does not specify compatible versions, so typed-dfs specifies
-[extras](https://python-poetry.org/docs/pyproject/#extras) are provided in typed-dfs
-to ensure that those packages are installed with compatible versions.
+```python
+TastyDf = typeddfs.typed("TastyDf").build()
+TastyDf.read_file("myfile.tab.gz").write_file("myfile.feather")
+```
 
-- To install with [Feather](https://arrow.apache.org/docs/python/feather.html) support,
-  use `pip install typeddfs[feather]`.
-- To install with support for all formats,
-  use `pip install typeddfs[all]`.
+Pandas does most of the serialization, but some formats require extra packages.
+Typed-dfs specifies [extras](https://python-poetry.org/docs/pyproject/#extras) 
+to help you get required packages and with compatible versions.
 
-Feather offers massively better performance over CSV, gzipped CSV, and HDF5
-in read speed, write speed, memory overhead, and compression ratios.
-Parquet typically results in smaller file sizes than Feather at some cost in speed.
-Feather is the preferred format for most cases.
+Here are the extras:
+- `feather`: [Feather](https://arrow.apache.org/docs/python/feather.html) (uses: pyarrow)
+- `parquet`: [Parquet (e.g. .snappy)](https://github.com/apache/parquet-format) (uses: pyarrow)
+- `xml` (uses: lxml)
+- `excel`: Excel and LibreOffice .xlsx/.ods/.xls, etc. (uses: openpyxl, defusedxml)
+- `toml`: [TOML](https://toml.io/en/) (uses: tomlkit)
+- `html` (uses: html5lib, beautifulsoup4)
+- `xlsb`: rare binary Excel file (uses: pyxlsb)
+- [HDF5](https://www.hdfgroup.org/solutions/hdf5/) *{no extra provided}* (*use:* `tables`)
+
+For example, for Feather and TOML support use: `typeddfs[feather,toml]`
+As a shorthand for all formats, use `typeddfs[all]`.
 
 ### 📊 Serialization in-depth
 
-**⚠ Note:** The `hdf5` extra is currently disabled.
-
+<details>
+<summary><emph>See: Full table</emph></summary>
+  
 | format      | packages                     | extra     | sanity | speed | file sizes |
 | ----------- | ---------------------------- | --------- | ------ | ----- | ---------- |
 | Feather     | `pyarrow`                    | `feather` | +++    | ++++  | +++        |
@@ -151,8 +179,11 @@ Feather is the preferred format for most cases.
 | XLSB        | `pyxlsb`                     | `xlsb`    | −−     | −−    | ++         |
 | HDF5        | `tables`                     | `hdf5`    | −−     | −     | ++         |
 
-**Notes:**
+**⚠ Note:** The `hdf5` extra is currently disabled.
+</details>
 
+<details>
+<summary><emph>See: serialization notes</emph></summary>
 - † `fastparquet` can be used instead. It is slower but much smaller.
 - Parquet only supports str, float64, float32, int64, int32, and bool.
   Other numeric types are automatically converted during write.
@@ -175,11 +206,20 @@ Feather is the preferred format for most cases.
 - HDF may not work on all platforms yet due to a
   [tables issue](https://github.com/PyTables/PyTables/issues/854).
 
+Feather offers massively better performance over CSV, gzipped CSV, and HDF5
+in read speed, write speed, memory overhead, and compression ratios.
+Parquet typically results in smaller file sizes than Feather at some cost in speed.
+Feather is the preferred format for most cases.
+</details>
+
 ### 🔒 Security
 
 Refer to the [security policy](https://github.com/dmyersturnbull/typed-dfs/blob/main/SECURITY.md).
 
 ### 📝 Extra notes
+
+<details>
+<summary><emph>See: Pinned versions</emph></summary>
 
 Dependencies in the extras are only restricted to minimum version numbers;
 libraries that use them can set their own version ranges.
@@ -188,7 +228,8 @@ For example, typed-dfs only requires tables >= 0.4, but Pandas can further restr
 this is because it receives frequent major version bumps.
 This means that the result of typed-df’s `sort_natural` could change.
 To fix this, pin natsort to a specific major version;
-e.g. `natsort = "^7"` with [Poetry](https://python-poetry.org/) or `natsort>=7,<8` with pip.
+e.g. `natsort = "^8"` with [Poetry](https://python-poetry.org/) or `natsort>=8,<9` with pip.
+</details>
 
 ### 🍁 Contributing
 
