@@ -80,7 +80,7 @@ Use `.untyped()` or `.vanilla()` if needed, and `.of(df)` for the inverse.
 Pandas has several issues with serialization.
 
 <details>
-<summary><emph>See: Fixed issues</emph></summary>
+<summary><em>See: Fixed issues</em></summary>
 Depending on the format and columns, these issues occur:
 
 - columns being silently added or dropped,
@@ -102,7 +102,7 @@ Depending on the format and columns, these issues occur:
 See more in the [guided walkthrough ✏️](https://typed-dfs.readthedocs.io/en/latest/guide.html)
 
 <details>
-<summary><emph>See: Short feature list</emph></summary>
+<summary><em>See: Short feature list</em></summary>
   
 - Dtype-aware natural sorting
 - UTF-8 by default
@@ -120,7 +120,7 @@ See more in the [guided walkthrough ✏️](https://typed-dfs.readthedocs.io/en/
 ### 💔 Limitations
 
 <details>
-  <summary><emph>See: List of limitations</emph></summary>
+  <summary><em>See: List of limitations</em></summary>
   
 - Multi-level columns are not yet supported.
 - Columns and index levels cannot share names.
@@ -160,7 +160,7 @@ As a shorthand for all formats, use `typeddfs[all]`.
 ### 📊 Serialization in-depth
 
 <details>
-<summary><emph>See: Full table</emph></summary>
+<summary><em>See: Full table</em></summary>
   
 | format      | packages                     | extra     | sanity | speed | file sizes |
 | ----------- | ---------------------------- | --------- | ------ | ----- | ---------- |
@@ -189,7 +189,7 @@ As a shorthand for all formats, use `typeddfs[all]`.
 </details>
 
 <details>
-<summary><emph>See: serialization notes</emph></summary>
+<summary><em>See: serialization notes</em></summary>
   
 - † `fastparquet` can be used instead. It is slower but much smaller.
 - Parquet only supports str, float64, float32, int64, int32, and bool.
@@ -227,13 +227,11 @@ Refer to the [security policy](https://github.com/dmyersturnbull/typed-dfs/blob/
 ### 📝 Extra notes
 
 <details>
-<summary><emph>See: Pinned versions</emph></summary>
+<summary><em>See: Pinned versions</em></summary>
 
-Dependencies in the extras are only restricted to minimum version numbers;
-libraries that use them can set their own version ranges.
-For example, typed-dfs only requires tables >= 0.4, but Pandas can further restrict it.
-[natsort](https://github.com/SethMMorton/natsort) is also only assigned a minimum version number;
-this is because it receives frequent major version bumps.
+Dependencies in the extras only have version minimums, not maximums.
+For example, typed-dfs requires pyarrow >= 4.
+[natsort](https://github.com/SethMMorton/natsort) is also only assigned a minimum version number.
 This means that the result of typed-df’s `sort_natural` could change.
 To fix this, pin natsort to a specific major version;
 e.g. `natsort = "^8"` with [Poetry](https://python-poetry.org/) or `natsort>=8,<9` with pip.
