@@ -4,14 +4,16 @@ Misc tools for typed-dfs.
 from __future__ import annotations
 
 import collections
-from typing import AbstractSet, Any, Iterator, Mapping, Sequence
+from typing import AbstractSet, Any, Iterator, Mapping, Optional, Sequence, Union
 
 import numpy as np
 
 # noinspection PyProtectedMember
 from tabulate import DataRow, TableFormat, _table_formats
 
+from typeddfs.file_formats import CompressionFormat
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
+from typeddfs.utils._utils import PathLike
 
 
 class MiscUtils:
@@ -85,6 +87,33 @@ class MiscUtils:
         Returns the names of styles for `tabulate <https://pypi.org/project/tabulate/>`_.
         """
         return _table_formats.keys()
+
+    @classmethod
+    def choose_table_format(
+        cls, *, path: PathLike, fmt: Union[None, TableFormat, str] = None, default: str = "plain"
+    ) -> TableFormat:
+        """
+        Makes a best-effort guess of a good tabulate format from a path name.
+        """
+        if fmt is not None and isinstance(fmt, TableFormat):
+            return fmt
+        if fmt is None and path is None:
+            fmt = default
+        elif fmt is None:
+            choices = dict(
+                html="html",
+                htm="html",
+                tex="tex",
+                latex="latex",
+                rst="rst",
+                md="github",
+                markdown="github",
+                tab="tab",
+                tsv="tsv",
+                wiki="wiki",
+            )
+            fmt = choices.get(CompressionFormat.strip_suffix(path).suffix.lstrip("."), default)
+        return TableFormat[fmt]
 
     @classmethod
     def table_format(cls, fmt: str) -> TableFormat:

@@ -27,6 +27,7 @@ from typeddfs.df_errors import (
 )
 from typeddfs.file_formats import CompressionFormat, FileFormat
 from typeddfs.utils import Utils
+from typeddfs.utils._utils import PathLike
 
 
 class _FullIoMixin(
@@ -41,11 +42,40 @@ class _FullIoMixin(
     _LinesMixin,
     _PickleMixin,
 ):
-    def pretty_print(self, fmt: Union[str, TableFormat] = "plain", **kwargs) -> str:
+    def pretty_print(
+        self,
+        fmt: Union[None, str, TableFormat] = None,
+        *,
+        to: Optional[PathLike] = None,
+        mode: str = "w",
+        **kwargs,
+    ) -> str:
         """
         Outputs a pretty table using the `tabulate <https://pypi.org/project/tabulate/>`_ package.
+
+        Args:
+            fmt: A tabulate format; if None, chooses according to ``to``, falling back to ``"plain"``.
+                 Choices include:
+                - "plain"
+                - "simple"
+                - "github"
+                - "grid"
+                - "html"
+                - "rst"
+                - "latex"
+                - "latex_longtable"
+            to: Write to this path (.gz, .zip, etc. is inferred)
+            mode: Write mode: 'w', 'a', or 'x'
+            kwargs: Passed to tabulate
+
+        Returns:
+            The formatted string
         """
-        return self._tabulate(fmt, **kwargs)
+        fmt = Utils.choose_table_format(path=to, fmt=fmt)
+        s = self._tabulate(fmt, **kwargs)
+        if to is not None:
+            Utils.write(to, s, mode=mode)
+        return s
 
     @classmethod
     def _call_read(

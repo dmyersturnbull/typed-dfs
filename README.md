@@ -49,29 +49,36 @@ df = Film.read_file("df.csv", attrs=True)
 print(df.attrs)  # e.g. {"dataset": "piano")
 ```
 
-**Make dirs? Don't overwrite?**
+**Make dirs? Don’t overwrite?**
 
 ```python
 df.write_file("df.csv", mkdirs=True, overwrite=False)
 ```
 
-**Write and verify checksum?**
+**Write / verify checksums?**
 
 ```python
 df.write_file("df.csv", file_hash=True)
 df = Film.read_file("df.csv", file_hash=True)  # fails if wrong
 ```
 
-**Example datasets?**
+**Get example datasets?**
 
 ```python
-print(ExampleDataframes.penguins().df)
+print(ExampleDfs.penguins().df)
 #    species     island  bill_length_mm  ...  flipper_length_mm  body_mass_g     sex
 # 0    Adelie  Torgersen            39.1  ...              181.0       3750.0    MALE
 ```
 
+**Pretty-print the obvious way?**
+
+```python
+df.pretty_print(to="all_data.md.zip")
+wiki_txt = df.pretty_print(fmt="mediawiki")
+```
+
 All standard DataFrame methods remain available.
-Use `.untyped()` or `.vanilla()` if needed, and `.of(df)` for the inverse.
+Use `.of(df)` to convert to your type, or `.vanilla()` for a plain DataFrame.
 
 **[Read the docs 📚](https://typed-dfs.readthedocs.io/en/stable/)** for more info and examples.
 
@@ -94,7 +101,7 @@ Depending on the format and columns, these issues occur:
 - you can’t write fixed-width format,
 - and the platform text encoding being used rather than utf-8.
 - invalid JSON is written via the built-in json library
-  
+
 </details>
 
 ### 🎁 Other features
@@ -103,7 +110,7 @@ See more in the [guided walkthrough ✏️](https://typed-dfs.readthedocs.io/en/
 
 <details>
 <summary><em>See: Short feature list</em></summary>
-  
+
 - Dtype-aware natural sorting
 - UTF-8 by default
 - Near-atomicity of read/write
@@ -111,23 +118,23 @@ See more in the [guided walkthrough ✏️](https://typed-dfs.readthedocs.io/en/
 - DataFrame-compatible frozen, hashable, ordered collections (dict, list, and set)
 - Serialize JSON robustly, preserving NaN, inf, −inf, enums, timezones, complex numbers, etc.
 - Serialize more formats like TOML and INI
-- Interpreting paths and formats (e.g. `FileFormat.split("dir/myfile.csv.gz").compression  # gz`)
+- Interpreting paths and formats (e.g. `FileFormat.split("dir/myfile.csv.gz").compression # gz`)
 - Generate good CLI help text for input DataFrames
 - Parse/verify/add/update/delete files in a .shasum-like file
-  
+
 </details>
 
 ### 💔 Limitations
 
 <details>
-  <summary><em>See: List of limitations</em></summary>
-  
+<summary><em>See: List of limitations</em></summary>
+
 - Multi-level columns are not yet supported.
 - Columns and index levels cannot share names.
 - Duplicate column names are not supported. (These are strange anyway.)
 - A typed DF cannot have columns "level_0", "index", or "Unnamed: 0".
 - `inplace` is forbidden in some functions; avoid it or use `.vanilla()`.
-  
+
 </details>
 
 ### 🔌 Serialization support
@@ -141,10 +148,11 @@ TastyDf.read_file("myfile.tab.gz").write_file("myfile.feather")
 ```
 
 Pandas does most of the serialization, but some formats require extra packages.
-Typed-dfs specifies [extras](https://python-poetry.org/docs/pyproject/#extras) 
+Typed-dfs specifies [extras](https://python-poetry.org/docs/pyproject/#extras)
 to help you get required packages and with compatible versions.
 
 Here are the extras:
+
 - `feather`: [Feather](https://arrow.apache.org/docs/python/feather.html) (uses: pyarrow)
 - `parquet`: [Parquet (e.g. .snappy)](https://github.com/apache/parquet-format) (uses: pyarrow)
 - `xml` (uses: lxml)
@@ -152,16 +160,16 @@ Here are the extras:
 - `toml`: [TOML](https://toml.io/en/) (uses: tomlkit)
 - `html` (uses: html5lib, beautifulsoup4)
 - `xlsb`: rare binary Excel file (uses: pyxlsb)
-- [HDF5](https://www.hdfgroup.org/solutions/hdf5/) *{no extra provided}* (*use:* `tables`)
+- [HDF5](https://www.hdfgroup.org/solutions/hdf5/) _{no extra provided}_ (_use:_ `tables`)
 
-For example, for Feather and TOML support use: `typeddfs[feather,toml]`
+For example, for Feather and TOML support use: `typeddfs[feather,toml]`  
 As a shorthand for all formats, use `typeddfs[all]`.
 
 ### 📊 Serialization in-depth
 
 <details>
 <summary><em>See: Full table</em></summary>
-  
+
 | format      | packages                     | extra     | sanity | speed | file sizes |
 | ----------- | ---------------------------- | --------- | ------ | ----- | ---------- |
 | Feather     | `pyarrow`                    | `feather` | +++    | ++++  | +++        |
@@ -186,11 +194,12 @@ As a shorthand for all formats, use `typeddfs[all]`.
 | HDF5        | `tables`                     | `hdf5`    | −−     | −     | ++         |
 
 **⚠ Note:** The `hdf5` extra is currently disabled.
+
 </details>
 
 <details>
 <summary><em>See: serialization notes</em></summary>
-  
+
 - † `fastparquet` can be used instead. It is slower but much smaller.
 - Parquet only supports str, float64, float32, int64, int32, and bool.
   Other numeric types are automatically converted during write.
@@ -217,7 +226,7 @@ Feather offers massively better performance over CSV, gzipped CSV, and HDF5
 in read speed, write speed, memory overhead, and compression ratios.
 Parquet typically results in smaller file sizes than Feather at some cost in speed.
 Feather is the preferred format for most cases.
-  
+
 </details>
 
 ### 🔒 Security
@@ -235,7 +244,7 @@ For example, typed-dfs requires pyarrow >= 4.
 This means that the result of typed-df’s `sort_natural` could change.
 To fix this, pin natsort to a specific major version;
 e.g. `natsort = "^8"` with [Poetry](https://python-poetry.org/) or `natsort>=8,<9` with pip.
-                                                                                   
+
 </details>
 
 ### 🍁 Contributing
