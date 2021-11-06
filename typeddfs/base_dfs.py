@@ -38,6 +38,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
         or tries first constructing a DataFrame by calling ``pd.DataFrame(df)``.
         If ``df`` is a list (``Iterable``) of DataFrames, will call ``pd.concat`` on them;
         for this, ``ignore_index=True`` is passed.
+        If the list is empty, will return :meth:`new_df`.
 
         May be overridden to accept more types, such as a string for database lookup.
         For example, ``Customers.of("john")`` could return a DataFrame for a database customer,
@@ -65,6 +66,8 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
                     if len(keys) != len(dfs):
                         raise ValueError(f"Got {len(dfs)} DataFrames but {len(keys)} keys")
         if dfs is not None:
+            if len(dfs) == 0:
+                return cls.new_df()
             df = pd.concat(dfs, ignore_index=True, copy=False)
             if keys is not None and any((len(d.attrs) > 0 for d in dfs)):
                 df.attrs = {s: d.attrs for s, d in zip(keys, dfs)}
