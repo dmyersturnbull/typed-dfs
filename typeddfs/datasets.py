@@ -24,6 +24,7 @@ class LazyDf(Generic[T]):
 
     Example:
         .. code-block::
+
             lazy = LazyDataFrame.from_source("https://google.com/dataframe.csv")
     """
 

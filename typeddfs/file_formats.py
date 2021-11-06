@@ -343,6 +343,7 @@ class FileFormat(_Enum):
 
         Example:
             .. code-block::
+
                 FileFormat.strip("abc/xyz.csv.gz")  # Path("abc") / "xyz"
         """
         base, _, _ = cls.split(path, format_map=format_map)

@@ -73,9 +73,7 @@ class TestDataclasses:
         assert instances == []
 
     def test_read_instances(self):
-        @dataclass(
-            frozen=True,
-        )
+        @dataclass(frozen=True)
         class Dc:
             animal: str
             val: Optional[int]

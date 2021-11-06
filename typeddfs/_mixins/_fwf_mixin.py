@@ -72,7 +72,7 @@ class _FwfMixin:
         # if colspecs is None:
         if True:
             # TODO: use format, etc.
-            content = self._tabulate(Utils.plain_table_format(" "), disable_numparse=True)
+            content = self._tabulate(Utils.plain_table_format(sep=" "), disable_numparse=True)
         else:
             df = self.vanilla_reset()
             if len(df.columns) != len(colspecs):

@@ -78,7 +78,7 @@ class _FlexwfMixin:
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
-        fmt = MiscUtils.plain_table_format(" " + sep + " ")
+        fmt = MiscUtils.plain_table_format(sep=" " + sep + " ")
         content = self._tabulate(fmt, disable_numparse=True)
         if path_or_buff is None:
             return content

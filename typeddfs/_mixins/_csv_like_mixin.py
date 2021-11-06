@@ -3,7 +3,6 @@ Mixin for CSV and TSV.
 """
 from __future__ import annotations
 
-import urllib
 from typing import Optional
 
 import pandas as pd

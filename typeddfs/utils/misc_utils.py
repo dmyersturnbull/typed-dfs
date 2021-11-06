@@ -4,7 +4,7 @@ Misc tools for typed-dfs.
 from __future__ import annotations
 
 import collections
-from typing import AbstractSet, Any, Iterator, Mapping, Optional, Sequence, Union
+from typing import AbstractSet, Any, Iterator, Mapping, Sequence, Union
 
 import numpy as np
 
@@ -91,14 +91,14 @@ class MiscUtils:
     @classmethod
     def choose_table_format(
         cls, *, path: PathLike, fmt: Union[None, TableFormat, str] = None, default: str = "plain"
-    ) -> TableFormat:
+    ) -> Union[str, TableFormat]:
         """
         Makes a best-effort guess of a good tabulate format from a path name.
         """
-        if fmt is not None and isinstance(fmt, TableFormat):
+        if fmt is not None:
             return fmt
         if fmt is None and path is None:
-            fmt = default
+            return default
         elif fmt is None:
             choices = dict(
                 html="html",
@@ -112,8 +112,8 @@ class MiscUtils:
                 tsv="tsv",
                 wiki="wiki",
             )
-            fmt = choices.get(CompressionFormat.strip_suffix(path).suffix.lstrip("."), default)
-        return TableFormat[fmt]
+            return choices.get(CompressionFormat.strip_suffix(path).suffix.lstrip("."), default)
+        return fmt
 
     @classmethod
     def table_format(cls, fmt: str) -> TableFormat:
@@ -126,7 +126,7 @@ class MiscUtils:
         return _table_formats[fmt]
 
     @classmethod
-    def plain_table_format(cls, sep: str = " ", **kwargs) -> TableFormat:
+    def plain_table_format(cls, *, sep: str = " ", **kwargs) -> TableFormat:
         """
         Creates a simple tabulate style using a column-delimiter ``sep``.
 

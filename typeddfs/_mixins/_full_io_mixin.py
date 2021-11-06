@@ -54,16 +54,7 @@ class _FullIoMixin(
         Outputs a pretty table using the `tabulate <https://pypi.org/project/tabulate/>`_ package.
 
         Args:
-            fmt: A tabulate format; if None, chooses according to ``to``, falling back to ``"plain"``.
-                 Choices include:
-                - "plain"
-                - "simple"
-                - "github"
-                - "grid"
-                - "html"
-                - "rst"
-                - "latex"
-                - "latex_longtable"
+            fmt: A tabulate format; if None, chooses according to ``to``, falling back to ``"plain"``
             to: Write to this path (.gz, .zip, etc. is inferred)
             mode: Write mode: 'w', 'a', or 'x'
             kwargs: Passed to tabulate
@@ -92,10 +83,7 @@ class _FullIoMixin(
         fn = cls._get_io(clazz, path, fmt, cls._get_write_kwargs(fmt, path), "read_")
         return fn(path, **kwargs)
 
-    def _call_write(
-        self,
-        path: Union[Path, str],
-    ) -> Optional[str]:
+    def _call_write(self, path: Union[Path, str]) -> Optional[str]:
         cls = self.__class__
         fmt = self._get_fmt(path)
         cls._check_io_ok(path, fmt)

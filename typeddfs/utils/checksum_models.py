@@ -329,7 +329,7 @@ class ChecksumMapping(_ChecksumMapping):
 
         Args:
             sort: Sort with this function, or ``sorted`` if True
-            rm_if_empty: Delete with ``pathlib.Path.unlink` if this contains no items
+            rm_if_empty: Delete with ``pathlib.Path.unlink`` if this contains no items
 
         Raises:
             OSError: Accordingly
