@@ -5,7 +5,7 @@ import pytest
 from typeddfs.df_errors import UnsupportedOperationError
 from typeddfs.untyped_dfs import UntypedDf
 
-from . import Trivial, sample_data, sample_data_2, sample_data_str
+from . import Col1, Ind1, Trivial, sample_data, sample_data_2, sample_data_str
 
 
 class TestBase:
@@ -28,6 +28,12 @@ class TestBase:
         assert df.to_numpy().tolist() == expected
         df = UntypedDf.of(sample_data())
         assert df.to_numpy().tolist() == expected
+
+    def test_of_concat(self):
+        df1 = UntypedDf.of(pd.DataFrame(sample_data()))
+        df2 = UntypedDf.of(pd.DataFrame(sample_data()))
+        df = UntypedDf.of([df1, df2])
+        assert len(df) == len(df1) + len(df2) > 0
 
     def test_st(self):
         df = UntypedDf().convert(pd.DataFrame(sample_data()))
@@ -126,6 +132,50 @@ class TestBase:
         df2 = df.set_attrs(animal="fishies")
         assert df2.attrs == dict(animal="fishies")
         assert df.attrs == {}
+
+    def test_preserve_attrs(self):
+        df = Col1([pd.Series(dict(abc="hippo"))])
+        df2 = df.set_attrs(animal="fishies")
+        df3 = Col1.convert(df2)
+        df4 = Col1.convert(df)
+        df5 = Col1.of(df2)
+        assert df3.attrs == dict(animal="fishies")
+        assert df4.attrs == {}
+        assert df5.attrs == dict(animal="fishies")
+
+    def test_concat_no_preserve_attrs(self):
+        df0 = Col1([pd.Series(dict(abc="hippo"))])
+        df1 = df0.set_attrs(animal="fishies")
+        df2 = df0.set_attrs(animal="hippos")
+        df = UntypedDf.of([df1, df2])
+        assert df0.attrs == {}
+        assert len(df) == len(df1) + len(df2) > 0
+        assert df.attrs == {}
+
+    def test_concat_preserve_attrs(self):
+        df0 = Col1([pd.Series(dict(abc="x")), pd.Series(dict(abc="y"))])
+        df1 = df0.set_attrs(animal="fishies")
+        df2 = df0.set_attrs(animal="hippos")
+        df = Col1.of([df1, df2], keys=["one", "two"])
+        assert df0.attrs == {}
+        assert len(df) == len(df1) + len(df2) > 0
+        assert df.attrs == {"one": {"animal": "fishies"}, "two": {"animal": "hippos"}}
+
+    def test_concat_ignore_index(self):
+        df1 = Col1([pd.Series(dict(abc="hippo"))])
+        df2 = Col1([pd.Series(dict(abc="hippo"))])
+        df = Col1.of([df1, df2])
+        assert len(df) == 2
+        assert df.index.tolist() == [0, 1]
+
+    def test_concat_ignore_index_index(self):
+        df1 = Ind1([pd.Series(dict(abc="elephant"))])
+        df2 = Ind1([pd.Series(dict(abc="lion"))])
+        df = Ind1.of([df1, df2])
+        assert len(df) == 2
+        assert df.columns.tolist() == []
+        assert df.index_names() == ["abc"]
+        assert df.index.tolist() == ["elephant", "lion"]
 
 
 if __name__ == "__main__":

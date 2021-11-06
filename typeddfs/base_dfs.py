@@ -4,6 +4,7 @@ Defines the superclasses of the types ``TypedDf`` and ``UntypedDf``.
 from __future__ import annotations
 
 import abc
+from typing import Iterable, Optional
 
 import pandas as pd
 
@@ -30,20 +31,44 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
             return super().__getitem__(item)
 
     @classmethod
-    def of(cls, df, *args, **kwargs) -> __qualname__:
+    def of(cls, df, *args, keys: Optional[Iterable[str]] = None, **kwargs) -> __qualname__:
         """
         Construct or convert a DataFrame, returning this type.
         Delegates to :meth:`convert` for DataFrames,
         or tries first constructing a DataFrame by calling ``pd.DataFrame(df)``.
+        If ``df`` is a list (``Iterable``) of DataFrames, will call ``pd.concat`` on them;
+        for this, ``ignore_index=True`` is passed.
 
         May be overridden to accept more types, such as a string for database lookup.
         For example, ``Customers.of("john")`` could return a DataFrame for a database customer,
         or return the result of ``Customers.convert(...)`` if a DataFrame instance is provided.
+        You may add and process keyword arguments, but keyword args for ``pd.DataFrame.__init__``
+        should be passed along to that constructor.
+
+        Args:
+            df: A DataFrame, list of DataFrames, or something to be passed to ``pd.DataFrame``.
+            keys: Labels for the DataFrames (if passed a sequence of them) to use as attr keys;
+                  if None, attrs will be empty (``{}``) if concatenating
+            kwargs: Passed to ``pd.DataFrame.__init__``; can be handled directly by this method
+                    for specialized construction, database lookup, etc.
 
         Returns:
             A new DataFrame; see :meth:`convert` for more info.
         """
-        if not isinstance(df, pd.DataFrame):
+        dfs = None
+        if isinstance(df, Iterable):
+            dfs_ = list(df)  # make sure we can iter multiple times
+            if all((isinstance(d, pd.DataFrame) for d in df)):
+                dfs = dfs_
+                if keys is not None:
+                    keys = list(keys)
+                    if len(keys) != len(dfs):
+                        raise ValueError(f"Got {len(dfs)} DataFrames but {len(keys)} keys")
+        if dfs is not None:
+            df = pd.concat(dfs, ignore_index=True, copy=False)
+            if keys is not None and any((len(d.attrs) > 0 for d in dfs)):
+                df.attrs = {s: d.attrs for s, d in zip(keys, dfs)}
+        elif not isinstance(df, pd.DataFrame):
             df = pd.DataFrame(df, *args, **kwargs)
         return cls.convert(df)
 

@@ -38,7 +38,7 @@ class _NewMethodsMixin:
             for col in range(len(self.columns)):
                 yield (row, col), self.iat[row, col]
 
-    def only(self, column: str, exclude_na: bool = False, show_vals: bool = False) -> Any:
+    def only(self, column: str, exclude_na: bool = False) -> Any:
         """
         Returns the single unique value in a column.
         Raises an error if zero or more than one value is in the column.
@@ -46,7 +46,6 @@ class _NewMethodsMixin:
         Args:
             column: The name of the column
             exclude_na: Exclude None/pd.NA values
-            show_vals: If there are multiple unique values, list them all in the error message
         """
         x = set(self[column].unique())
         if exclude_na:
