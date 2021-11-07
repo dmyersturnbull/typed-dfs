@@ -217,7 +217,7 @@ class JsonUtils:
             and not isinstance(data, str)
             and not isinstance(data, ByteString)
         ):
-            if all((isinstance(v, (float, np.floating)) and np.isinf(data)) for v in data):
+            if all((isinstance(v, (float, np.floating)) and np.isinf(v)) for v in data):
                 return [str(v) for v in data]
             else:
                 return [cls.preserve_inf(v) for v in data]
