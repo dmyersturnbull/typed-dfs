@@ -377,3 +377,16 @@ class HashEntryExistsError(HashVerificationError, FileExistsError):
     def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
+
+
+class PathNotRelativeError(ValueError):
+    """
+    The filename is not relative to the hash dir.
+
+    Attributes:
+        key: The filename
+    """
+
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+        super().__init__(*args)
+        self.key = key

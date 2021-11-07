@@ -3,7 +3,6 @@ Defines a builder pattern for ``TypedDf``.
 """
 from __future__ import annotations
 
-import logging
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Sequence, Type, Union
@@ -19,13 +18,12 @@ from typeddfs.typed_dfs import TypedDf
 from typeddfs.utils import Utils
 from typeddfs.utils._utils import (
     _AUTO_DROPPED_NAMES,
+    _DEFAULT_ATTRS_SUFFIX,
     _DEFAULT_HASH_ALG,
     _FORBIDDEN_NAMES,
     _PICKLE_VR,
 )
 from typeddfs.utils.checksums import Checksums
-
-logger = logging.getLogger("typeddfs")
 
 
 class _GenericBuilder:
@@ -237,7 +235,7 @@ class _GenericBuilder:
     def attrs(
         self,
         *,
-        suffix: str = ".attrs.json",
+        suffix: str = ".attrs.json",  # leave like this for clear documentation
         preserve_inf: bool = True,
         sort: bool = False,
         indent: bool = True,
@@ -387,7 +385,7 @@ class _GenericBuilder:
             _save_hash_dir=self._hash_dir,
             _secure=self._secure,
             _recommended=self._recommended,
-            _attrs_suffix=".attrs.json" if self._attr_suffix is None else self._attr_suffix,
+            _attrs_suffix=_DEFAULT_ATTRS_SUFFIX if self._attr_suffix is None else self._attr_suffix,
             _use_attrs=self._attr_suffix is not None,
             _attrs_json_kwargs=self._attr_json_kwargs,
             _custom_readers={k: v[0] for k, v in self._custom_formats.items()},

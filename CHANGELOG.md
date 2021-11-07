@@ -3,13 +3,31 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.16.2] - 2021-11-06
+## [0.16.4] - 2021-11-06
+
+### Added
+
+- `MiscUtils.delete_file`
+- `Checksums.delete_any`
+- `Checksums.generate_dirsum`
+
+### Fixed
+
+- One less `.resolve` in `Checksums`
+- Return a more specific exception for non-relative path
+- `JsonUtils.preserve_inf` would error on some lists
+
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.16.3...v0.16.4
+
+## [0.16.3] - 2021-11-06
 
 ### Added
 
 - Can concatenate with `.of`
 - `to=` arg to `pretty_print`
 - `Utils.choose_table_format`
+
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.16.2...v0.16.3
 
 ## [0.16.2] - 2021-11-05
 
@@ -29,6 +47,8 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 - Compat with natsort 8 (now required)
 
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.16.1...v0.16.2
+
 ## [0.16.1] - 2021-11-01
 
 ### Added
@@ -40,6 +60,8 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 ### Fixed
 
 - `read_file` uses IOTyping when `attrs=None`
+
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.16.0...v0.16.1
 
 ## [0.16.0] - 2021-10-23
 
@@ -57,6 +79,8 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 - Duplicate IO methods
 - Checksum path resolution
+
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.15.0...v0.16.0
 
 ## [0.15.0] - 2021-10-16
 
@@ -78,6 +102,8 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - `attrs=True` less brittle
 - Pandas >= 1.3 is explicitly required; this was already effectively true
 
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.14.2...v0.15.0
+
 ## [0.14.4] - 2021-10-12
 
 ### Added
@@ -88,12 +114,16 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 - Moved some docs to readthedocs
 
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.14.3...v0.14.4
+
 ## [0.14.3] - 2021-10-05
 
 ### Added
 
 - Some new methods to `Checksums`
 - `Checksums` functions can now accept strings
+
+**Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.16.2...v0.14.3
 
 ## [0.14.2] - 2021-10-05
 

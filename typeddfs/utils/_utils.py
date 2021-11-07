@@ -17,6 +17,9 @@ _SENTINEL = _Sentinel()
 _DEFAULT_HASH_ALG = "sha256"
 
 
+_DEFAULT_ATTRS_SUFFIX = ".attrs.json"
+
+
 _PICKLE_VR = 5
 
 

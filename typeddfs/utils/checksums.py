@@ -15,6 +15,7 @@ from typeddfs.df_errors import (
     HashFileMissingError,
     HashFilenameMissingError,
     MultipleHashFilenamesError,
+    PathNotRelativeError,
 )
 from typeddfs.utils._utils import _DEFAULT_HASH_ALG, PathLike
 from typeddfs.utils.checksum_models import ChecksumFile, ChecksumMapping
@@ -120,6 +121,19 @@ class Checksums:
             dh.verify(path, computed)
         return computed
 
+    def delete_any(self, path: PathLike, *, rm_if_empty: bool = False) -> None:
+        """
+        Deletes the filesum and removes ``path`` from the dirsum.
+        Ignores missing files.
+        """
+        path = Path(path)
+        self.get_filesum_of_file(path).unlink(missing_ok=True)
+        try:
+            ds = self.load_dirsum_of_file(path, missing_ok=True)
+            ds.remove(path, missing_ok=True).write(rm_if_empty=rm_if_empty)
+        except PathNotRelativeError:
+            pass
+
     def verify_hex(self, path: PathLike, expected: str) -> Optional[str]:
         """
         Verifies a hash directly from a hex string.
@@ -144,6 +158,22 @@ class Checksums:
             for chunk in iter(lambda: f.read(16 * 1024), b""):
                 alg.update(chunk)
         return alg.hexdigest()
+
+    def generate_dirsum(self, directory: PathLike, glob: str = "*") -> ChecksumMapping:
+        """
+        Generates a new hash mapping, calculating hashes for extant files.
+
+        Args:
+            directory: Base directory
+            glob: Glob pattern under ``directory`` (cannot be recursive)
+
+        Returns:
+            A ChecksumMapping; use ``.write`` to write it
+        """
+        directory = Path(directory)
+        path = self.get_dirsum_of_dir(directory)
+        sums = {p: self.calc_hash(p) for p in directory.glob(glob)}
+        return ChecksumMapping(path, sums)
 
     def load_filesum_of_file(self, path: PathLike) -> ChecksumFile:
         hash_file = self.get_filesum_of_file(path)

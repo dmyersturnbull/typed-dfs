@@ -25,6 +25,7 @@ from typeddfs.df_errors import (
     HashExistsError,
     HashFileMissingError,
     HashFilenameMissingError,
+    PathNotRelativeError,
 )
 from typeddfs.utils._utils import PathLike
 
@@ -43,7 +44,7 @@ class _ChecksumMapping:
             try:
                 p.relative_to(self.directory)
             except ValueError as e:
-                raise ValueError(f"{e}: Full contents are {self._dct}")
+                raise PathNotRelativeError(f"{e}: Full contents are {self._dct}")
 
     def lines(self) -> Sequence[str]:
         """
@@ -410,6 +411,9 @@ class ChecksumMapping(_ChecksumMapping):
         """
         Strips paths from this hash collection.
         Like :meth:`update` but less flexible and only for removing paths.
+
+        Raises:
+            :class:`typeddfs.df_errors.PathNotRelativeError`: To avoid, try calling ``resolve`` first
         """
         if isinstance(remove, (str, PurePath)):
             remove = [remove]
@@ -460,7 +464,7 @@ class ChecksumMapping(_ChecksumMapping):
         # add new items:
         if not callable(update):
             for p, v in update.items():
-                p = Path(p).resolve()
+                p = Path(p)
                 fixed[p] = self._get_updated(
                     path=p,
                     new=v,

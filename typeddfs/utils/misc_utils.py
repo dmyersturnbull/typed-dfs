@@ -4,6 +4,7 @@ Misc tools for typed-dfs.
 from __future__ import annotations
 
 import collections
+from pathlib import Path
 from typing import AbstractSet, Any, Iterator, Mapping, Sequence, Union
 
 import numpy as np
@@ -11,9 +12,11 @@ import numpy as np
 # noinspection PyProtectedMember
 from tabulate import DataRow, TableFormat, _table_formats
 
+from typeddfs.df_errors import PathNotRelativeError
 from typeddfs.file_formats import CompressionFormat
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
-from typeddfs.utils._utils import PathLike
+from typeddfs.utils._utils import _DEFAULT_ATTRS_SUFFIX, _DEFAULT_HASH_ALG, PathLike
+from typeddfs.utils.checksums import Checksums
 
 
 class MiscUtils:
@@ -41,6 +44,36 @@ class MiscUtils:
             return sep.join(items[:-1]) + sep + last + items[-1]
         else:
             return (" " + last + " ").join(items)
+
+    @classmethod
+    def delete_file(
+        cls,
+        path: PathLike,
+        *,
+        missing_ok: bool = False,
+        alg: str = _DEFAULT_HASH_ALG,
+        attrs_suffix: str = _DEFAULT_ATTRS_SUFFIX,
+        rm_if_empty: bool = True,
+    ) -> None:
+        """
+        Deletes a file, plus the checksum file and/or directory entry, and ``.attrs.json``.
+
+        Args:
+            path: The path to delete
+            missing_ok: ok if the path does not exist (will still delete any associated paths)
+            alg: The checksum algorithm
+            attrs_suffix: The suffix for attrs file (normally .attrs.json)
+            rm_if_empty: Remove the dir checksum file if it contains no additional paths
+
+        Raises:
+            :class:`typeddfs.df_errors.PathNotRelativeError`: To avoid, try calling ``resolve`` first
+        """
+        path = Path(path)
+        # delete the file first so we can get an error on missing_ok=False
+        Path(path).unlink(missing_ok=missing_ok)
+        Checksums(alg=alg).delete_any(path, rm_if_empty=rm_if_empty)
+        attrs_path = path.parent / (path.name + attrs_suffix)
+        attrs_path.unlink(missing_ok=True)
 
     @classmethod
     def freeze(cls, v: Any) -> Any:
