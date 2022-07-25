@@ -3,10 +3,12 @@ Combines various IO mixins.
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Mapping, Optional, Union
 
 import pandas as pd
+from pandas._typing import StorageOptions
 from tabulate import TableFormat
 
 from typeddfs._mixins._csv_like_mixin import _CsvLikeMixin
@@ -28,6 +30,9 @@ from typeddfs.df_errors import (
 from typeddfs.file_formats import CompressionFormat, FileFormat
 from typeddfs.utils import Utils
 from typeddfs.utils._utils import PathLike
+from typeddfs.utils.io_utils import IoUtils
+
+logger = logging.getLogger("typeddfs")
 
 
 class _FullIoMixin(
@@ -73,26 +78,41 @@ class _FullIoMixin(
         cls,
         clazz,
         path: Union[Path, str],
+        storage_options: Optional[StorageOptions] = None,
     ) -> pd.DataFrame:
         fmt = cls._get_fmt(path)
         # noinspection HttpUrlsUsage
         if str(path).startswith("http://"):
             raise UnsupportedOperationError("Cannot read from http with .secure() enabled")
         cls._check_io_ok(path, fmt)
-        kwargs = cls._get_read_kwargs(fmt, path)
-        fn = cls._get_io(clazz, path, fmt, cls._get_write_kwargs(fmt, path), "read_")
+        kwargs = cls._get_read_kwargs(fmt, path, storage_options=storage_options)
+        fn = cls._get_io(clazz, path, fmt, kwargs, "read_")
         return fn(path, **kwargs)
 
-    def _call_write(self, path: Union[Path, str]) -> Optional[str]:
+    def _call_write(
+        self,
+        path: Union[Path, str],
+        storage_options: Optional[StorageOptions] = None,
+        atomic: bool = False,
+    ) -> Optional[str]:
         cls = self.__class__
         fmt = self._get_fmt(path)
         cls._check_io_ok(path, fmt)
-        kwargs = cls._get_write_kwargs(fmt, path)
-        fn = self._get_io(self, path, fmt, cls._get_write_kwargs(fmt, path), "to_")
+        kwargs = cls._get_write_kwargs(fmt, path, storage_options=storage_options)
+        fn = self._get_io(self, path, fmt, kwargs, "to_")
+        if atomic and "://" in str(path):
+            logger.warning(f"Cannot ensure atomicity when writing to remote file {path}")
+        elif atomic:
+            tmp = IoUtils.tmp_path(path)
+            z = fn(path, **kwargs)
+            tmp.replace(path)
+            return z
         return fn(path, **kwargs)
 
     @classmethod
-    def _get_read_kwargs(cls, fmt: Optional[FileFormat], path: Path) -> Mapping[str, Any]:
+    def _get_read_kwargs(
+        cls, fmt: Optional[FileFormat], path: Path, storage_options: Optional[StorageOptions]
+    ) -> Mapping[str, Any]:
         t = cls.get_typing().io
         real_suffix = CompressionFormat.strip_suffix(path).suffix
         kwargs = t.read_kwargs.get(fmt, {})
@@ -108,10 +128,14 @@ class _FullIoMixin(
         ]:
             encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
+        if storage_options is not None:
+            kwargs["storage_options"] = storage_options
         return kwargs
 
     @classmethod
-    def _get_write_kwargs(cls, fmt: Optional[FileFormat], path: Path) -> Mapping[str, Any]:
+    def _get_write_kwargs(
+        cls, fmt: Optional[FileFormat], path: Path, storage_options: Optional[StorageOptions]
+    ) -> Mapping[str, Any]:
         t = cls.get_typing().io
         real_suffix = CompressionFormat.strip_suffix(path).suffix
         kwargs = t.write_kwargs.get(fmt, {})
@@ -125,6 +149,8 @@ class _FullIoMixin(
         ):  # and IS NOT JSON -- it doesn't use "encoding="
             encoding = kwargs.get("encoding", t.text_encoding)
             kwargs["encoding"] = Utils.get_encoding(encoding)
+        if storage_options is not None:
+            kwargs["storage_options"] = storage_options
         return kwargs
 
     @classmethod

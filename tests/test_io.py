@@ -203,7 +203,7 @@ class TestReadWrite:
                         raise
 
     """
-    # TODO: waiting for upsteam: https://github.com/dmyersturnbull/typed-dfs/issues/46
+    # TODO: waiting for upstream: https://github.com/dmyersturnbull/typed-dfs/issues/46
     def test_raw_to_xml(self):
         dtypes = [
             pd.StringDtype(),

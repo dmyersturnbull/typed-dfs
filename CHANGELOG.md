@@ -3,6 +3,17 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.17.0] - 2022-07-25
+
+### Added
+
+- [zstd](https://facebook.github.io/zstd/) support
+- `CompressionFormat.pandas_value`
+
+### Removed
+
+- Support for Pandas < 1.4
+
 ## [0.16.4] - 2021-11-06
 
 ### Added

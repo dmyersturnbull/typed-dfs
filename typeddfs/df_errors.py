@@ -205,6 +205,16 @@ class LengthMismatchError(ValueError):
         self.lengths = lengths
 
 
+class ReadPermissionsError(OSError):
+    """
+    Couldn't read from a file.
+    """
+
+    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+        super().__init__(*args)
+        self.key = key
+
+
 class WritePermissionsError(OSError):
     """
     Couldn't write to a file.

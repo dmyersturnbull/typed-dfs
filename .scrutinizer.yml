@@ -1,6 +1,6 @@
 build:
   environment:
-    python: 3.9.1
+    python: 3.10.5
   nodes:
     my-tests:
       dependencies:
@@ -23,7 +23,7 @@ checks:
     code_rating: true
     duplicate_code: true
 #filter:
-  # I actually like getting checks for these too
-  #excluded_paths:
-  #  - 'tests/*'
-  #  - 'docs/*'
+# I actually like getting checks for these too
+#excluded_paths:
+#  - 'tests/*'
+#  - 'docs/*'

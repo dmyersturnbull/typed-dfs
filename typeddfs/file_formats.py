@@ -53,6 +53,7 @@ class CompressionFormat(_Enum):
     zip = ()
     bz2 = ()
     xz = ()
+    zstd = ()
     none = ()
 
     @classmethod
@@ -113,12 +114,34 @@ class CompressionFormat(_Enum):
         return {c.suffix for c in cls}
 
     @property
+    def name_or_none(self) -> Optional[str]:
+        """
+        Returns the name, or ``None`` if it is not compressed.
+        """
+        return None if self is CompressionFormat.none else self.name
+
+    @property
+    def pandas_value(self) -> Optional[str]:
+        """
+        Returns the value that should be passed to Pandas as ``compression``.
+        """
+        if self is CompressionFormat.none:
+            return None
+        if self is CompressionFormat.gz:
+            return "gzip"
+        return self.name
+
+    @property
     def suffix(self) -> str:
         """
         Returns the single Pandas-recognized suffix for this format.
         This is just "" for CompressionFormat.none.
         """
-        return "" if self is CompressionFormat.none else "." + self.name
+        if self is CompressionFormat.none:
+            return ""
+        if self is CompressionFormat.zstd:
+            return ".zst"
+        return "." + self.name
 
     @classmethod
     def strip_suffix(cls, path: PathLike) -> Path:

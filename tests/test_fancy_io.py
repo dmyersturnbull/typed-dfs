@@ -48,7 +48,7 @@ assert DfFormatSupport.has_xls
 assert DfFormatSupport.has_xlsb
 assert DfFormatSupport.has_ods
 assert DfFormatSupport.has_toml
-known_compressions = {"", ".gz", ".zip", ".bz2", ".xz"}
+known_compressions = {"", ".gz", ".zip", ".bz2", ".xz", ".zst"}
 
 
 def get_req_ext(*, lines: bool, properties: bool) -> Set[str]:

@@ -12,7 +12,6 @@ import numpy as np
 # noinspection PyProtectedMember
 from tabulate import DataRow, TableFormat, _table_formats
 
-from typeddfs.df_errors import PathNotRelativeError
 from typeddfs.file_formats import CompressionFormat
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
 from typeddfs.utils._utils import _DEFAULT_ATTRS_SUFFIX, _DEFAULT_HASH_ALG, PathLike

@@ -7,6 +7,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Set, Union
 
+from pandas._typing import StorageOptions
+
 from typeddfs._core_dfs import CoreDf
 from typeddfs._mixins._full_io_mixin import _FullIoMixin
 from typeddfs.df_errors import (
@@ -45,6 +47,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         dir_hash: Optional[bool] = None,
         hex_hash: Optional[str] = None,
         attrs: Optional[bool] = None,
+        storage_options: Optional[StorageOptions] = None,
     ) -> __qualname__:
         """
         Reads from a file (or possibly URL), guessing the format from the filename extension.
@@ -90,6 +93,7 @@ class AbsDf(_FullIoMixin, CoreDf):
                    If True, uses :attr:`typeddfs.df_typing.DfTyping.attrs_suffix`.
                    If a str or Path, uses that file.
                    If None or False, does not set.
+            storage_options: Passed to Pandas
 
         Returns:
             An instance of this class
@@ -103,7 +107,7 @@ class AbsDf(_FullIoMixin, CoreDf):
             attrs = t.io.use_attrs
         cs = Checksums(alg=t.io.hash_algorithm)
         cs.verify_any(path, file_hash=file_hash, dir_hash=dir_hash, computed=hex_hash)
-        df = cls._call_read(cls, path)
+        df = cls._call_read(cls, path, storage_options=storage_options)
         if attrs:
             attrs_path = path.parent / (path.name + t.io.attrs_suffix)
             json_data = Utils.json_decoder().from_str(attrs_path.read_text(encoding="utf-8"))
@@ -119,6 +123,8 @@ class AbsDf(_FullIoMixin, CoreDf):
         file_hash: Optional[bool] = None,
         dir_hash: Optional[bool] = None,
         attrs: Optional[bool] = None,
+        storage_options: Optional[StorageOptions] = None,
+        atomic: bool = False,
     ) -> Optional[str]:
         """
         Writes to a file, guessing the format from the filename extension.
@@ -160,6 +166,8 @@ class AbsDf(_FullIoMixin, CoreDf):
             attrs: Write dataset attributes/metadata (``pd.DataFrame.attrs``) to a JSON file.
                    uses :attr:`typeddfs.df_typing.DfTyping.attrs_suffix`.
                    If None, chooses according to ``self.get_typing().io.use_attrs``.
+            storage_options: Passed to Pandas
+            atomic: Write to a temporary file, then renames
 
         Returns:
             Whatever the corresponding method on ``pd.to_*`` returns.
@@ -216,7 +224,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         Utils.verify_can_write_files(*all_files, missing_ok=True)
         # we verified as much as we can -- finally we can write!!
         # this writes the main file:
-        z = self._call_write(path)
+        z = self._call_write(path, storage_options=storage_options, atomic=atomic)
         # write the hashes
         # this shouldn't fail
         cs = Checksums(alg=t.io.hash_algorithm)

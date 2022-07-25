@@ -21,7 +21,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
 
     def __getitem__(self, item):
         """
-        Finds an index level or or column, returning the Series, DataFrame, or value.
+        Finds an index level or column, returning the Series, DataFrame, or value.
         Note that typeddfs forbids duplicate column names, as well as column names and
         index levels sharing names.
         """

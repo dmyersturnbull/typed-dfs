@@ -46,4 +46,5 @@ __all__ = [
     "_SENTINEL",
     "_AUTO_DROPPED_NAMES",
     "_FORBIDDEN_NAMES",
+    "_DEFAULT_ATTRS_SUFFIX",
 ]

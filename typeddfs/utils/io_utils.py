@@ -5,23 +5,67 @@ from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
+from datetime import datetime
+from pathlib import Path, PurePath
 from typing import Optional, Union
 
 from pandas.io.common import get_handle
 
-from typeddfs.df_errors import WritePermissionsError
+from typeddfs.df_errors import (
+    ReadPermissionsError,
+    UnsupportedOperationError,
+    WritePermissionsError,
+)
+from typeddfs.file_formats import CompressionFormat, FileFormat
+from typeddfs.utils._utils import PathLike
 
 
 class IoUtils:
     @classmethod
-    def verify_can_write_files(cls, *paths: Union[str, Path], missing_ok: bool = False) -> None:
+    def verify_can_read_files(
+        cls,
+        *paths: Union[str, Path],
+        missing_ok: bool = False,
+        attempt: bool = False,
+    ) -> None:
         """
         Checks that all files can be written to, to ensure atomicity before operations.
 
         Args:
             *paths: The files
             missing_ok: Don't raise an error if a path doesn't exist
+            attempt: Actually try opening
+
+        Returns:
+            ReadPermissionsError: If a path is not a file (modulo existence) or doesn't have 'W' set
+        """
+        paths = [Path(p) for p in paths]
+        for path in paths:
+            if path.exists() and not path.is_file():
+                raise ReadPermissionsError(f"Path {path} is not a file", key=str(path))
+            if (not missing_ok or path.exists()) and not os.access(path, os.R_OK):
+                raise ReadPermissionsError(f"Cannot read from {path}", key=str(path))
+            if attempt:
+                try:
+                    with open(path, "r"):
+                        pass
+                except OSError:
+                    raise WritePermissionsError(f"Failed to open {path} for read", key=str(path))
+
+    @classmethod
+    def verify_can_write_files(
+        cls,
+        *paths: Union[str, Path],
+        missing_ok: bool = False,
+        attempt: bool = False,
+    ) -> None:
+        """
+        Checks that all files can be written to, to ensure atomicity before operations.
+
+        Args:
+            *paths: The files
+            missing_ok: Don't raise an error if a path doesn't exist
+            attempt: Actually try opening
 
         Returns:
             WritePermissionsError: If a path is not a file (modulo existence) or doesn't have 'W' set
@@ -32,6 +76,12 @@ class IoUtils:
                 raise WritePermissionsError(f"Path {path} is not a file", key=str(path))
             if (not missing_ok or path.exists()) and not os.access(path, os.W_OK):
                 raise WritePermissionsError(f"Cannot write to {path}", key=str(path))
+            if attempt:
+                try:
+                    with open(path, "a"):  # or w
+                        pass
+                except OSError:
+                    raise WritePermissionsError(f"Failed to open {path} for write", key=str(path))
 
     @classmethod
     def verify_can_write_dirs(cls, *paths: Union[str, Path], missing_ok: bool = False) -> None:
@@ -57,15 +107,26 @@ class IoUtils:
                 raise WritePermissionsError(f"{path} lacks access permission", key=str(path))
 
     @classmethod
-    def write(cls, path_or_buff, content, *, mode: str = "w", **kwargs) -> Optional[str]:
+    def write(
+        cls, path_or_buff, content, *, mode: str = "w", atomic: bool = False, **kwargs
+    ) -> Optional[str]:
         """
         Writes using Pandas's ``get_handle``.
         By default (unless ``compression=`` is set), infers the compression type from the filename suffix
         (e.g. ``.csv.gz``).
         """
-        kwargs = {**dict(compression="infer"), **kwargs}
         if path_or_buff is None:
             return content
+        compression = cls.path_or_buff_compression(path_or_buff, kwargs)
+        kwargs = {**kwargs, "compression": compression.pandas_value}
+        if atomic and isinstance(path_or_buff, PathLike):
+            if "a" in mode:
+                raise UnsupportedOperationError("Can't append in atomic write")
+            path = Path(path_or_buff)
+            tmp = cls.tmp_path(path)
+            with get_handle(tmp, mode, **kwargs) as f:
+                f.handle.write(content)
+                os.replace(tmp, path)
         with get_handle(path_or_buff, mode, **kwargs) as f:
             f.handle.write(content)
 
@@ -73,12 +134,35 @@ class IoUtils:
     def read(cls, path_or_buff, *, mode: str = "r", **kwargs) -> str:
         """
         Reads using Pandas's ``get_handle``.
-        By default (unless ``compression=`` is set), infers the compression type from the filename suffix
+        By default (unless ``compression=`` is set), infers the compression type from the filename suffix.
         (e.g. ``.csv.gz``).
         """
-        kwargs = {**dict(compression="infer"), **kwargs}
+        compression = cls.path_or_buff_compression(path_or_buff, kwargs)
+        kwargs = {**kwargs, "compression": compression.pandas_value}
         with get_handle(path_or_buff, mode, **kwargs) as f:
             return f.handle.read()
+
+    @classmethod
+    def path_or_buff_compression(cls, path_or_buff, kwargs) -> CompressionFormat:
+        if "compression" in kwargs:
+            return CompressionFormat.of(kwargs["compression"])
+        elif isinstance(path_or_buff, (PurePath, str)):
+            return CompressionFormat.from_path(path_or_buff)
+        return CompressionFormat.none
+
+    @classmethod
+    def is_binary(cls, path: PathLike) -> bool:
+        path = Path(path)
+        if CompressionFormat.from_path(path).is_compressed:
+            return True
+        return FileFormat.from_path(path).is_binary
+
+    @classmethod
+    def tmp_path(cls, path: PathLike, extra: str = "tmp") -> Path:
+        now = datetime.now().isoformat(timespec="ns").replace(":", "").replace("-", "")
+        path = Path(path)
+        suffix = "".join(path.suffixes)
+        return path.parent / (".__" + extra + "." + now + suffix)
 
     @classmethod
     def get_encoding(cls, encoding: str = "utf-8") -> str:

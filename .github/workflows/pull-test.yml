@@ -3,8 +3,8 @@
 name: Test on pull request
 on:
   pull_request:
-    branches: [ main ]
-    paths-ignore: [ "**/*.md", "**/*.rst" ]
+    branches: [main]
+    paths-ignore: ["**/*.md", "**/*.rst"]
 jobs:
   build:
     strategy:
@@ -15,14 +15,14 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: "Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "${{ matrix.python-version }}"
       - name: Install build meta-dependencies
         run: |
-          pip install tox poetry
+          pip install tox poetry 'wheel>=0.36,<1.0'
       - name: Test with tox
         run: |
           tox -v

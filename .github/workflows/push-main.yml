@@ -9,19 +9,19 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        os: ['ubuntu-20.04', 'windows-2019', 'macos-10.15']
-        python-version: ['3.9']
-    runs-on: '${{ matrix.os }}'
+        os: ["ubuntu-20.04", "windows-2019", "macos-10.15"]
+        python-version: ["3.9"]
+    runs-on: "${{ matrix.os }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: 'Set up Python ${{ matrix.python-version }}'
-        uses: actions/setup-python@v2
+        uses: actions/checkout@v3
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: actions/setup-python@v4
         with:
-          python-version: '${{ matrix.python-version }}'
+          python-version: "${{ matrix.python-version }}"
       - name: Install build meta-dependencies
         run: |
-          pip install poetry tox
+          pip install poetry tox 'wheel>=0.36,<1.0'
       - name: Test with tox
         run: |
           tox -v
