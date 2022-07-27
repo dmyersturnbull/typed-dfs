@@ -191,7 +191,9 @@ As a shorthand for all formats, use `typeddfs[all]`.
 | ODS         | `openpyxl,defusedxml`        | `excel`   | +      | −−    | +          |
 | XLS         | `openpyxl,defusedxml`        | `excel`   | −−     | −−    | +          |
 | XLSB        | `pyxlsb`                     | `xlsb`    | −−     | −−    | ++         |
-| HDF5        | `tables`                     | `hdf5`    | −−     | −     | ++         |
+| HDF5        | `tables`                     | none      | −−     | −     | ++         |
+| LZ4         | `lz4`                        | `lz4`     | +++    | +++++ | ++++       |
+| ZSTD        | `zstandard`                  | none      | ++     | ++++  | +++        |
 
 **⚠ Note:** The `hdf5` extra is currently disabled.
 

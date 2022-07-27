@@ -8,6 +8,7 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 ### Added
 
 - [zstd](https://facebook.github.io/zstd/) support
+- Experimental [lz4](https://python-lz4.readthedocs.io/) support
 - `CompressionFormat.pandas_value`
 
 ### Removed
