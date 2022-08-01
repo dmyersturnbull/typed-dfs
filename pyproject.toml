@@ -110,7 +110,7 @@ bandit                   = "^1.7"
 pytest                   = ">=7"
 coverage                 = {extras = ["toml"], version = "^6"}
 pytest-cov               = "^3"
-flake8                   = "^4"
+flake8                   = "^5"
 flake8-bugbear           = ">=22"
 flake8-docstrings        = "^1.6"
 Sphinx                   = "^5"
