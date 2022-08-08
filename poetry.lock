@@ -246,10 +246,10 @@ six = ">=1.9"
 webencodings = "*"
 
 [package.extras]
-all = ["genshi", "chardet (>=2.2)", "lxml"]
-chardet = ["chardet (>=2.2)"]
-genshi = ["genshi"]
 lxml = ["lxml"]
+genshi = ["genshi"]
+chardet = ["chardet (>=2.2)"]
+all = ["lxml", "chardet (>=2.2)", "genshi"]
 
 [[package]]
 name = "identify"
@@ -475,8 +475,8 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest-benchmark", "pytest"]
+dev = ["tox", "pre-commit"]
 
 [[package]]
 name = "pre-commit"
@@ -596,7 +596,7 @@ coverage = {version = ">=5.2.1", extras = ["toml"]}
 pytest = ">=4.6"
 
 [package.extras]
-testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtualenv"]
+testing = ["virtualenv", "pytest-xdist", "six", "process-tests", "hunter", "fields"]
 
 [[package]]
 name = "python-dateutil"
@@ -755,8 +755,8 @@ python-versions = ">=3.6"
 sphinx = ">=1.8"
 
 [package.extras]
+rtd = ["sphinx-book-theme", "myst-nb", "ipython", "sphinx"]
 code_style = ["pre-commit (==2.12.1)"]
-rtd = ["sphinx", "ipython", "myst-nb", "sphinx-book-theme"]
 
 [[package]]
 name = "sphinx-rtd-theme"
@@ -771,7 +771,7 @@ docutils = "<0.18"
 sphinx = ">=1.6"
 
 [package.extras]
-dev = ["transifex-client", "sphinxcontrib-httpdomain", "bump2version"]
+dev = ["bump2version", "sphinxcontrib-httpdomain", "transifex-client"]
 
 [[package]]
 name = "sphinxcontrib-applehelp"
@@ -782,8 +782,8 @@ optional = false
 python-versions = ">=3.5"
 
 [package.extras]
-lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
+lint = ["docutils-stubs", "mypy", "flake8"]
 
 [[package]]
 name = "sphinxcontrib-devhelp"
@@ -794,8 +794,8 @@ optional = false
 python-versions = ">=3.5"
 
 [package.extras]
-lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
+lint = ["docutils-stubs", "mypy", "flake8"]
 
 [[package]]
 name = "sphinxcontrib-htmlhelp"
@@ -806,8 +806,8 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-lint = ["flake8", "mypy", "docutils-stubs"]
-test = ["pytest", "html5lib"]
+test = ["html5lib", "pytest"]
+lint = ["docutils-stubs", "mypy", "flake8"]
 
 [[package]]
 name = "sphinxcontrib-jsmath"
@@ -818,7 +818,7 @@ optional = false
 python-versions = ">=3.5"
 
 [package.extras]
-test = ["pytest", "flake8", "mypy"]
+test = ["mypy", "flake8", "pytest"]
 
 [[package]]
 name = "sphinxcontrib-qthelp"
@@ -829,8 +829,8 @@ optional = false
 python-versions = ">=3.5"
 
 [package.extras]
-lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
+lint = ["docutils-stubs", "mypy", "flake8"]
 
 [[package]]
 name = "sphinxcontrib-serializinghtml"
@@ -884,7 +884,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "tomlkit"
-version = "0.11.1"
+version = "0.11.2"
 description = "Style preserving TOML library"
 category = "main"
 optional = false
@@ -1264,6 +1264,15 @@ lz4 = [
     {file = "lz4-4.0.2-cp37-cp37m-win_amd64.whl", hash = "sha256:3fa0f000d8ce39e643e9e5c49fc4d1985156ffb177e3123a0f22551f5864841b"},
     {file = "lz4-4.0.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6f3b3670f52f0871885258bcbc746f483760434336f0bc5581f161cc5d4b0c9a"},
     {file = "lz4-4.0.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ea2c2182a5b0ad03f33ac09db0925a1738a1d65751a3e058110bd900c643d359"},
+    {file = "lz4-4.0.2-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:439898dd4176a724243002003c3f733eb6ce48a5988175f54c8560e0b100b7a6"},
+    {file = "lz4-4.0.2-cp38-cp38-win32.whl", hash = "sha256:35e6caced0229b90151d31d9cf1eaa541e597f8021bf5b70ff9e6374e3e43b23"},
+    {file = "lz4-4.0.2-cp38-cp38-win_amd64.whl", hash = "sha256:1bd56282f6993e013ccf7f6edf1530c2a13d1662741e2be072349c7f70bc0682"},
+    {file = "lz4-4.0.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:1ed9a1875dc2a489f3b665d0211984689d0e76585e55650b044a64dbd2d22992"},
+    {file = "lz4-4.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d2b18a6d6d9071c03dbf9e30bbe22e4476f24f1a4d73b1e975605ad3ce725e6c"},
+    {file = "lz4-4.0.2-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9d141719d3cbb7933809642a61b68b8f595ddf85657016521756ddcf826b85cd"},
+    {file = "lz4-4.0.2-cp39-cp39-win32.whl", hash = "sha256:a8e02c2477bd704f43113ac8dd966c361187383591388818d74e1b73e4674759"},
+    {file = "lz4-4.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:ee73357412c5505f6ba0ea61ff71455e2e4c1e04d8e60f17f3cd937261d773fa"},
+    {file = "lz4-4.0.2.tar.gz", hash = "sha256:083b7172c2938412ae37c3a090250bfdd9e4a6e855442594f86c3608ed12729b"},
 ]
 markupsafe = [
     {file = "MarkupSafe-2.1.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:86b1f75c4e7c2ac2ccdaec2b9022845dbb81880ca318bb7a0a01fbf7813e3812"},
@@ -1695,8 +1704,8 @@ tomli = [
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
 ]
 tomlkit = [
-    {file = "tomlkit-0.11.1-py3-none-any.whl", hash = "sha256:1c5bebdf19d5051e2e1de6cf70adfc5948d47221f097fcff7a3ffc91e953eaf5"},
-    {file = "tomlkit-0.11.1.tar.gz", hash = "sha256:61901f81ff4017951119cd0d1ed9b7af31c821d6845c8c477587bbdcd5e5854e"},
+    {file = "tomlkit-0.11.2-py3-none-any.whl", hash = "sha256:69e0675671a2eed1c08a53f342c955c4ead5d373a10f756219bf39f3d4f0018a"},
+    {file = "tomlkit-0.11.2.tar.gz", hash = "sha256:d1b49c3e460f5910b22d799b13513504acb4f5fcaee01660ee66f07bd45a271c"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.3.0-py3-none-any.whl", hash = "sha256:25642c956049920a5aa49edcdd6ab1e06d7e5d467fc00e0506c44ac86fbfca02"},
