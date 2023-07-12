@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Tools that could possibly be used outside of typed-dfs.
 """
@@ -21,7 +24,6 @@ from typeddfs.utils.sort_utils import SortUtils
 
 
 class Utils(MiscUtils, SortUtils, JsonUtils, IoUtils, ParseUtils, DtypeUtils):
-
     json_encoder = JsonUtils.encoder
     json_decoder = JsonUtils.decoder
 
@@ -30,11 +32,11 @@ class Utils(MiscUtils, SortUtils, JsonUtils, IoUtils, ParseUtils, DtypeUtils):
         return _DEFAULT_HASH_ALG
 
     @classmethod
-    def insecure_hash_functions(cls) -> Set[str]:
+    def insecure_hash_functions(cls) -> set[str]:
         return {"md5", "sha1"}
 
     @classmethod
-    def banned_names(cls) -> Set[str]:
+    def banned_names(cls) -> set[str]:
         """
         Lists strings that cannot be used for column names or index level names.
         """

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 import io
 import random
 from pathlib import Path
@@ -51,7 +54,7 @@ assert DfFormatSupport.has_toml
 known_compressions = {"", ".gz", ".zip", ".bz2", ".xz", ".zst"}
 
 
-def get_req_ext(*, lines: bool, properties: bool) -> Set[str]:
+def get_req_ext(*, lines: bool, properties: bool) -> set[str]:
     ne = {
         ".feather",
         ".snappy",
@@ -88,7 +91,7 @@ def get_req_ext(*, lines: bool, properties: bool) -> Set[str]:
     return ne
 
 
-def get_actual_ext(cls: Type[AbsDf]) -> Set[str]:
+def get_actual_ext(cls: type[AbsDf]) -> set[str]:
     known_fmts = cls.can_read().intersection(cls.can_write())
     exclude_for_now = {".hdf", ".h5", ".hdf5"}
     known = set()
@@ -162,7 +165,7 @@ class TestReadWrite:
         self._test_great(Ind2Col2)
 
     def _test_great(
-        self, t: Type[BaseDf], *, lines_fail: bool = False, allow_properties: bool = False
+        self, t: type[BaseDf], *, lines_fail: bool = False, allow_properties: bool = False
     ):
         for ext in get_actual_ext(t):
             try:

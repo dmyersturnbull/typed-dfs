@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for line-by-line text files.
 """
@@ -19,7 +22,7 @@ class _LinesMixin:
         path_or_buff=None,
         mode: str = "w",
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         r"""
         Writes a file that contains one row per line and 1 column per line.
         Associated with ``.lines`` or ``.txt``.
@@ -92,7 +95,7 @@ class _LinesMixin:
         # CAN apply as long as we don't REQUIRE more than 1 column
         return len(cls.get_typing().required_names) <= 1
 
-    def _tabulate(self, fmt: Union[str, TableFormat], **kwargs) -> str:
+    def _tabulate(self, fmt: str | TableFormat, **kwargs) -> str:
         df = self.vanilla_reset()
         return tabulate(df.to_numpy().tolist(), list(df.columns), tablefmt=fmt, **kwargs)
 

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Convenient code for import.
 """
@@ -77,7 +80,7 @@ class TypedDfs:
     _logger = logger
 
     @classmethod
-    def example(cls) -> Type[TypedDf]:
+    def example(cls) -> type[TypedDf]:
         """
         Creates a new example TypedDf subclass.
         The class has:
@@ -112,7 +115,7 @@ class TypedDfs:
         return FinalDf(df)
 
     @classmethod
-    def typed(cls, name: str, doc: Optional[str] = None) -> TypedDfBuilder:
+    def typed(cls, name: str, doc: str | None = None) -> TypedDfBuilder:
         """
         Creates a new type with flexible requirements.
         The class will enforce constraints and subclass :class:`typeddfs.typed_dfs.TypedDf`.
@@ -130,7 +133,7 @@ class TypedDfs:
         return TypedDfBuilder(name, doc)
 
     @classmethod
-    def matrix(cls, name: str, doc: Optional[str] = None) -> MatrixDfBuilder:
+    def matrix(cls, name: str, doc: str | None = None) -> MatrixDfBuilder:
         """
         Creates a new subclass of an :class:`typeddfs.matrix_dfs.MatrixDf`.
 
@@ -144,7 +147,7 @@ class TypedDfs:
         return MatrixDfBuilder(name, doc)
 
     @classmethod
-    def affinity_matrix(cls, name: str, doc: Optional[str] = None) -> AffinityMatrixDfBuilder:
+    def affinity_matrix(cls, name: str, doc: str | None = None) -> AffinityMatrixDfBuilder:
         """
         Creates a new subclass of an :class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
 
@@ -158,7 +161,7 @@ class TypedDfs:
         return AffinityMatrixDfBuilder(name, doc)
 
     @classmethod
-    def untyped(cls, name: str, doc: Optional[str] = None) -> Type[UntypedDf]:
+    def untyped(cls, name: str, doc: str | None = None) -> type[UntypedDf]:
         """
         Creates a new subclass of ``UntypedDf``.
         The returned class will not enforce constraints but will have some extra methods.

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Defines a DataFrame with simple extra functions like ``column_names``.
 """
@@ -15,7 +18,7 @@ class PrettyDf(_PrettyPrintMixin, pd.DataFrame, metaclass=abc.ABCMeta):
     A DataFrame with an overridden ``_repr_html_`` and some simple additional methods.
     """
 
-    def column_names(self) -> List[str]:
+    def column_names(self) -> list[str]:
         """
         Returns the list of columns.
 
@@ -24,7 +27,7 @@ class PrettyDf(_PrettyPrintMixin, pd.DataFrame, metaclass=abc.ABCMeta):
         """
         return list(self.columns)
 
-    def index_names(self) -> List[str]:
+    def index_names(self) -> list[str]:
         """
         Returns the list of index names.
         Unlike ``self.index.names``, returns ``[]`` instead of ``[None]`` if there is no index.

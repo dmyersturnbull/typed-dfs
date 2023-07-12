@@ -1,10 +1,14 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for fixed-width format.
 """
 from __future__ import annotations
 
 import csv
-from typing import Any, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -27,14 +31,14 @@ class _FwfMixin:
         self,
         path_or_buff=None,
         mode: str = "w",
-        colspecs: Optional[Sequence[Tuple[int, int]]] = None,
-        widths: Optional[Sequence[int]] = None,
-        na_rep: Optional[str] = None,
-        float_format: Optional[str] = None,
-        date_format: Optional[str] = None,
+        colspecs: Sequence[tuple[int, int]] | None = None,
+        widths: Sequence[int] | None = None,
+        na_rep: str | None = None,
+        float_format: str | None = None,
+        date_format: str | None = None,
         decimal: str = ".",
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Writes a fixed-width text format.
         See ``read_fwf`` and ``to_flexwf`` for more info.

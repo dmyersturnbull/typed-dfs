@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for JSON and XML.
 """
@@ -37,7 +40,7 @@ class _JsonXmlMixin:
         return cls._convert_typed(df)
 
     # noinspection PyFinal,PyMethodOverriding
-    def to_xml(self, path_or_buf=None, *args, **kwargs) -> Optional[str]:
+    def to_xml(self, path_or_buf=None, *args, **kwargs) -> str | None:
         # Pandas's to_xml and read_xml have two buggy properties:
         # 1. Unnamed indices are called "index"
         #    for to_xml, but not read_xml -- so they're not inverses.
@@ -59,7 +62,7 @@ class _JsonXmlMixin:
         return df.to_xml(path_or_buf, *args, **kwargs)
 
     # noinspection PyFinal,PyMethodOverriding
-    def to_json(self, path_or_buf=None, *args, **kwargs) -> Optional[str]:
+    def to_json(self, path_or_buf=None, *args, **kwargs) -> str | None:
         df = self.vanilla_reset()
         return df.to_json(path_or_buf, *args, **kwargs)
 

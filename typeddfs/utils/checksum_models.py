@@ -1,21 +1,15 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Models for shasum-like files.
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable, Mapping, Sequence, ValuesView
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import (
-    AbstractSet,
-    Callable,
-    Iterable,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    ValuesView,
-)
+from typing import AbstractSet, Optional, Tuple, Union
 
 import regex
 
@@ -101,7 +95,7 @@ class _ChecksumMapping:
         cls,
         path: Path,
         *,
-        lines: Optional[Sequence[str]] = None,
+        lines: Sequence[str] | None = None,
         missing_ok: bool = False,
         subdirs: bool = False,
     ) -> __qualname__:
@@ -134,10 +128,10 @@ class _ChecksumMapping:
         self,
         *,
         path: PathLike,
-        new: Optional[str],
-        overwrite: Optional[bool],
+        new: str | None,
+        overwrite: bool | None,
         missing_ok: bool,
-    ) -> Optional[str]:
+    ) -> str | None:
         path = Path(path)
         z = self._dct.get(path)
         if z is None and not missing_ok:
@@ -169,7 +163,7 @@ class ChecksumFile(_ChecksumMapping):
         cls,
         path: Path,
         *,
-        lines: Optional[Sequence[str]] = None,
+        lines: Sequence[str] | None = None,
     ) -> __qualname__:
         """
         Reads hash file contents.
@@ -204,7 +198,7 @@ class ChecksumFile(_ChecksumMapping):
         """
         return self.new(self.hash_path, file_path=path, hash_value=self.hash_value)
 
-    def update(self, value: str, overwrite: Optional[bool] = True) -> __qualname__:
+    def update(self, value: str, overwrite: bool | None = True) -> __qualname__:
         """
         Modifies the hash.
 
@@ -287,7 +281,7 @@ class ChecksumMapping(_ChecksumMapping):
         cls,
         path: Path,
         *,
-        lines: Optional[Sequence[str]] = None,
+        lines: Sequence[str] | None = None,
         missing_ok: bool = False,
         subdirs: bool = False,
     ) -> __qualname__:
@@ -322,7 +316,7 @@ class ChecksumMapping(_ChecksumMapping):
     def write(
         self,
         *,
-        sort: Union[bool, Callable[[Sequence[Path]], Sequence[Path]]] = False,
+        sort: bool | Callable[[Sequence[Path]], Sequence[Path]] = False,
         rm_if_empty: bool = False,
     ) -> None:
         """
@@ -356,10 +350,10 @@ class ChecksumMapping(_ChecksumMapping):
     def values(self) -> ValuesView[str]:
         return self._dct.values()
 
-    def items(self) -> AbstractSet[Tuple[Path, str]]:
+    def items(self) -> AbstractSet[tuple[Path, str]]:
         return self._dct.items()
 
-    def get(self, key: Path, default: Optional[str] = None) -> Optional[str]:
+    def get(self, key: Path, default: str | None = None) -> str | None:
         return self._dct.get(key, default)
 
     def __contains__(self, path: Path) -> bool:
@@ -372,7 +366,7 @@ class ChecksumMapping(_ChecksumMapping):
         return len(self._dct)
 
     def __add__(
-        self, other: Union[ChecksumMapping, Mapping[PathLike, str], __qualname__]
+        self, other: ChecksumMapping | Mapping[PathLike, str] | __qualname__
     ) -> __qualname__:
         """
         Performs a symmetric addition.
@@ -391,7 +385,7 @@ class ChecksumMapping(_ChecksumMapping):
             raise ValueError(f"Cannot merge with intersection: {intersection}")
         return ChecksumMapping(self.hash_path, {**self, **other})
 
-    def __sub__(self, other: Union[PathLike, Iterable[PathLike], ChecksumMapping]) -> __qualname__:
+    def __sub__(self, other: PathLike | Iterable[PathLike] | ChecksumMapping) -> __qualname__:
         """
         Removes entries.
 
@@ -406,7 +400,7 @@ class ChecksumMapping(_ChecksumMapping):
         return self.new(self.hash_path, {k: v for k, v in self.items() if k not in other})
 
     def remove(
-        self, remove: Union[PathLike, Iterable[PathLike]], *, missing_ok: bool = False
+        self, remove: PathLike | Iterable[PathLike], *, missing_ok: bool = False
     ) -> __qualname__:
         """
         Strips paths from this hash collection.
@@ -420,7 +414,7 @@ class ChecksumMapping(_ChecksumMapping):
         return self.update({p: None for p in remove}, missing_ok=missing_ok, overwrite=True)
 
     def append(
-        self, append: Mapping[PathLike, str], *, overwrite: Optional[bool] = False
+        self, append: Mapping[PathLike, str], *, overwrite: bool | None = False
     ) -> __qualname__:
         """
         Append paths to a dir hash file.
@@ -430,10 +424,10 @@ class ChecksumMapping(_ChecksumMapping):
 
     def update(
         self,
-        update: Union[Callable[[Path], Optional[PathLike]], Mapping[PathLike, Optional[PathLike]]],
+        update: Callable[[Path], PathLike | None] | Mapping[PathLike, PathLike | None],
         *,
         missing_ok: bool = True,
-        overwrite: Optional[bool] = True,
+        overwrite: bool | None = True,
     ) -> __qualname__:
         """
         Returns updated hashes from a dir hash file.

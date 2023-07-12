@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Tools for IO.
 """
@@ -24,7 +27,7 @@ class IoUtils:
     @classmethod
     def verify_can_read_files(
         cls,
-        *paths: Union[str, Path],
+        *paths: str | Path,
         missing_ok: bool = False,
         attempt: bool = False,
     ) -> None:
@@ -47,7 +50,7 @@ class IoUtils:
                 raise ReadPermissionsError(f"Cannot read from {path}", key=str(path))
             if attempt:
                 try:
-                    with open(path, "r"):
+                    with open(path):
                         pass
                 except OSError:
                     raise WritePermissionsError(f"Failed to open {path} for read", key=str(path))
@@ -55,7 +58,7 @@ class IoUtils:
     @classmethod
     def verify_can_write_files(
         cls,
-        *paths: Union[str, Path],
+        *paths: str | Path,
         missing_ok: bool = False,
         attempt: bool = False,
     ) -> None:
@@ -84,7 +87,7 @@ class IoUtils:
                     raise WritePermissionsError(f"Failed to open {path} for write", key=str(path))
 
     @classmethod
-    def verify_can_write_dirs(cls, *paths: Union[str, Path], missing_ok: bool = False) -> None:
+    def verify_can_write_dirs(cls, *paths: str | Path, missing_ok: bool = False) -> None:
         """
         Checks that all directories can be written to, to ensure atomicity before operations.
 
@@ -109,7 +112,7 @@ class IoUtils:
     @classmethod
     def write(
         cls, path_or_buff, content, *, mode: str = "w", atomic: bool = False, **kwargs
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Writes using Pandas's ``get_handle``.
         By default (unless ``compression=`` is set), infers the compression type from the filename suffix
@@ -188,7 +191,7 @@ class IoUtils:
         return encoding
 
     @classmethod
-    def get_encoding_errors(cls, errors: Optional[str]) -> Optional[str]:
+    def get_encoding_errors(cls, errors: str | None) -> str | None:
         """
         Returns the value passed as``errors=`` in ``open``.
         Raises:

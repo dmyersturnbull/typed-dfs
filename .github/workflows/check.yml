@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 # Various static code analysis and checks
 # Runs on commit or pull (to any branch)
 # and on a schedule (weekly)
@@ -11,7 +14,7 @@ on:
 jobs:
   markdown-link-check:
     name: Check Markdown links
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       - uses: gaurav-nelson/github-action-markdown-link-check@v1

@@ -1,10 +1,14 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
 import abc
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 import pandas as pd
 
@@ -144,7 +148,7 @@ class TypedDf(_DataclassMixin, BaseDf, metaclass=abc.ABCMeta):
         return df
 
     @classmethod
-    def new_df(cls, reserved: Union[bool, Sequence[str]] = False) -> __qualname__:
+    def new_df(cls, reserved: bool | Sequence[str] = False) -> __qualname__:
         """
         Returns a DataFrame that is empty but has the correct columns and indices.
 

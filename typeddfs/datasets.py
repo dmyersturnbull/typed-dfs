@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Near-replica of example from the readme.
 """
@@ -28,15 +31,15 @@ class LazyDf(Generic[T]):
             lazy = LazyDataFrame.from_source("https://google.com/dataframe.csv")
     """
 
-    def __init__(self, name: str, source: str, clazz: Type[T], _df: Optional[T]):
+    def __init__(self, name: str, source: str, clazz: type[T], _df: T | None):
         self._name = name
         self._source = source
-        self._clazz: Type[T] = clazz
-        self._df: Optional[T] = _df
+        self._clazz: type[T] = clazz
+        self._df: T | None = _df
 
     @classmethod
     def from_source(
-        cls, source: str, clazz: Type[S] = PlainTypedDf, name: Optional[str] = None
+        cls, source: str, clazz: type[S] = PlainTypedDf, name: str | None = None
     ) -> LazyDf[S]:
         p, _, _ = FileFormat.split(source)
         if name is None:
@@ -44,7 +47,7 @@ class LazyDf(Generic[T]):
         return LazyDf(name, source, clazz, None)
 
     @classmethod
-    def from_df(cls, df: X, name: Optional[str] = None) -> LazyDf[X]:
+    def from_df(cls, df: X, name: str | None = None) -> LazyDf[X]:
         if name is None:
             name = df.__class__.__name__
         return LazyDf(name, "", df.__class__, df)
@@ -54,7 +57,7 @@ class LazyDf(Generic[T]):
         return self._name
 
     @property
-    def clazz(self) -> Type[T]:
+    def clazz(self) -> type[T]:
         return self._clazz
 
     @property
@@ -66,7 +69,7 @@ class LazyDf(Generic[T]):
         return self._df
 
 
-def _get(name: str, t: Type[AbsDf] = PlainTypedDf) -> LazyDf:
+def _get(name: str, t: type[AbsDf] = PlainTypedDf) -> LazyDf:
     url = f"https://raw.githubusercontent.com/mwaskom/seaborn-data/master/{name}.csv"
     if t is None:
         p, _, _ = FileFormat.split(url)

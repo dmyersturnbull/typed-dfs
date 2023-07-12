@@ -1,12 +1,15 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 build:
   environment:
-    python: 3.10.5
+    python: 3.11.4
   nodes:
     my-tests:
       dependencies:
         before:
-          - "pip install --upgrade 'tox>=3.21,<4.0'"
-          - "pip install --upgrade 'poetry>=1.1.4,<2.0'"
+          - "pip install --upgrade 'tox>=4.6,<5'"
+          - "pip install --upgrade 'poetry-core>=1.4,<2'"
     analysis:
       project_setup:
         override:

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for formats like HTML and RST.
 """
@@ -16,13 +19,13 @@ from typeddfs.utils._utils import PathLike
 
 
 class _FormattedMixin:
-    def to_html(self, *args, **kwargs) -> Optional[str]:
+    def to_html(self, *args, **kwargs) -> str | None:
         df = self.vanilla_reset()
         return df.to_html(*args, **kwargs)
 
     def to_rst(
-        self, path_or_none: Optional[PathLike] = None, style: str = "simple", mode: str = "w"
-    ) -> Optional[str]:
+        self, path_or_none: PathLike | None = None, style: str = "simple", mode: str = "w"
+    ) -> str | None:
         """
         Writes a reStructuredText table.
         Args:
@@ -33,7 +36,7 @@ class _FormattedMixin:
         txt = self._tabulate(fmt="rst") + "\n"
         return Utils.write(path_or_none, txt, mode=mode)
 
-    def to_markdown(self, *args, **kwargs) -> Optional[str]:
+    def to_markdown(self, *args, **kwargs) -> str | None:
         return super().to_markdown(*args, **kwargs)
 
     @classmethod
@@ -59,7 +62,7 @@ class _FormattedMixin:
             df = df.drop("Unnamed: 0", axis=1)
         return cls._convert_typed(df)
 
-    def _tabulate(self, fmt: Union[str, TableFormat], **kwargs) -> str:
+    def _tabulate(self, fmt: str | TableFormat, **kwargs) -> str:
         df = self.vanilla_reset()
         return tabulate(df.to_numpy().tolist(), list(df.columns), tablefmt=fmt, **kwargs)
 

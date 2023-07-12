@@ -1,11 +1,15 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Combines various IO mixins.
 """
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Optional, Union
 
 import pandas as pd
 from pandas._typing import StorageOptions
@@ -49,9 +53,9 @@ class _FullIoMixin(
 ):
     def pretty_print(
         self,
-        fmt: Union[None, str, TableFormat] = None,
+        fmt: None | str | TableFormat = None,
         *,
-        to: Optional[PathLike] = None,
+        to: PathLike | None = None,
         mode: str = "w",
         **kwargs,
     ) -> str:
@@ -77,8 +81,8 @@ class _FullIoMixin(
     def _call_read(
         cls,
         clazz,
-        path: Union[Path, str],
-        storage_options: Optional[StorageOptions] = None,
+        path: Path | str,
+        storage_options: StorageOptions | None = None,
     ) -> pd.DataFrame:
         fmt = cls._get_fmt(path)
         # noinspection HttpUrlsUsage
@@ -91,10 +95,10 @@ class _FullIoMixin(
 
     def _call_write(
         self,
-        path: Union[Path, str],
-        storage_options: Optional[StorageOptions] = None,
+        path: Path | str,
+        storage_options: StorageOptions | None = None,
         atomic: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
         cls = self.__class__
         fmt = self._get_fmt(path)
         cls._check_io_ok(path, fmt)
@@ -111,7 +115,7 @@ class _FullIoMixin(
 
     @classmethod
     def _get_read_kwargs(
-        cls, fmt: Optional[FileFormat], path: Path, storage_options: Optional[StorageOptions]
+        cls, fmt: FileFormat | None, path: Path, storage_options: StorageOptions | None
     ) -> Mapping[str, Any]:
         t = cls.get_typing().io
         real_suffix = CompressionFormat.strip_suffix(path).suffix
@@ -134,7 +138,7 @@ class _FullIoMixin(
 
     @classmethod
     def _get_write_kwargs(
-        cls, fmt: Optional[FileFormat], path: Path, storage_options: Optional[StorageOptions]
+        cls, fmt: FileFormat | None, path: Path, storage_options: StorageOptions | None
     ) -> Mapping[str, Any]:
         t = cls.get_typing().io
         real_suffix = CompressionFormat.strip_suffix(path).suffix
@@ -154,14 +158,14 @@ class _FullIoMixin(
         return kwargs
 
     @classmethod
-    def _get_fmt(cls, path: Path) -> Optional[FileFormat]:
+    def _get_fmt(cls, path: Path) -> FileFormat | None:
         t = cls.get_typing().io
         mp = FileFormat.suffix_map()
         mp.update(t.remap_suffixes)
         return FileFormat.from_path_or_none(path, format_map=mp)
 
     @classmethod
-    def _check_io_ok(cls, path: Path, fmt: Optional[FileFormat]):
+    def _check_io_ok(cls, path: Path, fmt: FileFormat | None):
         t = cls.get_typing().io
         if fmt is not None:
             if t.secure and not fmt.is_secure:

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Tools for shasum-like files.
 """
@@ -35,8 +38,8 @@ class Checksums:
         *,
         to_file: bool,
         to_dir: bool,
-        overwrite: Optional[bool] = True,
-    ) -> Optional[str]:
+        overwrite: bool | None = True,
+    ) -> str | None:
         """
         Adds and/or appends the hex hash of ``path``.
 
@@ -97,8 +100,8 @@ class Checksums:
         *,
         file_hash: bool,
         dir_hash: bool,
-        computed: Optional[str],
-    ) -> Optional[str]:
+        computed: str | None,
+    ) -> str | None:
         path = Path(path)
         if computed is not None:
             self.verify_hex(path, computed)
@@ -134,7 +137,7 @@ class Checksums:
         except PathNotRelativeError:
             pass
 
-    def verify_hex(self, path: PathLike, expected: str) -> Optional[str]:
+    def verify_hex(self, path: PathLike, expected: str) -> str | None:
         """
         Verifies a hash directly from a hex string.
         """

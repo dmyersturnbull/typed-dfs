@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -76,7 +79,7 @@ class TestDataclasses:
         @dataclass(frozen=True)
         class Dc:
             animal: str
-            val: Optional[int]
+            val: int | None
 
         t = TypedDfBuilder("T").require("animal", dtype=str).reserve("age", dtype=int).build()
         df = t.from_dataclass_instances([Dc("cat", 1), Dc("kitten", 2)])

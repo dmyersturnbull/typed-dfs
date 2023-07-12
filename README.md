@@ -4,8 +4,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python version compatibility](https://img.shields.io/pypi/pyversions/typeddfs?label=Python)](https://pypi.org/project/typeddfs)
 [![Version on GitHub](https://img.shields.io/github/v/release/dmyersturnbull/typed-dfs?include_prereleases&label=GitHub)](https://github.com/dmyersturnbull/typed-dfs/releases)
-[![Version on PyPi](https://img.shields.io/pypi/v/typeddfs?label=PyPi)](https://pypi.org/project/typeddfs)  
-[![Build (Actions)](https://img.shields.io/github/workflow/status/dmyersturnbull/typed-dfs/Build%20&%20test?label=Tests)](https://github.com/dmyersturnbull/typed-dfs/actions)
+[![Version on PyPi](https://img.shields.io/pypi/v/typeddfs?label=PyPi)](https://pypi.org/project/typeddfs)
+[![Build (Actions)](https://img.shields.io/github/actions/workflow/status/dmyersturnbull/typed-dfs/push-main.yml?branch=main&label=Tests)](https://github.com/dmyersturnbull/typed-dfs/actions)
 [![Coverage (coveralls)](https://coveralls.io/repos/github/dmyersturnbull/typed-dfs/badge.svg?branch=main&service=github)](https://coveralls.io/github/dmyersturnbull/typed-dfs?branch=main)
 [![Documentation status](https://readthedocs.org/projects/typed-dfs/badge)](https://typed-dfs.readthedocs.io/en/stable/)
 [![Maintainability](https://api.codeclimate.com/v1/badges/6b804351b6ba5e7694af/maintainability)](https://codeclimate.com/github/dmyersturnbull/typed-dfs/maintainability)
@@ -162,7 +162,7 @@ Here are the extras:
 - `xlsb`: rare binary Excel file (uses: pyxlsb)
 - [HDF5](https://www.hdfgroup.org/solutions/hdf5/) _{no extra provided}_ (_use:_ `tables`)
 
-For example, for Feather and TOML support use: `typeddfs[feather,toml]`  
+For example, for Feather and TOML support use: `typeddfs[feather,toml]`
 As a shorthand for all formats, use `typeddfs[all]`.
 
 ### 📊 Serialization in-depth

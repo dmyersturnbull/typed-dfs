@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 # Build, test, and run static analyses, and send reports to external services
 # Runs only on pushing to main
 name: Build & test
@@ -9,8 +12,8 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        os: ["ubuntu-20.04", "windows-2019", "macos-10.15"]
-        python-version: ["3.9"]
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        python-version: ["3.11"]
     runs-on: "${{ matrix.os }}"
     steps:
       - name: Checkout
@@ -21,8 +24,8 @@ jobs:
           python-version: "${{ matrix.python-version }}"
       - name: Install build meta-dependencies
         run: |
-          pip install poetry tox 'wheel>=0.36,<1.0'
-      - name: Test with tox
+          pip install 'tox>=4' 'poetry-core>=1.4' 'wheel>=0.36,<1.0'
+      - name: Test with tox>=4
         run: |
           tox -v
       - name: Update coveralls
@@ -31,4 +34,4 @@ jobs:
         run: |
           pip install 'coveralls>=3,<4'
           coveralls --service=github
-        if: ${{ matrix.os }} == ubuntu-20.04
+        if: ${{ matrix.os }} == ubuntu-latest

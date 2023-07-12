@@ -1,10 +1,14 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Defines the superclasses of the types ``TypedDf`` and ``UntypedDf``.
 """
 from __future__ import annotations
 
 import abc
-from typing import Iterable, Optional
+from collections.abc import Iterable
+from typing import Optional
 
 import pandas as pd
 
@@ -31,7 +35,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
             return super().__getitem__(item)
 
     @classmethod
-    def of(cls, df, *args, keys: Optional[Iterable[str]] = None, **kwargs) -> __qualname__:
+    def of(cls, df, *args, keys: Iterable[str] | None = None, **kwargs) -> __qualname__:
         """
         Construct or convert a DataFrame, returning this type.
         Delegates to :meth:`convert` for DataFrames,
@@ -59,7 +63,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
         dfs = None
         if isinstance(df, Iterable):
             dfs_ = list(df)  # make sure we can iter multiple times
-            if all((isinstance(d, pd.DataFrame) for d in df)):
+            if all(isinstance(d, pd.DataFrame) for d in df):
                 dfs = dfs_
                 if keys is not None:
                     keys = list(keys)
@@ -69,7 +73,7 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
             if len(dfs) == 0:
                 return cls.new_df()
             df = pd.concat(dfs, ignore_index=True, copy=False)
-            if keys is not None and any((len(d.attrs) > 0 for d in dfs)):
+            if keys is not None and any(len(d.attrs) > 0 for d in dfs):
                 df.attrs = {s: d.attrs for s, d in zip(keys, dfs)}
         elif not isinstance(df, pd.DataFrame):
             df = pd.DataFrame(df, *args, **kwargs)

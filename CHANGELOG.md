@@ -3,6 +3,24 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.18.0] - 2023-07-12
+
+### Added
+
+- Support for Pandas 2
+
+### Removed
+
+- Support for Python < 3.10
+- Support for Pandas < 1.5.2
+- Support for Poetry < 1.4
+
+### Fixed
+
+- Use poetry-core and new Poetry options
+- Enable virtualenv>20.0.33
+- Switch to Furo theme
+
 ## [0.17.0] - 2022-07-25
 
 ### Added

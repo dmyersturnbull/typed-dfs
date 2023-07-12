@@ -1,9 +1,13 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Defines DataFrames with convenience methods but that do not enforce invariants.
 """
 from __future__ import annotations
 
-from typing import Any, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
@@ -26,9 +30,7 @@ class UntypedDf(BaseDf):
         return FINAL_DF_TYPING
 
     @classmethod
-    def new_df(
-        cls, rows: int = 0, cols: Union[int, Sequence[str]] = 0, fill: Any = 0
-    ) -> __qualname__:
+    def new_df(cls, rows: int = 0, cols: int | Sequence[str] = 0, fill: Any = 0) -> __qualname__:
         """
         Creates a new, semi-arbitrary DataFrame of the specified rows and columns.
         The DataFrame will have no index.

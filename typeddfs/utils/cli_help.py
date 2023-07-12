@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 r"""
 Utils for getting nice CLI help on DataFrame inputs.
 
@@ -9,8 +12,9 @@ Utils for getting nice CLI help on DataFrame inputs.
     This is consistent with a number of formats, including Markdown,
     reStructuredText, and `Typer <https://github.com/tiangolo/typer>`_.
 """
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import FrozenSet, Mapping, Sequence, Type
+from typing import FrozenSet, Type
 
 from typeddfs import MatrixDf, TypedDf
 from typeddfs.abs_dfs import AbsDf
@@ -58,7 +62,7 @@ class DfFormatHelp:
             return "/".join(suffixes) + ": " + self.desc
 
 
-class DfFormatsHelp(FrozenSet[DfFormatHelp]):
+class DfFormatsHelp(frozenset[DfFormatHelp]):
     """
     Help on file formats only.
     """
@@ -136,7 +140,7 @@ class DfHelp:
     Info on a TypedDf suitable for CLI help.
     """
 
-    clazz: Type[AbsDf]
+    clazz: type[AbsDf]
     formats: DfFormatsHelp
 
     @property
@@ -351,7 +355,7 @@ class UntypedDfHelp(DfHelp):
 
 class DfCliHelp:
     @classmethod
-    def help(cls, clazz: Type[AbsDf]) -> DfHelp:
+    def help(cls, clazz: type[AbsDf]) -> DfHelp:
         """
         Returns info suitable for CLI help.
 

@@ -1,11 +1,15 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Defines a builder pattern for ``TypedDf``.
 """
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence, Type, Union
+from typing import Any, Optional, Type, Union
 
 import pandas as pd
 
@@ -27,7 +31,7 @@ from typeddfs.utils.checksums import Checksums
 
 
 class _GenericBuilder:
-    def __init__(self, name: str, doc: Optional[str] = None):
+    def __init__(self, name: str, doc: str | None = None):
         """
         Constructs a new builder.
 
@@ -81,7 +85,7 @@ class _GenericBuilder:
         self.add_read_kwargs("pickle", protocol=_PICKLE_VR)
         self.add_write_kwargs("pickle", protocol=_PICKLE_VR)
 
-    def subclass(self, clazz: Type[Any]) -> __qualname__:
+    def subclass(self, clazz: type[Any]) -> __qualname__:
         """
         Make the class inherit from some type.
         May only subclass from a single subclass of DataFrame.
@@ -128,7 +132,7 @@ class _GenericBuilder:
         self._methods.update(**kwargs)
         return self
 
-    def add_classmethods(self, **kwargs: Callable[[Type[BaseDf], ...], Any]) -> __qualname__:
+    def add_classmethods(self, **kwargs: Callable[[type[BaseDf], ...], Any]) -> __qualname__:
         """
         Attaches classmethods to the class.
         Mostly useful for factory methods.
@@ -154,7 +158,7 @@ class _GenericBuilder:
         self._post_processing = fn
         return self
 
-    def verify(self, *conditions: Callable[[pd.DataFrame], Optional[str, bool]]) -> __qualname__:
+    def verify(self, *conditions: Callable[[pd.DataFrame], str, bool | None]) -> __qualname__:
         """
         Adds additional requirement(s) for the DataFrames.
 
@@ -173,10 +177,10 @@ class _GenericBuilder:
     def suffix(
         self,
         suffix: str,
-        fmt: Union[FileFormat, str],
+        fmt: FileFormat | str,
         *,
-        read: Optional[Mapping[str, Any]] = None,
-        write: Optional[Mapping[str, Any]] = None,
+        read: Mapping[str, Any] | None = None,
+        write: Mapping[str, Any] | None = None,
     ) -> __qualname__:
         """
         Makes read_files and write_files interpret a filename suffix differently.
@@ -239,7 +243,7 @@ class _GenericBuilder:
         preserve_inf: bool = True,
         sort: bool = False,
         indent: bool = True,
-        fallback: Optional[Callable[[Any], Any]] = None,
+        fallback: Callable[[Any], Any] | None = None,
     ) -> __qualname__:
         """
         Sets ``pd.DataFrame.attrs`` to be read and written by default.
@@ -331,7 +335,7 @@ class _GenericBuilder:
         self._custom_formats[suffix] = (reader, writer)
         return self
 
-    def add_read_kwargs(self, fmt: Union[FileFormat, str], **kwargs) -> __qualname__:
+    def add_read_kwargs(self, fmt: FileFormat | str, **kwargs) -> __qualname__:
         """
         Adds keyword arguments that are passed to ``read_`` methods when called from ``read_file``.
         Rarely needed.
@@ -348,7 +352,7 @@ class _GenericBuilder:
             self._read_kwargs[fmt][k] = v
         return self
 
-    def add_write_kwargs(self, fmt: Union[FileFormat, str], **kwargs) -> __qualname__:
+    def add_write_kwargs(self, fmt: FileFormat | str, **kwargs) -> __qualname__:
         """
         Adds keyword arguments that are passed to ``to_`` methods when called from ``to_file``.
         Rarely needed.
@@ -370,7 +374,7 @@ class _GenericBuilder:
             self._write_kwargs[fmt][k] = v
         return self
 
-    def _build(self) -> Type[BaseDf]:
+    def _build(self) -> type[BaseDf]:
         if self._secure and self._hash_alg in Utils.insecure_hash_functions():
             raise DfTypeConstructionError(f"Hash algorithm {self._hash_alg} forbidden by .secure()")
         self._check_final()
@@ -431,14 +435,14 @@ class MatrixDfBuilder(_GenericBuilder):
     A builder pattern for :class:`typeddfs.matrix_dfs.MatrixDf`.
     """
 
-    def __init__(self, name: str, doc: Optional[str] = None):
+    def __init__(self, name: str, doc: str | None = None):
         super().__init__(name, doc)
         self._clazz = MatrixDf
         self._index_series_name = "row"
         self._column_series_name = "column"
         self._req_meta.append("row")
 
-    def build(self) -> Type[MatrixDf]:
+    def build(self) -> type[MatrixDf]:
         """
         Builds this type.
 
@@ -460,7 +464,7 @@ class MatrixDfBuilder(_GenericBuilder):
         # noinspection PyTypeChecker
         return self._build()
 
-    def dtype(self, dt: Type[Any]) -> __qualname__:
+    def dtype(self, dt: type[Any]) -> __qualname__:
         """
         Sets the type of value for all matrix elements.
         This should almost certainly be a numeric type,
@@ -487,11 +491,11 @@ class AffinityMatrixDfBuilder(MatrixDfBuilder):
     A builder pattern for :class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
     """
 
-    def __init__(self, name: str, doc: Optional[str] = None):
+    def __init__(self, name: str, doc: str | None = None):
         super().__init__(name, doc)
         self._clazz = AffinityMatrixDf
 
-    def build(self) -> Type[AffinityMatrixDf]:
+    def build(self) -> type[AffinityMatrixDf]:
         """
         Builds this type.
 
@@ -519,12 +523,12 @@ class TypedDfBuilder(_GenericBuilder):
         ``TypedDfBuilder.typed().require("name").build()``
     """
 
-    def __init__(self, name: str, doc: Optional[str] = None):
+    def __init__(self, name: str, doc: str | None = None):
         super().__init__(name, doc)
         self._clazz = TypedDf
 
     def series_names(
-        self, index: Union[None, bool, str] = False, columns: Union[None, bool, str] = False
+        self, index: None | bool | str = False, columns: None | bool | str = False
     ) -> __qualname__:
         """
         Sets ``pd.DataFrame.index.name`` and/or ``pd.DataFrame.columns.name``.
@@ -538,7 +542,7 @@ class TypedDfBuilder(_GenericBuilder):
         self._column_series_name = columns
         return self
 
-    def build(self) -> Type[TypedDf]:
+    def build(self) -> type[TypedDf]:
         """
         Builds this type.
 
@@ -555,9 +559,7 @@ class TypedDfBuilder(_GenericBuilder):
         # noinspection PyTypeChecker
         return self._build()
 
-    def require(
-        self, *names: str, dtype: Optional[Type] = None, index: bool = False
-    ) -> __qualname__:
+    def require(self, *names: str, dtype: type | None = None, index: bool = False) -> __qualname__:
         """
         Requires column(s) or index name(s).
         DataFrames will fail if they are missing any of these.
@@ -583,9 +585,7 @@ class TypedDfBuilder(_GenericBuilder):
                 self._dtypes[name] = dtype
         return self
 
-    def reserve(
-        self, *names: str, dtype: Optional[Type] = None, index: bool = False
-    ) -> __qualname__:
+    def reserve(self, *names: str, dtype: type | None = None, index: bool = False) -> __qualname__:
         """
         Reserves column(s) or index name(s) for optional inclusion.
         A reserved column will be accepted even if ``strict`` is set.

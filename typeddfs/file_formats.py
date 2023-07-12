@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 File formats for reading/writing to/from DFs.
 """
@@ -5,8 +8,9 @@ from __future__ import annotations
 
 import enum
 from collections import defaultdict
+from collections.abc import Mapping, MutableMapping
 from pathlib import Path
-from typing import Mapping, MutableMapping, NamedTuple, Optional, Set, Union
+from typing import NamedTuple, Optional, Set, Union
 
 from typeddfs.df_errors import FilenameSuffixError
 from typeddfs.utils._format_support import DfFormatSupport
@@ -15,7 +19,7 @@ from typeddfs.utils._utils import PathLike
 
 class BaseFormatCompression(NamedTuple):
     base: Path
-    format: Optional[FileFormat]
+    format: FileFormat | None
     compression: CompressionFormat
 
 
@@ -57,7 +61,7 @@ class CompressionFormat(_Enum):
     none = ()
 
     @classmethod
-    def list(cls) -> Set[CompressionFormat]:
+    def list(cls) -> set[CompressionFormat]:
         """
         Returns the set of CompressionFormats.
         Works with static type analysis.
@@ -65,7 +69,7 @@ class CompressionFormat(_Enum):
         return set(cls)
 
     @classmethod
-    def list_non_empty(cls) -> Set[CompressionFormat]:
+    def list_non_empty(cls) -> set[CompressionFormat]:
         """
         Returns the set of CompressionFormats, except for ``none``.
         Works with static type analysis.
@@ -73,7 +77,7 @@ class CompressionFormat(_Enum):
         return {c for c in cls if c is not cls.none}
 
     @classmethod
-    def of(cls, t: Union[str, CompressionFormat]) -> CompressionFormat:
+    def of(cls, t: str | CompressionFormat) -> CompressionFormat:
         """
         Returns a FileFormat from a name (e.g. "gz" or "gzip").
         Case-insensitive.
@@ -107,21 +111,21 @@ class CompressionFormat(_Enum):
         return self is not CompressionFormat.none
 
     @classmethod
-    def all_suffixes(cls) -> Set[str]:
+    def all_suffixes(cls) -> set[str]:
         """
         Returns all suffixes for all compression formats.
         """
         return {c.suffix for c in cls}
 
     @property
-    def name_or_none(self) -> Optional[str]:
+    def name_or_none(self) -> str | None:
         """
         Returns the name, or ``None`` if it is not compressed.
         """
         return None if self is CompressionFormat.none else self.name
 
     @property
-    def pandas_value(self) -> Optional[str]:
+    def pandas_value(self) -> str | None:
         """
         Returns the value that should be passed to Pandas as ``compression``.
         """
@@ -285,7 +289,7 @@ class FileFormat(_Enum):
     xlsx = ()
 
     @classmethod
-    def list(cls) -> Set[FileFormat]:
+    def list(cls) -> set[FileFormat]:
         """
         Returns the set of FileFormats.
         Works with static type analysis.
@@ -342,7 +346,7 @@ class FileFormat(_Enum):
         }
 
     @classmethod
-    def of(cls, t: Union[str, FileFormat]) -> FileFormat:
+    def of(cls, t: str | FileFormat) -> FileFormat:
         """
         Returns a FileFormat from an exact name (e.g. "csv").
 
@@ -356,7 +360,7 @@ class FileFormat(_Enum):
 
     @classmethod
     def strip(
-        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
     ) -> Path:
         """
         Strips a recognized, optionally compressed, suffix from ``path``.
@@ -374,7 +378,7 @@ class FileFormat(_Enum):
 
     @classmethod
     def split(
-        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
     ) -> BaseFormatCompression:
         """
         Splits a path into the base path, format, and compression.
@@ -397,7 +401,7 @@ class FileFormat(_Enum):
 
     @classmethod
     def split_or_none(
-        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
     ) -> BaseFormatCompression:
         """
         Splits a path into the base path, format, and compression.
@@ -426,8 +430,8 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_path_or_none(
-        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
-    ) -> Optional[FileFormat]:
+        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
+    ) -> FileFormat | None:
         """
         Same as :meth:`from_path`, but returns None if not found.
         """
@@ -438,7 +442,7 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_path(
-        cls, path: PathLike, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
     ) -> FileFormat:
         """
         Guesses a FileFormat from a filename.
@@ -459,8 +463,8 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_suffix_or_none(
-        cls, suffix: str, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
-    ) -> Optional[FileFormat]:
+        cls, suffix: str, *, format_map: Mapping[str, FileFormat | str] | None = None
+    ) -> FileFormat | None:
         """
         Same as :meth:`from_suffix`, but returns None if not found.
         """
@@ -471,7 +475,7 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_suffix(
-        cls, suffix: str, *, format_map: Optional[Mapping[str, Union[FileFormat, str]]] = None
+        cls, suffix: str, *, format_map: Mapping[str, FileFormat | str] | None = None
     ) -> FileFormat:
         """
         Returns the FileFormat corresponding to a filename suffix.
@@ -496,7 +500,7 @@ class FileFormat(_Enum):
             raise FilenameSuffixError(msg, key=suffix) from None
 
     @classmethod
-    def all_readable(cls) -> Set[FileFormat]:
+    def all_readable(cls) -> set[FileFormat]:
         """
         Returns all formats that can be read on this system.
         Note that the result may depend on whether supporting packages are installed.
@@ -505,7 +509,7 @@ class FileFormat(_Enum):
         return {f for f in cls if f.can_read}
 
     @classmethod
-    def all_writable(cls) -> Set[FileFormat]:
+    def all_writable(cls) -> set[FileFormat]:
         """
         Returns all formats that can be written to on this system.
         Note that the result may depend on whether supporting packages are installed.
@@ -521,7 +525,7 @@ class FileFormat(_Enum):
         """
         return {k: v for k, v in _rev_valid_formats.items()}
 
-    def compressed_variants(self, suffix: str) -> Set[str]:
+    def compressed_variants(self, suffix: str) -> set[str]:
         """
         Returns all allowed suffixes.
 
@@ -553,7 +557,7 @@ class FileFormat(_Enum):
         )
 
     @property
-    def suffixes(self) -> Set[str]:
+    def suffixes(self) -> set[str]:
         """
         Returns the suffixes that are tied to this format.
         These will not overlap with the suffixes for any other format.

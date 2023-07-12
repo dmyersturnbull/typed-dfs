@@ -1,10 +1,14 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for Excel/ODF IO.
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path, PurePath
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -26,7 +30,7 @@ class _ExcelMixin:
         return cls._convert_typed(df)
 
     # noinspection PyFinal,PyMethodOverriding
-    def to_excel(self, excel_writer, *args, **kwargs) -> Optional[str]:
+    def to_excel(self, excel_writer, *args, **kwargs) -> str | None:
         kwargs = dict(kwargs)
         df = self.vanilla_reset()
         if isinstance(excel_writer, (str, PurePath)) and Path(excel_writer).suffix in [
@@ -49,7 +53,7 @@ class _ExcelMixin:
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
-    def to_xlsx(self, excel_writer, *args, **kwargs) -> Optional[str]:
+    def to_xlsx(self, excel_writer, *args, **kwargs) -> str | None:
         """
         Writes XLSX Excel files.
         Prefer this method over :meth:`write_excel`.
@@ -67,7 +71,7 @@ class _ExcelMixin:
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
-    def to_xls(self, excel_writer, *args, **kwargs) -> Optional[str]:
+    def to_xls(self, excel_writer, *args, **kwargs) -> str | None:
         """
         Reads legacy XLS Excel files.
         Prefer this method over :meth:`write_excel`.
@@ -86,7 +90,7 @@ class _ExcelMixin:
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
-    def to_xlsb(self, excel_writer, *args, **kwargs) -> Optional[str]:
+    def to_xlsb(self, excel_writer, *args, **kwargs) -> str | None:
         """
         Writes XLSB Excel files.
         This is a relatively uncommon format.
@@ -105,7 +109,7 @@ class _ExcelMixin:
         kwargs = {k: v for k, v in kwargs.items() if k != "engine"}
         return cls.read_excel(io, sheet_name, **kwargs, engine="openpyxl")
 
-    def to_ods(self, ods_writer, *args, **kwargs) -> Optional[str]:
+    def to_ods(self, ods_writer, *args, **kwargs) -> str | None:
         """
         Writes OpenDocument ODS/ODT files.
         Prefer this method over :meth:`write_excel`.

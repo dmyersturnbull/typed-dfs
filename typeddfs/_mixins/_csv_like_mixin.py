@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for CSV and TSV.
 """
@@ -51,7 +54,7 @@ class _CsvLikeMixin:
             return cls.new_df()
         return cls._convert_typed(df)
 
-    def to_tsv(self, *args, **kwargs) -> Optional[str]:
+    def to_tsv(self, *args, **kwargs) -> str | None:
         """
         Writes tab-separated data.
         See :meth:`to_csv` for more info.
@@ -59,7 +62,7 @@ class _CsvLikeMixin:
         return self.to_csv(*args, sep="\t", **kwargs)
 
     # noinspection PyFinal
-    def to_csv(self, *args, **kwargs) -> Optional[str]:
+    def to_csv(self, *args, **kwargs) -> str | None:
         kwargs = dict(kwargs)
         kwargs.setdefault("index", False)
         df = self.vanilla_reset()

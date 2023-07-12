@@ -1,10 +1,14 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for INI, .properties, and TOML.
 """
 from __future__ import annotations
 
 import os
-from typing import Optional, Sequence, Set, Union
+from collections.abc import Sequence
+from typing import Optional, Set, Union
 
 import pandas as pd
 
@@ -18,9 +22,9 @@ class _IniLikeMixin:
         path_or_buff=None,
         mode: str = "w",
         *,
-        comment: Union[None, str, Sequence[str]] = None,
+        comment: None | str | Sequence[str] = None,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         r"""
         Writes a .properties file.
         Backslashes, colons, spaces, and equal signs are escaped in keys.
@@ -83,7 +87,7 @@ class _IniLikeMixin:
 
     @classmethod
     def read_toml(
-        cls, path_or_buff, aot: Optional[str] = "row", aot_only: bool = True, **kwargs
+        cls, path_or_buff, aot: str | None = "row", aot_only: bool = True, **kwargs
     ) -> __qualname__:
         r"""
         Reads a TOML file.
@@ -117,7 +121,7 @@ class _IniLikeMixin:
         self,
         path_or_buff=None,
         aot: str = "row",
-        comment: Union[None, str, Sequence[str]] = None,
+        comment: None | str | Sequence[str] = None,
         mode: str = "w",
         **kwargs,
     ) -> __qualname__:
@@ -178,7 +182,7 @@ class _IniLikeMixin:
     def to_ini(
         self,
         path_or_buff=None,
-        comment: Union[None, str, Sequence[str]] = None,
+        comment: None | str | Sequence[str] = None,
         mode: str = "w",
         **kwargs,
     ) -> __qualname__:
@@ -211,7 +215,7 @@ class _IniLikeMixin:
         cls,
         unescape_keys,
         unescape_values,
-        comment_chars: Set[str],
+        comment_chars: set[str],
         strip_quotes: bool,
         path_or_buff,
         **kwargs,
@@ -231,7 +235,7 @@ class _IniLikeMixin:
         for i, line in enumerate(txt.splitlines()):
             try:
                 line = line.strip()
-                if any((line.startswith(c) for c in comment_chars)) or len(line.strip()) == 0:
+                if any(line.startswith(c) for c in comment_chars) or len(line.strip()) == 0:
                     continue
                 if line.startswith("["):
                     # treat [ ] (with spaces) as the global key
@@ -264,9 +268,9 @@ class _IniLikeMixin:
         comment_char: str,
         path_or_buff=None,
         mode: str = "w",
-        comment: Union[None, str, Sequence[str]] = None,
+        comment: None | str | Sequence[str] = None,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         r"""
         Writes a .properties-like file.
         """

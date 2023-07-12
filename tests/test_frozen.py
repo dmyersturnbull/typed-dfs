@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 import pytest
 
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet

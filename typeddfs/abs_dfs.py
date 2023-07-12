@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Defines a low-level DataFrame subclass.
 It overrides a lot of methods to auto-change the type back to ``cls``.
@@ -41,13 +44,13 @@ class AbsDf(_FullIoMixin, CoreDf):
     @classmethod
     def read_file(
         cls,
-        path: Union[Path, str],
+        path: Path | str,
         *,
-        file_hash: Optional[bool] = None,
-        dir_hash: Optional[bool] = None,
-        hex_hash: Optional[str] = None,
-        attrs: Optional[bool] = None,
-        storage_options: Optional[StorageOptions] = None,
+        file_hash: bool | None = None,
+        dir_hash: bool | None = None,
+        hex_hash: str | None = None,
+        attrs: bool | None = None,
+        storage_options: StorageOptions | None = None,
     ) -> __qualname__:
         """
         Reads from a file (or possibly URL), guessing the format from the filename extension.
@@ -98,7 +101,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         Returns:
             An instance of this class
         """
-        if any((str(path).startswith(x + "://") for x in ["http", "https", "ftp"])):
+        if any(str(path).startswith(x + "://") for x in ["http", "https", "ftp"]):
             # just save some pain -- better than a weird error in .resolve()
             raise ValueError(f"Cannot read from URL {path}; use read_url instead")
         path = Path(path).resolve()
@@ -116,16 +119,16 @@ class AbsDf(_FullIoMixin, CoreDf):
 
     def write_file(
         self,
-        path: Union[Path, str],
+        path: Path | str,
         *,
         overwrite: bool = True,
         mkdirs: bool = False,
-        file_hash: Optional[bool] = None,
-        dir_hash: Optional[bool] = None,
-        attrs: Optional[bool] = None,
-        storage_options: Optional[StorageOptions] = None,
+        file_hash: bool | None = None,
+        dir_hash: bool | None = None,
+        attrs: bool | None = None,
+        storage_options: StorageOptions | None = None,
         atomic: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Writes to a file, guessing the format from the filename extension.
         Delegates to the ``to_*`` functions of this class (e.g. ``to_csv``).
@@ -177,7 +180,7 @@ class AbsDf(_FullIoMixin, CoreDf):
             InvalidDfError: If the DataFrame is not valid for this type
             ValueError: If the type of a column or index name is non-str
         """
-        if any((str(path).startswith(x + "://") for x in ["http", "https", "ftp"])):
+        if any(str(path).startswith(x + "://") for x in ["http", "https", "ftp"]):
             # just save some pain -- better than a weird error in .resolve()
             raise ValueError(f"Cannot write to URL {path}")
         path = Path(path).resolve()
@@ -206,7 +209,7 @@ class AbsDf(_FullIoMixin, CoreDf):
                 raise FileExistsError(f"{attrs_path} already exists")
         self._check(self)
         types = set(self.column_names()).union(self.index_names())
-        if any((not isinstance(c, str) for c in types)):
+        if any(not isinstance(c, str) for c in types):
             raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
         # now we're ready to write
         if mkdirs:
@@ -241,7 +244,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         return z
 
     @classmethod
-    def can_read(cls) -> Set[FileFormat]:
+    def can_read(cls) -> set[FileFormat]:
         """
         Returns all formats that can be read using ``read_file``.
         Some depend on the availability of optional packages.
@@ -257,7 +260,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         }
 
     @classmethod
-    def can_write(cls) -> Set[FileFormat]:
+    def can_write(cls) -> set[FileFormat]:
         """
         Returns all formats that can be written to using ``write_file``.
         Some depend on the availability of optional packages.

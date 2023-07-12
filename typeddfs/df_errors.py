@@ -1,8 +1,12 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Exceptions used by typeddfs.
 """
+from collections.abc import Sequence
 from pathlib import PurePath
-from typing import AbstractSet, Optional, Sequence, Union
+from typing import AbstractSet, Optional, Union
 
 
 class UnsupportedOperationError(Exception):
@@ -20,7 +24,7 @@ class FilenameSuffixError(UnsupportedOperationError):
         filename: The bad filename
     """
 
-    def __init__(self, *args, key: Optional[str] = None, filename: Optional[str] = None):
+    def __init__(self, *args, key: str | None = None, filename: str | None = None):
         super().__init__(*args)
         self.key = key
         self.filename = filename
@@ -34,7 +38,7 @@ class FormatInsecureError(UnsupportedOperationError):
         key: The problematic format name
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: str | None = None):
         super().__init__(*args)
         self.key = key
 
@@ -47,7 +51,7 @@ class FormatDiscouragedError(UnsupportedOperationError):
         key: The problematic format name
     """
 
-    def __init__(self, *args, key: Optional[str] = None):
+    def __init__(self, *args, key: str | None = None):
         super().__init__(*args)
         self.key = key
 
@@ -78,7 +82,7 @@ class ClashError(DfTypeConstructionError):
         keys: The clashing name(s)
     """
 
-    def __init__(self, *args, keys: Optional[AbstractSet[str]] = None):
+    def __init__(self, *args, keys: AbstractSet[str] | None = None):
         super().__init__(*args)
         self.keys = keys
 
@@ -97,7 +101,7 @@ class VerificationFailedError(InvalidDfError):
         key: The key name of the verification that failed
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -110,7 +114,7 @@ class MissingColumnError(InvalidDfError):
         key: The name of the missing column
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -125,7 +129,7 @@ class RowColumnMismatchError(InvalidDfError):
     """
 
     def __init__(
-        self, *args, rows: Optional[Sequence[str]] = None, columns: Optional[Sequence[str]] = None
+        self, *args, rows: Sequence[str] | None = None, columns: Sequence[str] | None = None
     ):  # pragma: no cover
         super().__init__(*args)
         self.rows = rows
@@ -140,7 +144,7 @@ class UnexpectedColumnError(InvalidDfError):
         key: The name of the unexpected column
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -153,7 +157,7 @@ class UnexpectedIndexNameError(InvalidDfError):
         key: The name of the unexpected index level
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -168,7 +172,7 @@ class ValueNotUniqueError(ValueError):
     """
 
     def __init__(
-        self, *args, key: Optional[str] = None, values: Optional[AbstractSet[str]] = None
+        self, *args, key: str | None = None, values: AbstractSet[str] | None = None
     ):  # pragma: no cover
         super().__init__(*args)
         self.key = key
@@ -183,7 +187,7 @@ class NoValueError(ValueError):
         key: The key used for lookup
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -198,7 +202,7 @@ class LengthMismatchError(ValueError):
     """
 
     def __init__(
-        self, *args, key: Optional[str] = None, lengths: AbstractSet[int]
+        self, *args, key: str | None = None, lengths: AbstractSet[int]
     ):  # pragma: no cover
         super().__init__(*args)
         self.key = key
@@ -210,7 +214,7 @@ class ReadPermissionsError(OSError):
     Couldn't read from a file.
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -220,7 +224,7 @@ class WritePermissionsError(OSError):
     Couldn't write to a file.
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -251,9 +255,9 @@ class HashExistsError(HashWriteError, ValueError):
     def __init__(
         self,
         *args,
-        key: Optional[str] = None,
-        original: Optional[str] = None,
-        new: Optional[str] = None,
+        key: str | None = None,
+        original: str | None = None,
+        new: str | None = None,
     ):  # pragma: no cover
         super().__init__(*args)
         self.key = key
@@ -281,7 +285,7 @@ class HashAlgorithmMissingError(HashWriteError, LookupError):
         key: The missing hash algorithm
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -302,7 +306,7 @@ class HashDidNotValidateError(HashVerificationError):
     """
 
     def __init__(
-        self, *args, actual: Optional[str] = None, expected: Optional[str] = None
+        self, *args, actual: str | None = None, expected: str | None = None
     ):  # pragma: no cover
         super().__init__(*args)
         self.actual = actual
@@ -317,7 +321,7 @@ class HashFileInvalidError(HashVerificationError, ValueError):
         key: The path to the hash file
     """
 
-    def __init__(self, *args, key: Union[None, PurePath, str] = None):  # pragma: no cover
+    def __init__(self, *args, key: None | PurePath | str = None):  # pragma: no cover
         super().__init__(*args)
         if isinstance(key, PurePath):
             key = str(key)
@@ -332,7 +336,7 @@ class HashFileMissingError(HashVerificationError, FileNotFoundError):
         key: The path or filename of the file corresponding to the expected hash file(s)
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -345,7 +349,7 @@ class HashFilenameMissingError(HashVerificationError, LookupError):
         key: The filename
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -358,7 +362,7 @@ class MultipleHashFilenamesError(HashVerificationError, ValueError):
         key: The filename with duplicate entries
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -371,7 +375,7 @@ class HashFileExistsError(HashVerificationError, FileExistsError):
         key: The existing hash file path or filename
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -384,7 +388,7 @@ class HashEntryExistsError(HashVerificationError, FileExistsError):
         key: The existing hash dir path
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -397,6 +401,6 @@ class PathNotRelativeError(ValueError):
         key: The filename
     """
 
-    def __init__(self, *args, key: Optional[str] = None):  # pragma: no cover
+    def __init__(self, *args, key: str | None = None):  # pragma: no cover
         super().__init__(*args)
         self.key = key

@@ -1,9 +1,12 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Handles optional packages required for formats.
 """
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 pyarrow = None
 fastparquet = None

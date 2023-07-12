@@ -4,8 +4,9 @@ Misc tools for typed-dfs.
 from __future__ import annotations
 
 import collections
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import AbstractSet, Any, Iterator, Mapping, Sequence, Union
+from typing import AbstractSet, Any, Union
 
 import numpy as np
 
@@ -122,8 +123,8 @@ class MiscUtils:
 
     @classmethod
     def choose_table_format(
-        cls, *, path: PathLike, fmt: Union[None, TableFormat, str] = None, default: str = "plain"
-    ) -> Union[str, TableFormat]:
+        cls, *, path: PathLike, fmt: None | TableFormat | str = None, default: str = "plain"
+    ) -> str | TableFormat:
         """
         Makes a best-effort guess of a good tabulate format from a path name.
         """

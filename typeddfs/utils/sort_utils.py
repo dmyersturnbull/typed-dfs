@@ -1,21 +1,14 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Tools for sorting.
 """
 from __future__ import annotations
 
 import typing
-from typing import (
-    AbstractSet,
-    Any,
-    Collection,
-    Mapping,
-    NamedTuple,
-    Sequence,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-)
+from collections.abc import Collection, Mapping, Sequence
+from typing import AbstractSet, Any, NamedTuple, Set, Type, TypeVar, Union
 
 from natsort import natsorted, ns
 from natsort.ns_enum import ns as ns_enum
@@ -44,9 +37,9 @@ class SortUtils:
     def natsort(
         cls,
         lst: typing.Iterable[T],
-        dtype: Type[T],
+        dtype: type[T],
         *,
-        alg: Union[None, int, Set[str]] = None,
+        alg: None | int | set[str] = None,
         reverse: bool = False,
     ) -> Sequence[T]:
         """
@@ -98,11 +91,11 @@ class SortUtils:
         # exclude 0 values -- they're defaults
         # exclude any that are not a power of 2 -- they're combinations
         # len(ns_enum) is more than the number of core vals, but that's fine
-        good_vals = {int(2 ** i) for i in range(len(ns_enum))}
+        good_vals = {int(2**i) for i in range(len(ns_enum))}
         return {e.name: e.value for e in ns_enum if e.value in good_vals}
 
     @classmethod
-    def guess_natsort_alg(cls, dtype: Type[Any]) -> NatsortFlagsAndValue:
+    def guess_natsort_alg(cls, dtype: type[Any]) -> NatsortFlagsAndValue:
         """
         Guesses a good natsorted flag for the dtype.
 
@@ -133,9 +126,7 @@ class SortUtils:
         return NatsortFlagsAndValue(st, x)
 
     @classmethod
-    def exact_natsort_alg(
-        cls, flags: Union[None, int, Collection[Union[int, str]]]
-    ) -> NatsortFlagsAndValue:
+    def exact_natsort_alg(cls, flags: None | int | Collection[int | str]) -> NatsortFlagsAndValue:
         """
         Gets the flag names and combined ``alg=`` argument for natsort.
 

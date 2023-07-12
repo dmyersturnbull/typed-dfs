@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for Feather, Parquet, and HDF5.
 """
@@ -28,7 +31,7 @@ class _FeatherParquetHdfMixin:
         return cls._convert_typed(df)
 
     # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
-    def to_feather(self, path_or_buf, *args, **kwargs) -> Optional[str]:
+    def to_feather(self, path_or_buf, *args, **kwargs) -> str | None:
         # feather does not support MultiIndex, so reset index and use convert()
         # if an error occurs you end up with a 0-byte file
         # this is fixed with exactly the same logic as for to_hdf -- see that method
@@ -68,7 +71,7 @@ class _FeatherParquetHdfMixin:
         return cls._convert_typed(df)
 
     # noinspection PyMethodOverriding,PyBroadException,DuplicatedCode
-    def to_parquet(self, path_or_buf, *args, **kwargs) -> Optional[str]:
+    def to_parquet(self, path_or_buf, *args, **kwargs) -> str | None:
         # parquet does not support MultiIndex, so reset index and use convert()
         # if an error occurs you end up with a 0-byte file
         # this is fixed with exactly the same logic as for to_hdf -- see that method
@@ -99,9 +102,7 @@ class _FeatherParquetHdfMixin:
             raise
 
     @classmethod
-    def read_hdf(
-        cls, *args, key: Optional[str] = None, **kwargs
-    ) -> __qualname__:  # pragma: no cover
+    def read_hdf(cls, *args, key: str | None = None, **kwargs) -> __qualname__:  # pragma: no cover
         if key is None:
             key = cls.get_typing().io.hdf_key
         try:
@@ -113,9 +114,7 @@ class _FeatherParquetHdfMixin:
         return cls._convert_typed(df)
 
     # noinspection PyBroadException,PyFinal,DuplicatedCode
-    def to_hdf(
-        self, path: PathLike, key: Optional[str] = None, **kwargs
-    ) -> None:  # pragma: no cover
+    def to_hdf(self, path: PathLike, key: str | None = None, **kwargs) -> None:  # pragma: no cover
         path = Path(path)
         # if an error occurs you end up with a 0-byte file
         # delete it if and only if we CREATED an empty file --

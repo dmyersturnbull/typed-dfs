@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 import contextlib
 import logging
 import random
@@ -16,7 +19,7 @@ logger_name = Path(__file__).parent.parent.name.upper() + ".TEST"
 logger = logging.getLogger(logger_name)
 
 
-def get_resource(*nodes: Union[str, Path]) -> Path:
+def get_resource(*nodes: str | Path) -> Path:
     path = Path(Path(__file__).parent, "resources", *nodes)
     if not path.is_file():
         raise FileNotFoundError(str(path))

@@ -1,10 +1,14 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Misc tools for typed-dfs.
 """
 from __future__ import annotations
 
 import typing
-from typing import Any, Generator, Mapping, Sequence, Tuple, TypeVar
+from collections.abc import Generator, Mapping, Sequence
+from typing import Any, Tuple, TypeVar
 
 import regex
 
@@ -111,7 +115,7 @@ class ParseUtils:
                 cls._un_leaf(to[k0], {k1: v})
 
     @classmethod
-    def _re_leaf(cls, at: str, items: Mapping[str, Any]) -> Generator[Tuple[str, Any], None, None]:
+    def _re_leaf(cls, at: str, items: Mapping[str, Any]) -> Generator[tuple[str, Any], None, None]:
         for k, v in items.items():
             me = at + "." + k if len(at) > 0 else k
             if hasattr(v, "items") and hasattr(v, "keys") and hasattr(v, "values"):

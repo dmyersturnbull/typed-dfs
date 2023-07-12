@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Sphinx config file.
 Uses several extensions to get API docs and sourcecode.
@@ -16,7 +19,7 @@ _toml = tomlkit.loads((_root / "pyproject.toml").read_text(encoding="utf8"))
 T = TypeVar("T")
 
 
-def find(key: str, default: Optional[T] = None, as_type: Type[T] = str) -> Optional[T]:
+def find(key: str, default: T | None = None, as_type: type[T] = str) -> T | None:
     """
     Gets a value from pyproject.toml, or a default.
     Args:
@@ -68,18 +71,7 @@ autoapi_keep_files = True
 autoapi_python_class_content = "both"
 autoapi_member_order = "groupwise"
 autoapi_options = ["private-members", "undoc-members", "special-members"]
-
-# The vast majority of Sphinx themes are unmaintained
-# This includes the commonly used alabaster theme
-# The readthedocs theme is pretty good anyway
-# These can be specific to the theme, or processed by Sphinx directly
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-html_theme = "sphinx_rtd_theme"
-html_theme_options = dict(
-    collapse_navigation=False,
-    navigation_depth=False,
-    style_external_links=True,
-)
+html_theme = "furo"
 
 # doc types to build
 sphinx_enable_epub_build = False

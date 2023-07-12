@@ -1,14 +1,18 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Dataclass mixin.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import Field
 from dataclasses import asdict as dataclass_asdict
 from dataclasses import dataclass
 from dataclasses import fields as dataclass_fields
 from dataclasses import make_dataclass
-from typing import Any, Mapping, Optional, Sequence, Tuple, Type
+from typing import Any, Optional, Tuple, Type
 
 
 @dataclass(frozen=True)
@@ -26,7 +30,7 @@ class TypedDfDataclass:
         return list(dataclass_fields(cls))
 
     @classmethod
-    def get_df_type(cls) -> Type["TypedDf"]:
+    def get_df_type(cls) -> type[TypedDf]:
         """
         Returns the original DataFrame type.
         """
@@ -97,7 +101,7 @@ class _DataclassMixin:
         return instances
 
     @classmethod
-    def _create_dataclass(cls, fields: Sequence[Tuple[str, Type[Any]]]) -> Type[TypedDfDataclass]:
+    def _create_dataclass(cls, fields: Sequence[tuple[str, type[Any]]]) -> type[TypedDfDataclass]:
         clazz = make_dataclass(
             f"{cls.__name__}Dataclass",
             fields,
@@ -123,7 +127,7 @@ class _DataclassMixin:
         return clazz
 
     @classmethod
-    def create_dataclass(cls, reserved: bool = True) -> Type[TypedDfDataclass]:
+    def create_dataclass(cls, reserved: bool = True) -> type[TypedDfDataclass]:
         """
         Creates a best-effort immutable ``dataclass`` for this type.
         The fields will depend on the columns and index levels present

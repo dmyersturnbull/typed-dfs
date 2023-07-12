@@ -1,24 +1,21 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Hashable and ordered collections.
 """
 from __future__ import annotations
 
 import functools
-from typing import (
-    AbstractSet,
-    Dict,
+from collections.abc import (
     Hashable,
     Iterator,
-    List,
     Mapping,
     MutableMapping,
-    Optional,
     Sequence,
-    Set,
-    TypeVar,
-    Union,
     ValuesView,
 )
+from typing import AbstractSet, Dict, List, Optional, Set, TypeVar, Union
 
 T = TypeVar("T", covariant=True)
 K = TypeVar("K", contravariant=True)
@@ -58,10 +55,10 @@ class FrozeList(Sequence[T], Hashable):
     def __hash__(self) -> int:
         return self.__hash
 
-    def __eq__(self, other: Union[FrozeList[T], Sequence[T]]) -> bool:
+    def __eq__(self, other: FrozeList[T] | Sequence[T]) -> bool:
         return self.__lst == self.__make_other(other)
 
-    def __lt__(self, other: Union[FrozeList[T], Sequence[T]]):
+    def __lt__(self, other: FrozeList[T] | Sequence[T]):
         return self.__lst < self.__make_other(other)
 
     def __len__(self) -> int:
@@ -73,15 +70,15 @@ class FrozeList(Sequence[T], Hashable):
     def __repr__(self) -> str:
         return repr(self.__lst)
 
-    def to_list(self) -> List[T]:
+    def to_list(self) -> list[T]:
         return list(self.__lst)
 
-    def get(self, item: T, default: Optional[T] = None) -> Optional[T]:
+    def get(self, item: T, default: T | None = None) -> T | None:
         if item in self.__lst:
             return item
         return default
 
-    def req(self, item: T, default: Optional[T] = None) -> T:
+    def req(self, item: T, default: T | None = None) -> T:
         """
         Returns the requested list item, falling back to a default.
         Short for "require".
@@ -95,7 +92,7 @@ class FrozeList(Sequence[T], Hashable):
             raise KeyError(f"Item {item} not found")
         return default
 
-    def __make_other(self, other: Union[FrozeList[T], Sequence[T]]) -> List[T]:
+    def __make_other(self, other: FrozeList[T] | Sequence[T]) -> list[T]:
         if isinstance(other, FrozeList):
             other = other.__lst
         if isinstance(other, list):
@@ -124,12 +121,12 @@ class FrozeSet(AbstractSet[T], Hashable):
             # but at least we'll have a hash and thereby not violate the constraint
             self.__hash = 0
 
-    def get(self, item: T, default: Optional[T] = None) -> Optional[T]:
+    def get(self, item: T, default: T | None = None) -> T | None:
         if item in self.__lst:
             return item
         return default
 
-    def req(self, item: T, default: Optional[T] = None) -> T:
+    def req(self, item: T, default: T | None = None) -> T:
         """
         Returns ``item`` if it is in this set.
         Short for "require".
@@ -161,7 +158,7 @@ class FrozeSet(AbstractSet[T], Hashable):
     def __eq__(self, other: FrozeSet[T]) -> bool:
         return self.__lst == self.__make_other(other)
 
-    def __lt__(self, other: Union[FrozeSet[T], AbstractSet[T]]):
+    def __lt__(self, other: FrozeSet[T] | AbstractSet[T]):
         """
         Compares ``self`` and ``other`` for partial ordering.
         Sorts ``self`` and ``other``, then compares the two sorted sets.
@@ -196,7 +193,7 @@ class FrozeSet(AbstractSet[T], Hashable):
     def to_frozenset(self) -> AbstractSet[T]:
         return frozenset(self.__lst)
 
-    def __make_other(self, other: Union[FrozeSet[T], AbstractSet[T]]) -> Set[T]:
+    def __make_other(self, other: FrozeSet[T] | AbstractSet[T]) -> set[T]:
         if isinstance(other, FrozeSet):
             other = other.__lst
         if isinstance(other, set):
@@ -218,10 +215,10 @@ class FrozeDict(Mapping[K, V], Hashable):
         self.__dct = dct if isinstance(dct, dict) else dict(dct)
         self.__hash = hash(tuple(dct.items()))
 
-    def get(self, key: K, default: Optional[V] = None) -> Optional[V]:  # pragma: no cover
+    def get(self, key: K, default: V | None = None) -> V | None:  # pragma: no cover
         return self.__dct.get(key, default)
 
-    def req(self, key: K, default: Optional[V] = None) -> V:
+    def req(self, key: K, default: V | None = None) -> V:
         """
         Returns the value corresponding to ``key``.
         Short for "require".
@@ -285,7 +282,7 @@ class FrozeDict(Mapping[K, V], Hashable):
         if o_keys > s_keys:
             return True
         # keys are equal
-        return any((other[k] > me[k] for k in o_keys))
+        return any(other[k] > me[k] for k in o_keys)
 
     @property
     def is_empty(self) -> bool:  # pragma: no cover
@@ -307,7 +304,7 @@ class FrozeDict(Mapping[K, V], Hashable):
     def to_dict(self) -> MutableMapping[K, V]:  # pragma: no cover
         return dict(self.__dct)
 
-    def __make_other(self, other: Union[FrozeDict[K, V], Mapping[K, V]]) -> Dict[K, V]:
+    def __make_other(self, other: FrozeDict[K, V] | Mapping[K, V]) -> dict[K, V]:
         if isinstance(other, FrozeDict):
             other = other.__dct
         if isinstance(other, dict):

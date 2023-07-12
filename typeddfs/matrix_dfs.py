@@ -1,20 +1,28 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 DataFrames that are essentially n-by-m matrices.
 """
 from __future__ import annotations
 
 import abc
+from collections.abc import Sequence
 from copy import deepcopy
 from functools import partial
 from inspect import cleandoc
-from typing import Sequence, Set, Tuple, Union
+from typing import Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from numpy.random import RandomState
 
 from typeddfs.base_dfs import BaseDf
-from typeddfs.df_errors import InvalidDfError, RowColumnMismatchError, VerificationFailedError
+from typeddfs.df_errors import (
+    InvalidDfError,
+    RowColumnMismatchError,
+    VerificationFailedError,
+)
 from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping
 from typeddfs.typed_dfs import TypedDf
 
@@ -73,7 +81,7 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         """
         return self.rows == self.cols and np.array_equal(self.values, self.T.values)
 
-    def sub_matrix(self, rows: Set[str], cols: Set[str]) -> __qualname__:
+    def sub_matrix(self, rows: set[str], cols: set[str]) -> __qualname__:
         """
         Returns a matrix containing only these labels.
         """
@@ -113,7 +121,7 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         df = df.transpose()
         return df
 
-    def shuffle(self, rand: Union[None, int, RandomState] = None) -> __qualname__:
+    def shuffle(self, rand: None | int | RandomState = None) -> __qualname__:
         """
         Returns a copy with every value mapped to a new location.
         Destroys the correct links between labels and values.
@@ -149,7 +157,7 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         return f"{len(self.rows)} × {len(self.columns)}"
 
     @property
-    def dims(self) -> Tuple[int, int]:
+    def dims(self) -> tuple[int, int]:
         """
         Returns (n rows, n_columns).
         """
@@ -202,9 +210,9 @@ class MatrixDf(_MatrixDf):
     @classmethod
     def new_df(
         cls,
-        rows: Union[int, Sequence[str]] = 0,
-        cols: Union[int, Sequence[str]] = 0,
-        fill: Union[int, float, complex] = 0,
+        rows: int | Sequence[str] = 0,
+        cols: int | Sequence[str] = 0,
+        fill: int | float | complex = 0,
     ) -> __qualname__:
         """
         Returns a DataFrame that is empty but valid.
@@ -243,9 +251,7 @@ class AffinityMatrixDf(_MatrixDf):
         return FINAL_DF_TYPING  # default only -- should be overridden
 
     @classmethod
-    def new_df(
-        cls, n: Union[int, Sequence[str]] = 0, fill: Union[int, float, complex] = 0
-    ) -> __qualname__:
+    def new_df(cls, n: int | Sequence[str] = 0, fill: int | float | complex = 0) -> __qualname__:
         """
         Returns a DataFrame that is empty but valid.
 

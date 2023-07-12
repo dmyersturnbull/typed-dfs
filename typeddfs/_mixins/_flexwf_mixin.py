@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin for flex-wf.
 """
@@ -63,7 +66,7 @@ class _FlexwfMixin:
 
     def to_flexwf(
         self, path_or_buff=None, sep: str = "|||", mode: str = "w", **kwargs
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Writes a fixed-width formatter, optionally with a delimiter, which can be multiple characters.
 

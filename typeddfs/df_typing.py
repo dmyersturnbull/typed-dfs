@@ -1,23 +1,16 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Information about how DataFrame subclasses should be handled.
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy as _copy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Generic,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Generic, Optional, Set, Type, TypeVar, Union
 
 import pandas as pd
 
@@ -45,23 +38,23 @@ def _opt_dict(x):
 
 @dataclass(frozen=True, repr=True)
 class IoTyping(Generic[T]):
-    _hash_alg: Optional[str] = "sha256"
+    _hash_alg: str | None = "sha256"
     _save_hash_file: bool = False
     _save_hash_dir: bool = False
-    _remap_suffixes: Optional[Mapping[str, FileFormat]] = None
+    _remap_suffixes: Mapping[str, FileFormat] | None = None
     _text_encoding: str = "utf-8"
-    _read_kwargs: Optional[Mapping[FileFormat, Mapping[str, Any]]] = None
-    _write_kwargs: Optional[Mapping[FileFormat, Mapping[str, Any]]] = None
+    _read_kwargs: Mapping[FileFormat, Mapping[str, Any]] | None = None
+    _write_kwargs: Mapping[FileFormat, Mapping[str, Any]] | None = None
     _secure: bool = False
     _recommended: bool = False
     _hdf_key: str = "df"
     _attrs_suffix: str = ".attrs.json"
     _use_attrs: bool = False
-    _attrs_json_kwargs: Optional[Mapping[str, Any]] = None
-    _remapped_read_kwargs: Optional[Mapping[str, Any]] = None
-    _remapped_write_kwargs: Optional[Mapping[str, Any]] = None
-    _custom_readers: Optional[Mapping[str, Callable[[Path], pd.DataFrame]]] = None
-    _custom_writers: Optional[Mapping[str, Callable[[pd.DataFrame, Path], None]]] = None
+    _attrs_json_kwargs: Mapping[str, Any] | None = None
+    _remapped_read_kwargs: Mapping[str, Any] | None = None
+    _remapped_write_kwargs: Mapping[str, Any] | None = None
+    _custom_readers: Mapping[str, Callable[[Path], pd.DataFrame]] | None = None
+    _custom_writers: Mapping[str, Callable[[pd.DataFrame, Path], None]] | None = None
 
     def copy(self, **kwargs) -> IoTyping:
         x = _copy(self)
@@ -138,7 +131,7 @@ class IoTyping(Generic[T]):
         return self._recommended
 
     @property
-    def hash_algorithm(self) -> Optional[str]:
+    def hash_algorithm(self) -> str | None:
         """
         The hash algorithm used for checksums.
         """
@@ -249,19 +242,19 @@ class DfTyping:
     """
 
     _io_typing: IoTyping = FINAL_IO_TYPING
-    _post_processing: Optional[Callable[[T], Optional[T]]] = None
-    _verifications: Optional[Sequence[Callable[[T], Union[None, bool, str]]]] = None
-    _column_series_name: Union[bool, None, str] = None
-    _index_series_name: Union[bool, None, str] = None
+    _post_processing: Callable[[T], T | None] | None = None
+    _verifications: Sequence[Callable[[T], None | bool | str]] | None = None
+    _column_series_name: bool | None | str = None
+    _index_series_name: bool | None | str = None
     _more_columns_allowed: bool = True
     _more_index_names_allowed: bool = True
-    _required_columns: Optional[Sequence[str]] = None
-    _reserved_columns: Optional[Sequence[str]] = None
-    _required_index_names: Optional[Sequence[str]] = None
-    _reserved_index_names: Optional[Sequence[str]] = None
-    _auto_dtypes: Optional[Mapping[str, Type[Any]]] = None
-    _columns_to_drop: Optional[Set[str]] = None
-    _value_dtype: Optional[Type[Any]] = None
+    _required_columns: Sequence[str] | None = None
+    _reserved_columns: Sequence[str] | None = None
+    _required_index_names: Sequence[str] | None = None
+    _reserved_index_names: Sequence[str] | None = None
+    _auto_dtypes: Mapping[str, type[Any]] | None = None
+    _columns_to_drop: set[str] | None = None
+    _value_dtype: type[Any] | None = None
     _order_dclass: bool = True
 
     def copy(self, **kwargs) -> DfTyping:
@@ -291,7 +284,7 @@ class DfTyping:
         return self._order_dclass
 
     @property
-    def index_series_name(self) -> Union[bool, None, str]:
+    def index_series_name(self) -> bool | None | str:
         """
         Intelligently returns ``df.index.name``.
         Returns a value that will be forced into ``df.index.name`` on calling ``convert``,
@@ -302,7 +295,7 @@ class DfTyping:
         return self._index_series_name
 
     @property
-    def column_series_name(self) -> Union[bool, None, str]:
+    def column_series_name(self) -> bool | None | str:
         """
         Intelligently returns ``df.columns.name``.
         Returns a value that will be forced into ``df.columns.name`` on calling ``convert``.
@@ -399,7 +392,7 @@ class DfTyping:
         ]
 
     @property
-    def value_dtype(self) -> Optional[Type[Any]]:
+    def value_dtype(self) -> type[Any] | None:
         """
         A type for "values" in a simple DataFrame.
         Typically numeric.
@@ -407,7 +400,7 @@ class DfTyping:
         return self._value_dtype
 
     @property
-    def auto_dtypes(self) -> Mapping[str, Type[Any]]:
+    def auto_dtypes(self) -> Mapping[str, type[Any]]:
         """
         A mapping from column/index names to the expected dtype.
         These are used via ``pd.Series.as_type`` for automatic conversion.
@@ -419,7 +412,7 @@ class DfTyping:
         return _opt_dict(self._auto_dtypes)
 
     @property
-    def columns_to_drop(self) -> Set[str]:
+    def columns_to_drop(self) -> set[str]:
         """
         Returns the list of columns that are automatically dropped by ``convert``.
         This does NOT include "level_0" and "index, which are ALWAYS dropped.
@@ -427,7 +420,7 @@ class DfTyping:
         return _opt_set(self._columns_to_drop)
 
     @property
-    def post_processing(self) -> Optional[Callable[[T], Optional[T]]]:
+    def post_processing(self) -> Callable[[T], T | None] | None:
         """
         A function to be called at the final stage of ``convert``.
         It is called immediately before ``verifications`` are checked.
@@ -441,7 +434,7 @@ class DfTyping:
         return self._post_processing
 
     @property
-    def verifications(self) -> Sequence[Callable[[T], Union[None, bool, str]]]:
+    def verifications(self) -> Sequence[Callable[[T], None | bool | str]]:
         """
         Additional requirements for the DataFrame to be conformant.
 

@@ -1,28 +1,29 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
-Tools that could possibly be used outside of typed-dfs.
+Tools that could possibly be used outside typed-dfs.
 """
 from __future__ import annotations
 
 import base64
 import enum
 import inspect
-from dataclasses import dataclass
-from datetime import date, datetime
-from datetime import time as _time
-from datetime import tzinfo
-from decimal import Decimal
-from typing import (
-    AbstractSet,
-    Any,
+from collections.abc import (
     ByteString,
     Callable,
     ItemsView,
     KeysView,
     Mapping,
-    Optional,
     Sequence,
     ValuesView,
 )
+from dataclasses import dataclass
+from datetime import date, datetime
+from datetime import time as _time
+from datetime import tzinfo
+from decimal import Decimal
+from typing import AbstractSet, Any, Optional
 from uuid import UUID
 
 import numpy as np
@@ -91,7 +92,7 @@ class JsonEncoder:
     bytes_options: int
     str_options: int
     default: Callable[[Any], Any]
-    prep: Optional[Callable[[Any], Any]]
+    prep: Callable[[Any], Any] | None
 
     def as_bytes(self, data: Any) -> ByteString:
         if self.prep is not None:
@@ -126,9 +127,9 @@ class JsonUtils:
     @classmethod
     def new_default(
         cls,
-        *fallbacks: Optional[Callable[[Any], Any]],
-        first: Optional[Callable[[Any], Any]] = _misc_types_default,
-        last: Optional[Callable[[Any], Any]] = str,
+        *fallbacks: Callable[[Any], Any] | None,
+        first: Callable[[Any], Any] | None = _misc_types_default,
+        last: Callable[[Any], Any] | None = str,
     ) -> Callable[[Any], Any]:
         """
         Creates a new method to be passed as ``default=`` to ``orjson.dumps``.
@@ -161,11 +162,11 @@ class JsonUtils:
     @classmethod
     def encoder(
         cls,
-        *fallbacks: Optional[Callable[[Any], Any]],
+        *fallbacks: Callable[[Any], Any] | None,
         indent: bool = True,
         sort: bool = False,
         preserve_inf: bool = True,
-        last: Optional[Callable[[Any], Any]] = str,
+        last: Callable[[Any], Any] | None = str,
     ) -> JsonEncoder:
         """
         Serializes to string with orjson, indenting and adding a trailing newline.

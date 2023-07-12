@@ -1,3 +1,6 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Data type tools for typed-dfs.
 """
@@ -35,7 +38,6 @@ from pandas.api.types import (
 
 
 class DtypeUtils:
-
     is_integer_dtype = is_integer_dtype
     is_float_dtype = is_float_dtype
     is_bool_dtype = is_bool_dtype
@@ -59,7 +61,7 @@ class DtypeUtils:
     is_scalar = is_scalar
 
     @classmethod
-    def describe_dtype(cls, t: Type[Any], *, short: bool = False) -> Optional[str]:
+    def describe_dtype(cls, t: type[Any], *, short: bool = False) -> str | None:
         """
         Returns a string name for a Pandas-supported dtype.
 

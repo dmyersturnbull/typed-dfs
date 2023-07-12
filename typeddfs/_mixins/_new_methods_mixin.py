@@ -1,7 +1,11 @@
+# SPDX-License-Identifier Apache-2.0
+# Source: https://github.com/dmyersturnbull/typed-dfs
+#
 """
 Mixin with misc new DataFrame methods.
 """
-from typing import Any, Generator, Iterable, Mapping, Sequence, Set, Tuple, Union
+from collections.abc import Generator, Iterable, Mapping, Sequence
+from typing import Any, Set, Tuple, Union
 
 import pandas as pd
 from natsort import natsorted
@@ -29,7 +33,7 @@ class _NewMethodsMixin:
         df.attrs.update(attrs)
         return df
 
-    def iter_row_col(self) -> Generator[Tuple[Tuple[int, int], Any], None, None]:
+    def iter_row_col(self) -> Generator[tuple[tuple[int, int], Any], None, None]:
         """
         Iterates over ``((row, col), value)`` tuples.
         The row and column are the row and column numbers, 1-indexed.
@@ -58,7 +62,7 @@ class _NewMethodsMixin:
             )
         return next(iter(x))
 
-    def cfirst(self, cols: Union[str, int, Sequence[str]]) -> __qualname__:
+    def cfirst(self, cols: str | int | Sequence[str]) -> __qualname__:
         """
         Returns a new DataFrame with the specified columns appearing first.
 
@@ -70,7 +74,7 @@ class _NewMethodsMixin:
         return self.__class__._change(self[cols + [c for c in self.columns if c not in cols]])
 
     def sort_natural(
-        self, column: str, *, alg: Union[None, int, Set[str]] = None, reverse: bool = False
+        self, column: str, *, alg: None | int | set[str] = None, reverse: bool = False
     ) -> __qualname__:
         """
         Calls ``natsorted`` on a single column.
@@ -119,7 +123,7 @@ class _NewMethodsMixin:
         df = df.sort_values("__sort").drop_cols(["__sort"])
         return self.__class__._change(df)
 
-    def drop_cols(self, *cols: Union[str, Iterable[str]]) -> __qualname__:
+    def drop_cols(self, *cols: str | Iterable[str]) -> __qualname__:
         """
         Drops columns, ignoring those that are not present.
 
