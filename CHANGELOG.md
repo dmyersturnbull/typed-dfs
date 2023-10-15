@@ -3,11 +3,14 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.18.0] - 2023-07-12
+## [0.17.0] - 2023-10-15
 
 ### Added
 
 - Support for Pandas 2
+- [zstd](https://facebook.github.io/zstd/) support
+- Experimental [lz4](https://python-lz4.readthedocs.io/) support
+- `CompressionFormat.pandas_value`
 
 ### Removed
 
@@ -20,18 +23,6 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - Use poetry-core and new Poetry options
 - Enable virtualenv>20.0.33
 - Switch to Furo theme
-
-## [0.17.0] - 2022-07-25
-
-### Added
-
-- [zstd](https://facebook.github.io/zstd/) support
-- Experimental [lz4](https://python-lz4.readthedocs.io/) support
-- `CompressionFormat.pandas_value`
-
-### Removed
-
-- Support for Pandas < 1.4
 
 ## [0.16.4] - 2021-11-06
 
