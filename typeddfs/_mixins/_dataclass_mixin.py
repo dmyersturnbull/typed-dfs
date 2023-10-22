@@ -12,7 +12,7 @@ from dataclasses import asdict as dataclass_asdict
 from dataclasses import dataclass
 from dataclasses import fields as dataclass_fields
 from dataclasses import make_dataclass
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Optional
 
 
 @dataclass(frozen=True)

@@ -6,9 +6,8 @@ Misc tools for typed-dfs.
 """
 from __future__ import annotations
 
-import typing
-from collections.abc import Generator, Mapping, Sequence
-from typing import Any, Tuple, TypeVar
+from collections.abc import Generator, Mapping, MutableMapping, Sequence
+from typing import Any, TypeVar
 
 import regex
 
@@ -104,7 +103,7 @@ class ParseUtils:
         return dict(cls._re_leaf("", items))
 
     @classmethod
-    def _un_leaf(cls, to: typing.MutableMapping[str, Any], items: Mapping[str, Any]) -> None:
+    def _un_leaf(cls, to: MutableMapping[str, Any], items: Mapping[str, Any]) -> None:
         for k, v in items.items():
             if "." not in k:
                 to[k] = v

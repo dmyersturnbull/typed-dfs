@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping, Sequence, ValuesView
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import AbstractSet, Optional, Tuple, Union
+from typing import AbstractSet
 
 import regex
 
@@ -27,7 +27,7 @@ _hex_pattern = regex.compile(r"[A-Ha-h0-9]+", flags=regex.V1)
 _hashsum_file_sep = regex.compile(r" [ *]", flags=regex.V1)
 
 
-@dataclass(frozen=True, repr=True)
+@dataclass(frozen=True, slots=True)
 class _ChecksumMapping:
     hash_path: Path
     _dct: Mapping[Path, str]
@@ -150,7 +150,7 @@ class _ChecksumMapping:
         return new
 
 
-@dataclass(frozen=True, repr=True)
+@dataclass(frozen=True, slots=True)
 class ChecksumFile(_ChecksumMapping):
     def load(self) -> __qualname__:
         """
@@ -265,7 +265,7 @@ class ChecksumFile(_ChecksumMapping):
             )
 
 
-@dataclass(frozen=True, repr=True)
+@dataclass(frozen=True, slots=True)
 class ChecksumMapping(_ChecksumMapping):
     def load(self, missing_ok: bool = False) -> __qualname__:
         """

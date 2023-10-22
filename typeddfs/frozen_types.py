@@ -15,7 +15,7 @@ from collections.abc import (
     Sequence,
     ValuesView,
 )
-from typing import AbstractSet, Dict, List, Optional, Set, TypeVar, Union
+from typing import AbstractSet, TypeVar
 
 T = TypeVar("T", covariant=True)
 K = TypeVar("K", contravariant=True)

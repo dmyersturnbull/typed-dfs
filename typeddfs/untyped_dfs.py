@@ -7,7 +7,7 @@ Defines DataFrames with convenience methods but that do not enforce invariants.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ import pandas as pd
 from typeddfs.base_dfs import BaseDf
 from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping, IoTyping
 
-_empty_io_typing = IoTyping[BaseDf]()
+_empty_io_typing: IoTyping[BaseDf] = IoTyping()
 
 
 class UntypedDf(BaseDf):

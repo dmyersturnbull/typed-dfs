@@ -6,7 +6,7 @@ Exceptions used by typeddfs.
 """
 from collections.abc import Sequence
 from pathlib import PurePath
-from typing import AbstractSet, Optional, Union
+from typing import AbstractSet
 
 
 class UnsupportedOperationError(Exception):
@@ -209,7 +209,7 @@ class LengthMismatchError(ValueError):
         self.lengths = lengths
 
 
-class ReadPermissionsError(OSError):
+class ReadPermissionsError(Exception):
     """
     Couldn't read from a file.
     """
@@ -219,7 +219,7 @@ class ReadPermissionsError(OSError):
         self.key = key
 
 
-class WritePermissionsError(OSError):
+class WritePermissionsError(Exception):
     """
     Couldn't write to a file.
     """
@@ -241,7 +241,7 @@ class HashWriteError(HashError):
     """
 
 
-class HashExistsError(HashWriteError, ValueError):
+class HashExistsError(HashWriteError):
     """
     A hash for the filename already exists in the directory hash list.
 
@@ -277,7 +277,7 @@ class HashContradictsExistingError(HashExistsError):
     """
 
 
-class HashAlgorithmMissingError(HashWriteError, LookupError):
+class HashAlgorithmMissingError(HashWriteError):
     """
     The hash algorithm was not found in :mod:`hashlib`.
 
@@ -313,7 +313,7 @@ class HashDidNotValidateError(HashVerificationError):
         self.expected = expected
 
 
-class HashFileInvalidError(HashVerificationError, ValueError):
+class HashFileInvalidError(HashVerificationError):
     """
     The hash file could not be parsed.
 
@@ -328,7 +328,7 @@ class HashFileInvalidError(HashVerificationError, ValueError):
         self.key = key
 
 
-class HashFileMissingError(HashVerificationError, FileNotFoundError):
+class HashFileMissingError(HashVerificationError):
     """
     The hash file does not exist.
 
@@ -341,7 +341,7 @@ class HashFileMissingError(HashVerificationError, FileNotFoundError):
         self.key = key
 
 
-class HashFilenameMissingError(HashVerificationError, LookupError):
+class HashFilenameMissingError(HashVerificationError):
     """
     The filename was not found listed in the hash file.
 
@@ -354,7 +354,7 @@ class HashFilenameMissingError(HashVerificationError, LookupError):
         self.key = key
 
 
-class MultipleHashFilenamesError(HashVerificationError, ValueError):
+class MultipleHashFilenamesError(HashVerificationError):
     """
     There are multiple filenames listed in the hash file where only 1 was expected.
 
@@ -367,7 +367,7 @@ class MultipleHashFilenamesError(HashVerificationError, ValueError):
         self.key = key
 
 
-class HashFileExistsError(HashVerificationError, FileExistsError):
+class HashFileExistsError(HashVerificationError):
     """
     The hash file already exists and cannot be overwritten.
 
@@ -380,7 +380,7 @@ class HashFileExistsError(HashVerificationError, FileExistsError):
         self.key = key
 
 
-class HashEntryExistsError(HashVerificationError, FileExistsError):
+class HashEntryExistsError(HashVerificationError):
     """
     The file is already listed in the hash dir, and it cannot be overwritten.
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional
 
 import pandas as pd
 
@@ -78,7 +78,7 @@ class _GenericBuilder:
         self._req_hash: Optional = False
         self._req_order: Optional = False
         self._attr_suffix = None
-        self._attr_json_kwargs = frozenset()
+        self._attr_json_kwargs = {}
         self._custom_formats = {}
         # make these use an explicit version
         # the user can override if needed
@@ -267,8 +267,8 @@ class _GenericBuilder:
         if fmt is not FileFormat.json:
             raise ValueError(f"File format must be JSON ({suffix}")
         self._attr_suffix = suffix
-        self._attr_json_kwargs = frozenset(
-            dict(preserve_inf=preserve_inf, sort=sort, indent=indent, fallbacks=[fallback])
+        self._attr_json_kwargs = dict(
+            preserve_inf=preserve_inf, sort=sort, indent=indent, fallbacks=[fallback]
         )
         return self
 
@@ -379,7 +379,7 @@ class _GenericBuilder:
             raise DfTypeConstructionError(f"Hash algorithm {self._hash_alg} forbidden by .secure()")
         self._check_final()
 
-        _io_typing = IoTyping[BaseDf](
+        _io_typing = IoTyping(
             _remap_suffixes=dict(self._remapped_suffixes),
             _text_encoding=self._encoding,
             _read_kwargs=dict(self._read_kwargs),

@@ -7,7 +7,6 @@ Mixin for flex-wf.
 from __future__ import annotations
 
 import csv
-from typing import Optional
 
 import pandas as pd
 

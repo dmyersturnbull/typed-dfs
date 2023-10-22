@@ -54,13 +54,13 @@ class TestFileFormats:
         assert FileFormat.from_path_or_none("abc.what") is None
 
     def test_variants(self):
-        expected = {".molly", ".molly.gz", ".molly.zip", ".molly.xz", ".molly.bz2", ".molly.zst"}
+        expected = {".molly", ".molly.gz", ".molly.xz", ".molly.bz2", ".molly.zst"}
         assert FileFormat.json.compressed_variants(".molly") == expected
-        expected = {".gz", ".gz.gz", ".gz.zip", ".gz.xz", ".gz.bz2", ".gz.zst"}
+        expected = {".gz", ".gz.gz", ".gz.xz", ".gz.bz2", ".gz.zst"}
         assert FileFormat.json.compressed_variants(".gz") == expected
-        expected = {".", "..gz", "..zip", "..xz", "..bz2", "..zst"}
+        expected = {".", "..gz", "..xz", "..bz2", "..zst"}
         assert FileFormat.json.compressed_variants(".") == expected
-        expected = {"", ".gz", ".zip", ".xz", ".bz2", ".zst"}
+        expected = {"", ".gz", ".xz", ".bz2", ".zst"}
         assert FileFormat.json.compressed_variants("") == expected
         assert FileFormat.feather.compressed_variants(".feather") == {".feather"}
         assert FileFormat.feather.compressed_variants(".whatever") == {".whatever"}

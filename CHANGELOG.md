@@ -3,26 +3,34 @@
 Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.17.0] - 2023-10-15
+## [0.17.0] - 2023-10-22
 
 ### Added
 
 - Support for Pandas 2
 - [zstd](https://facebook.github.io/zstd/) support
-- Experimental [lz4](https://python-lz4.readthedocs.io/) support
+- [lz4](https://python-lz4.readthedocs.io/) support
 - `CompressionFormat.pandas_value`
 
 ### Removed
 
-- Support for Python < 3.10
+- ZIP compression
+- Support for Python < 3.9
 - Support for Pandas < 1.5.2
 - Support for Poetry < 1.4
+- `MiscUtils.table_format`
+
+### Changed
+- Excel write methods no longer use `encoding`
 
 ### Fixed
 
 - Use poetry-core and new Poetry options
 - Enable virtualenv>20.0.33
-- Switch to Furo theme
+
+## [0.16.5] - 2022-02-28
+
+No changes.
 
 ## [0.16.4] - 2021-11-06
 

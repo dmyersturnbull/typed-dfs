@@ -6,7 +6,6 @@ Convenient code for import.
 """
 import logging
 from pathlib import Path
-from typing import Optional, Type
 
 import pandas as pd
 

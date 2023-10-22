@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path, PurePath
-from typing import Optional, Union
+from typing import Union
 
 import pandas as pd
 

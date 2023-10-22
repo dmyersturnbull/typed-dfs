@@ -157,10 +157,6 @@ class _RetypeMixin:
         df = df.assign(**kwargs)
         return self.__class__._change(df)
 
-    def append(self, *args, **kwargs) -> __qualname__:
-        df = super().append(*args, **kwargs)
-        return self.__class__._change(df)
-
     def transpose(self, *args, **kwargs) -> __qualname__:
         df = super().transpose(*args, **kwargs)
         return self.__class__._change(df)
@@ -234,5 +230,13 @@ class _RetypeMixin:
         if kwargs.get("inplace") is True:  # pragma: no cover
             raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
 
+
+if hasattr(pd.DataFrame, "append"):
+
+    def _append(self, *args, **kwargs) -> __qualname__:
+        df = super().append(*args, **kwargs)
+        return self.__class__._change(df)
+
+    _RetypeMixin.append = _append
 
 __all__ = ["_RetypeMixin"]

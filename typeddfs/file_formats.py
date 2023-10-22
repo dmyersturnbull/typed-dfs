@@ -10,7 +10,7 @@ import enum
 from collections import defaultdict
 from collections.abc import Mapping, MutableMapping
 from pathlib import Path
-from typing import NamedTuple, Optional, Set, Union
+from typing import NamedTuple
 
 from typeddfs.df_errors import FilenameSuffixError
 from typeddfs.utils._format_support import DfFormatSupport
@@ -54,7 +54,6 @@ class CompressionFormat(_Enum):
     """
 
     gz = ()
-    zip = ()
     bz2 = ()
     xz = ()
     zstd = ()
@@ -312,10 +311,10 @@ class FileFormat(_Enum):
             FileFormat.lines,
             FileFormat.fwf,
             FileFormat.flexwf,
-            FileFormat.xlsx,
-            FileFormat.ods,
-            FileFormat.xls,
-            FileFormat.xlsb,
+            # FileFormat.xlsx,
+            # FileFormat.ods,
+            # FileFormat.xls,
+            # FileFormat.xlsb,
         }
 
     @property

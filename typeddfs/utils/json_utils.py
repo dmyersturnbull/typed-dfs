@@ -23,7 +23,7 @@ from datetime import date, datetime
 from datetime import time as _time
 from datetime import tzinfo
 from decimal import Decimal
-from typing import AbstractSet, Any, Optional
+from typing import AbstractSet, Any
 from uuid import UUID
 
 import numpy as np
@@ -87,7 +87,7 @@ class MiscTypesJsonDefault(Callable[[Any], Any]):
 _misc_types_default = MiscTypesJsonDefault()
 
 
-@dataclass(frozen=True, repr=True)
+@dataclass(frozen=True, slots=True)
 class JsonEncoder:
     bytes_options: int
     str_options: int
@@ -106,7 +106,7 @@ class JsonEncoder:
         return x.decode(encoding="utf8") + "\n"
 
 
-@dataclass(frozen=True, repr=True)
+@dataclass(frozen=True, slots=True)
 class JsonDecoder:
     def from_bytes(self, data: ByteString) -> Any:
         if not isinstance(data, ByteString):

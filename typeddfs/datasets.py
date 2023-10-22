@@ -7,7 +7,7 @@ Near-replica of example from the readme.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Generic, Optional, Type, TypeVar
+from typing import Generic, TypeVar
 
 from typeddfs.abs_dfs import AbsDf
 from typeddfs.builders import TypedDfBuilder

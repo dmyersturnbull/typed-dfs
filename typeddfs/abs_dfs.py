@@ -8,7 +8,6 @@ It overrides a lot of methods to auto-change the type back to ``cls``.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Set, Union
 
 from pandas._typing import StorageOptions
 

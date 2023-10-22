@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -41,9 +40,7 @@ class _FeatherParquetHdfMixin:
             old_size = None
         df = self.vanilla_reset()
         if len(df) == len(df.columns) == 0:
-            df = df.append(
-                pd.Series(dict(__feather_ignore_="__feather_ignore_")), ignore_index=True
-            )
+            df = pd.DataFrame([pd.Series(dict(__feather_ignore_="__feather_ignore_"))])
         df.columns = df.columns.astype(str)
         try:
             return df.to_feather(path_or_buf, *args, **kwargs)

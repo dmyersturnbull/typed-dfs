@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import abc
 from collections.abc import Iterable
-from typing import Optional
 
 import pandas as pd
 

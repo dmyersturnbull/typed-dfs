@@ -10,7 +10,6 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path, PurePath
-from typing import Optional, Union
 
 from pandas.io.common import get_handle
 

@@ -6,12 +6,12 @@ from __future__ import annotations
 import collections
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import AbstractSet, Any, Union
+from typing import AbstractSet, Any
 
 import numpy as np
 
 # noinspection PyProtectedMember
-from tabulate import DataRow, TableFormat, _table_formats
+from tabulate import DataRow, TableFormat, tabulate_formats
 
 from typeddfs.file_formats import CompressionFormat
 from typeddfs.frozen_types import FrozeDict, FrozeList, FrozeSet
@@ -119,7 +119,7 @@ class MiscUtils:
         """
         Returns the names of styles for `tabulate <https://pypi.org/project/tabulate/>`_.
         """
-        return _table_formats.keys()
+        return tabulate_formats
 
     @classmethod
     def choose_table_format(
@@ -147,16 +147,6 @@ class MiscUtils:
             )
             return choices.get(CompressionFormat.strip_suffix(path).suffix.lstrip("."), default)
         return fmt
-
-    @classmethod
-    def table_format(cls, fmt: str) -> TableFormat:
-        """
-        Gets a tabulate style by name.
-
-        Returns:
-            A TableFormat, which can be passed as a style
-        """
-        return _table_formats[fmt]
 
     @classmethod
     def plain_table_format(cls, *, sep: str = " ", **kwargs) -> TableFormat:

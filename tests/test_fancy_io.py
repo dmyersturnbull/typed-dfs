@@ -51,7 +51,7 @@ assert DfFormatSupport.has_xls
 assert DfFormatSupport.has_xlsb
 assert DfFormatSupport.has_ods
 assert DfFormatSupport.has_toml
-known_compressions = {"", ".gz", ".zip", ".bz2", ".xz", ".zst"}
+known_compressions = {"", ".gz", ".bz2", ".xz", ".zst"}
 
 
 def get_req_ext(*, lines: bool, properties: bool) -> set[str]:
@@ -191,7 +191,7 @@ class TestReadWrite:
                         ".flexwf",
                         ".fwf",
                     ]:
-                        raw_data = path.read_text(encoding="utf8")
+                        raw_data = path.read_text(encoding="utf-8")
                     else:
                         raw_data = None
                     df2 = t.read_file(path)

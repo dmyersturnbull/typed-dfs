@@ -10,7 +10,7 @@ description-file = "README.md"
 # Poetry uses pip and setuptools (although they're not included as dependencies)
 # We don't need to list wheel here, but setting a min vr can avoid generating inferior wheels
 requires = ["poetry-core>=1.4,<2", "virtualenv>=20.0.33", "wheel>=0.36,<1.0"]
-build-backend = "poetry.masonry.api"
+build-backend = "poetry.core.masonry.api"
 
 
 #########################################################################################
@@ -52,10 +52,11 @@ Download = "https://pypi.org/project/typeddfs/"
 
 [tool.poetry.dependencies]
 python                   = "^3.9"
+defusedxml               = {version=">=0.7", optional=true}
 natsort                  = ">=8.3"
-orjson                   = ">=3.7.7"
-pandas                   = ">=1.5.2, <3"
-regex                    = ">=2022.10.31"
+orjson                   = ">=3.7"
+pandas                   = ">=1.5.2"
+regex                    = ">=2023"
 tabulate                 = ">=0.8"
 # we don't care about the exact versions, as long as tabulate and pandas accept them
 wcwidth                  = ">=0.2"
@@ -67,6 +68,7 @@ pyxlsb                   = {version=">=1", optional=true}
 html5lib                 = {version=">=1", optional=true}
 beautifulsoup4           = {version=">=4.11", optional=true}
 tomlkit                  = {version=">=0.11.6", optional=true}
+zstandard                = {version="0.21.0", optional=true}
 
 #===== Test dependencies =====#
 [tool.poetry.group.test.dependencies]
@@ -94,9 +96,10 @@ xml = ["lxml"]
 excel = ["openpyxl", "defusedxml"]
 xlsb = ["pyxlsb"]
 lz4 = ["lz4"]
+zstd = ["zstandard"]
 #hdf5    = ["tables"]
 html = ["html5lib", "beautifulsoup4"]
-main = ["pyarrow", "lxml", "openpyxl", "defusedxml", "tomlkit", "lz4"]
+main = ["pyarrow", "lxml", "openpyxl", "defusedxml", "tomlkit", "lz4", "zstandard"]
 all = [
     "pyarrow",
     "lxml",
@@ -107,6 +110,7 @@ all = [
     "pyxlsb",
     "html5lib",
     "beautifulsoup4",
+    "zstandard",
 ]
 
 

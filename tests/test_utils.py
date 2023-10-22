@@ -16,13 +16,6 @@ class TestUtils:
         assert Utils.get_encoding("UTF-8") == "utf8"
         assert Utils.get_encoding("utf-16") == "utf16"
 
-    def test_table_formats(self):
-        formats = list(Utils.table_formats())
-        assert len(formats) > 10
-        assert "simple" in formats
-        x = Utils.table_format("simple")
-        assert isinstance(x, TableFormat)
-
     def test_basic(self):
         assert "sha1" in Utils.insecure_hash_functions()
         assert "__xml_index_" in Utils.banned_names()

@@ -7,7 +7,6 @@ Mixin for line-by-line text files.
 from __future__ import annotations
 
 import csv
-from typing import Optional, Union
 
 import pandas as pd
 from tabulate import TableFormat, tabulate

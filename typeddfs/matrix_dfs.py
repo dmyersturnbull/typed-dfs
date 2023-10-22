@@ -11,7 +11,6 @@ from collections.abc import Sequence
 from copy import deepcopy
 from functools import partial
 from inspect import cleandoc
-from typing import Set, Tuple, Union
 
 import numpy as np
 import pandas as pd

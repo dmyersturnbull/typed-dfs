@@ -14,7 +14,6 @@ Utils for getting nice CLI help on DataFrame inputs.
 """
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import FrozenSet, Type
 
 from typeddfs import MatrixDf, TypedDf
 from typeddfs.abs_dfs import AbsDf

@@ -6,8 +6,6 @@ Mixin for formats like HTML and RST.
 """
 from __future__ import annotations
 
-from typing import Optional, Union
-
 import pandas as pd
 
 # noinspection PyProtectedMember

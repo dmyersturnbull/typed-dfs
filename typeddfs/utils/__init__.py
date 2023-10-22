@@ -2,11 +2,9 @@
 # Source: https://github.com/dmyersturnbull/typed-dfs
 #
 """
-Tools that could possibly be used outside of typed-dfs.
+Tools that could possibly be used outside typed-dfs.
 """
 from __future__ import annotations
-
-from typing import Set
 
 from tabulate import TableFormat
 

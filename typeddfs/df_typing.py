@@ -10,7 +10,7 @@ from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy as _copy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generic, Optional, Set, Type, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 import pandas as pd
 
@@ -36,7 +36,7 @@ def _opt_dict(x):
     return {} if x is None else dict(x)
 
 
-@dataclass(frozen=True, repr=True)
+@dataclass(frozen=True, slots=True)
 class IoTyping(Generic[T]):
     _hash_alg: str | None = "sha256"
     _save_hash_file: bool = False
@@ -235,7 +235,7 @@ class IoTyping(Generic[T]):
 FINAL_IO_TYPING = IoTyping()
 
 
-@dataclass(frozen=True, repr=True)
+@dataclass(frozen=True, slots=True)
 class DfTyping:
     """
     Contains all information about how to type a DataFrame subclass.

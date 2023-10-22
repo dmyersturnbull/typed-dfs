@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import csv
 from collections.abc import Sequence
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Union
 
 import pandas as pd
 

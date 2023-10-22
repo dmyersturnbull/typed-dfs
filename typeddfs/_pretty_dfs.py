@@ -5,7 +5,6 @@
 Defines a DataFrame with simple extra functions like ``column_names``.
 """
 import abc
-from typing import List
 
 import pandas as pd
 

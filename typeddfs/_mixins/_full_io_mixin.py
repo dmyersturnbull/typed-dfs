@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 import pandas as pd
 from pandas._typing import StorageOptions

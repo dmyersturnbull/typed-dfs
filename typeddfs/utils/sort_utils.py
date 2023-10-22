@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Collection, Mapping, Sequence
-from typing import AbstractSet, Any, NamedTuple, Set, Type, TypeVar, Union
+from typing import AbstractSet, Any, NamedTuple, TypeVar
 
 from natsort import natsorted, ns
 from natsort.ns_enum import ns as ns_enum

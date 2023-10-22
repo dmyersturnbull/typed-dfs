@@ -5,7 +5,7 @@
 Mixin with misc new DataFrame methods.
 """
 from collections.abc import Generator, Iterable, Mapping, Sequence
-from typing import Any, Set, Tuple, Union
+from typing import Any
 
 import pandas as pd
 from natsort import natsorted

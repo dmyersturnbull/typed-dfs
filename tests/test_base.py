@@ -115,7 +115,6 @@ class TestBase:
         assert isinstance(df.drop("abc", axis=1), Trivial)
         assert isinstance(df.dropna(), Trivial)
         assert isinstance(df.fillna(0), Trivial)
-        assert isinstance(df.append(df), Trivial)
         assert isinstance(df.rename(columns=dict(abc="twotwentytwo")), Trivial)
 
     def test_set_index(self):
