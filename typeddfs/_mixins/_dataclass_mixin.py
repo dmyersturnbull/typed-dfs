@@ -6,13 +6,13 @@ Dataclass mixin.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from dataclasses import Field
+from dataclasses import Field, dataclass, make_dataclass
 from dataclasses import asdict as dataclass_asdict
-from dataclasses import dataclass
 from dataclasses import fields as dataclass_fields
-from dataclasses import make_dataclass
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 
 @dataclass(frozen=True)
@@ -107,7 +107,7 @@ class _DataclassMixin:
             fields,
             bases=(TypedDfDataclass,),
             frozen=True,
-            repr=True,
+            slots=True,
             unsafe_hash=True,
             order=cls.get_typing().order_dataclass,
         )

@@ -134,7 +134,7 @@ class TestReadWrite:
             pd.UInt8Dtype(),
         ]
         for suffix, fn in [
-            (".snappy", "parquet"),
+            (".parquet", "parquet"),
             (".feather", "feather"),
             (".xml", "xml"),
             (".csv", "csv"),
@@ -176,10 +176,8 @@ class TestReadWrite:
             pd.UInt8Dtype(),
             pd.StringDtype(),
         ]
-        # TODO: Re-add (".xml", "xml"),
-        # TODO: See https://github.com/dmyersturnbull/typed-dfs/issues/46
         for suffix, fn in [
-            (".snappy", "parquet"),
+            (".parquet", "parquet"),
             (".feather", "feather"),
             (".csv", "csv"),
             (".tsv", "tsv"),
@@ -189,8 +187,8 @@ class TestReadWrite:
             (".xlsb", "xlsb"),
             (".ods", "ods"),
             (".pickle", "pickle"),
+            (".xml", "xml"),
         ]:
-            # TODO: include xml
             for dtype in dtypes:
                 with tmpfile(suffix) as path:
                     try:
@@ -276,13 +274,13 @@ class TestReadWrite:
 
     def test_html_invalid(self):
         with tmpfile(".html") as path:
-            path.write_text("", encoding="utf8")
+            path.write_text("", encoding="utf-8")
             with pytest.raises(XMLSyntaxError):
                 UntypedDf.read_html(path)
 
     def test_html_empty(self):
         with tmpfile(".html") as path:
-            path.write_text("<html></html>", encoding="utf8")
+            path.write_text("<html></html>", encoding="utf-8")
             with pytest.raises(NoValueError):
                 UntypedDf.read_html(path)
 

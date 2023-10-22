@@ -12,11 +12,11 @@ from typing import AbstractSet, Any, NamedTuple, TypeVar
 
 from natsort import natsorted, ns
 from natsort.ns_enum import ns as ns_enum
+from pandas import CategoricalDtype
 
 # noinspection PyProtectedMember
 from pandas.api.types import (
     is_bool_dtype,
-    is_categorical_dtype,
     is_float_dtype,
     is_integer_dtype,
     is_string_dtype,
@@ -115,7 +115,7 @@ class SortUtils:
         if is_string_dtype(dtype):
             st.update(["COMPATIBILITYNORMALIZE", "GROUPLETTERS"])
             x |= ns_enum.COMPATIBILITYNORMALIZE | ns_enum.GROUPLETTERS
-        elif is_categorical_dtype(dtype):
+        elif isinstance(dtype, CategoricalDtype):
             pass
         elif is_integer_dtype(dtype) or is_bool_dtype(dtype):
             st.update(["INT", "SIGNED"])
@@ -166,9 +166,11 @@ class SortUtils:
                 elif isinstance(f, int):
                     x |= f
                 else:
-                    raise TypeError(f"Unknown type {type(flags)} for {flags}")
+                    msg = f"Unknown type {type(flags)} for {flags}"
+                    raise TypeError(msg)
             return cls._ns_info_from_int_flag(x)
-        raise TypeError(f"Unknown type {type(flags)} for {flags}")
+        msg = f"Unknown type {type(flags)} for {flags}"
+        raise TypeError(msg)
 
     @classmethod
     def _ns_info_from_int_flag(cls, val: int) -> NatsortFlagsAndValue:

@@ -6,10 +6,9 @@ Models for shasum-like files.
 """
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping, Sequence, ValuesView
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import AbstractSet
+from typing import TYPE_CHECKING, AbstractSet
 
 import regex
 
@@ -21,7 +20,11 @@ from typeddfs.df_errors import (
     HashFilenameMissingError,
     PathNotRelativeError,
 )
-from typeddfs.utils._utils import PathLike
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Mapping, Sequence, ValuesView
+
+    from typeddfs.utils._utils import PathLike
 
 _hex_pattern = regex.compile(r"[A-Ha-h0-9]+", flags=regex.V1)
 _hashsum_file_sep = regex.compile(r" [ *]", flags=regex.V1)
@@ -33,12 +36,13 @@ class _ChecksumMapping:
     _dct: Mapping[Path, str]
 
     def __post_init__(self):
-        for p in self._dct.keys():
+        for p in self._dct:
             # will error if it's not
             try:
                 p.relative_to(self.directory)
             except ValueError as e:
-                raise PathNotRelativeError(f"{e}: Full contents are {self._dct}")
+                msg = f"{e}: Full contents are {self._dct}"
+                raise PathNotRelativeError(msg)
 
     def lines(self) -> Sequence[str]:
         """
@@ -67,7 +71,8 @@ class _ChecksumMapping:
         """
         # noinspection PyArgumentList
         return self.__class__(
-            self.hash_path.resolve(), {k.resolve(): v for k, v in self._dct.items()}
+            self.hash_path.resolve(),
+            {k.resolve(): v for k, v in self._dct.items()},
         )
 
     def unresolve(self) -> __qualname__:
@@ -85,7 +90,8 @@ class _ChecksumMapping:
         for k, v in self._dct.items():
             k = self.directory / k.name
             if k in dct:
-                raise ValueError(f"At least 2 paths resolve to {k}")
+                msg = f"At least 2 paths resolve to {k}"
+                raise ValueError(msg)
             dct[k] = v
         # noinspection PyArgumentList
         return self.__class__(self.hash_path, dct)
@@ -101,11 +107,12 @@ class _ChecksumMapping:
     ) -> __qualname__:
         path = Path(path)
         if lines is None and path.exists():
-            lines = path.read_text(encoding="utf8").splitlines()
+            lines = path.read_text(encoding="utf-8").splitlines()
         elif missing_ok and lines is None:
             lines = []
         elif lines is None:
-            raise HashFileMissingError(f"Hash file {path} not found")
+            msg = f"Hash file {path} not found"
+            raise HashFileMissingError(msg)
 
         # ignore spaces -- editors often add an extra line break, and it's probably fine anyway
         read = [_hashsum_file_sep.split(s, 1) for s in lines if len(s) > 0]
@@ -118,9 +125,10 @@ class _ChecksumMapping:
             if len(r[0]) != 0
         }
         if not subdirs:
-            slashed = {k for k in kv.keys() if len(k.parts) > 1}
+            slashed = {k for k in kv if len(k.parts) > 1}
             if len(slashed) > 0:
-                raise ValueError(f"Subdirectory (containing /): {slashed} in {path}")
+                msg = f"Subdirectory (containing /): {slashed} in {path}"
+                raise ValueError(msg)
         kv = {Path(path.parent, p): v for p, v in kv.items()}
         return cls(path, kv)
 
@@ -135,7 +143,8 @@ class _ChecksumMapping:
         path = Path(path)
         z = self._dct.get(path)
         if z is None and not missing_ok:
-            raise HashFilenameMissingError(f"{path} not found ({len(self._dct)} are)")
+            msg = f"{path} not found ({len(self._dct)} are)"
+            raise HashFilenameMissingError(msg)
         if z is not None:
             err = None
             if overwrite is None and z != new:
@@ -233,18 +242,20 @@ class ChecksumFile(_ChecksumMapping):
             OsError: Accordingly
         """
         self.directory.mkdir(exist_ok=True, parents=True)
-        self.hash_path.write_text("\n".join(self.lines()), encoding="utf8")
+        self.hash_path.write_text("\n".join(self.lines()), encoding="utf-8")
 
     @property
     def file_path(self) -> Path:
         if len(self._dct) != 1:
-            raise AssertionError(f"{self.hash_path} contains {len(self._dct)} (!= 1) items")
+            msg = f"{self.hash_path} contains {len(self._dct)} (!= 1) items"
+            raise AssertionError(msg)
         return next(iter(self._dct.keys()))
 
     @property
     def hash_value(self) -> str:
         if len(self._dct) != 1:
-            raise AssertionError(f"{self.hash_path} contains {len(self._dct)} (!= 1) items")
+            msg = f"{self.hash_path} contains {len(self._dct)} (!= 1) items"
+            raise AssertionError(msg)
         return next(iter(self._dct.values()))
 
     def verify(self, computed: str) -> None:
@@ -258,8 +269,9 @@ class ChecksumFile(_ChecksumMapping):
             HashDidNotValidateError: If the hashes are not equal
         """
         if computed != self.hash_value:
+            msg = f"Hash for {self.file_path}: calculated {computed} != expected {self.hash_value}"
             raise HashDidNotValidateError(
-                f"Hash for {self.file_path}: calculated {computed} != expected {self.hash_value}",
+                msg,
                 actual=computed,
                 expected=self.hash_value,
             )
@@ -338,7 +350,7 @@ class ChecksumMapping(_ChecksumMapping):
             if callable(sort):
                 lines = sort(lines)
             self.directory.mkdir(exist_ok=True, parents=True)
-            self.hash_path.write_text("\n".join(lines), encoding="utf8")
+            self.hash_path.write_text("\n".join(lines), encoding="utf-8")
 
     @property
     def entries(self) -> Mapping[Path, str]:
@@ -366,7 +378,8 @@ class ChecksumMapping(_ChecksumMapping):
         return len(self._dct)
 
     def __add__(
-        self, other: ChecksumMapping | Mapping[PathLike, str] | __qualname__
+        self,
+        other: ChecksumMapping | Mapping[PathLike, str] | __qualname__,
     ) -> __qualname__:
         """
         Performs a symmetric addition.
@@ -382,7 +395,8 @@ class ChecksumMapping(_ChecksumMapping):
         other = {Path(k): v for k, v in other.items()}
         intersection = set(self._dct).intersection(other)
         if len(intersection) > 0:
-            raise ValueError(f"Cannot merge with intersection: {intersection}")
+            msg = f"Cannot merge with intersection: {intersection}"
+            raise ValueError(msg)
         return ChecksumMapping(self.hash_path, {**self, **other})
 
     def __sub__(self, other: PathLike | Iterable[PathLike] | ChecksumMapping) -> __qualname__:
@@ -394,13 +408,16 @@ class ChecksumMapping(_ChecksumMapping):
         """
         if isinstance(other, ChecksumMapping):
             other = other._dct
-        if isinstance(other, (PurePath, str)):
+        if isinstance(other, PurePath | str):
             other = {other}
         other = {Path(p) for p in other}
         return self.new(self.hash_path, {k: v for k, v in self.items() if k not in other})
 
     def remove(
-        self, remove: PathLike | Iterable[PathLike], *, missing_ok: bool = False
+        self,
+        remove: PathLike | Iterable[PathLike],
+        *,
+        missing_ok: bool = False,
     ) -> __qualname__:
         """
         Strips paths from this hash collection.
@@ -409,12 +426,15 @@ class ChecksumMapping(_ChecksumMapping):
         Raises:
             :class:`typeddfs.df_errors.PathNotRelativeError`: To avoid, try calling ``resolve`` first
         """
-        if isinstance(remove, (str, PurePath)):
+        if isinstance(remove, str | PurePath):
             remove = [remove]
         return self.update({p: None for p in remove}, missing_ok=missing_ok, overwrite=True)
 
     def append(
-        self, append: Mapping[PathLike, str], *, overwrite: bool | None = False
+        self,
+        append: Mapping[PathLike, str],
+        *,
+        overwrite: bool | None = False,
     ) -> __qualname__:
         """
         Append paths to a dir hash file.
@@ -469,7 +489,12 @@ class ChecksumMapping(_ChecksumMapping):
         return self.new(self.hash_path, fixed)
 
     def verify(
-        self, path: PathLike, computed: str, *, resolve: bool = False, exist: bool = False
+        self,
+        path: PathLike,
+        computed: str,
+        *,
+        resolve: bool = False,
+        exist: bool = False,
     ) -> None:
         """
         Verifies a checksum.
@@ -494,13 +519,16 @@ class ChecksumMapping(_ChecksumMapping):
         elif not path.is_absolute():
             path = self.directory / path
         if exist and not path.exists():
-            raise FileNotFoundError(f"Path {path} does not exist")
+            msg = f"Path {path} does not exist"
+            raise FileNotFoundError(msg)
         found = self.get(path)
         if found is None:
-            raise FileNotFoundError(f"Path {path} not listed in {self.hash_path}")
+            msg = f"Path {path} not listed in {self.hash_path}"
+            raise FileNotFoundError(msg)
         if computed != found:
+            msg = f"Hash for {path}: calculated {computed} != expected {found}"
             raise HashDidNotValidateError(
-                f"Hash for {path}: calculated {computed} != expected {found}",
+                msg,
                 actual=computed,
                 expected=found,
             )

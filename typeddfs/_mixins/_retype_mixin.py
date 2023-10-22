@@ -87,9 +87,14 @@ class _RetypeMixin:
         return self.__class__._change(df)
 
     def set_index(
-        self, keys, drop=True, append=False, inplace=False, verify_integrity=False
+        self,
+        keys,
+        drop=True,
+        append=False,
+        inplace=False,
+        verify_integrity=False,
     ) -> __qualname__:
-        self._no_inplace(dict(inplace=inplace))
+        self._no_inplace({"inplace": inplace})
         if len(keys) == 0 and append:
             return self
         elif len(keys) == 0:
@@ -228,12 +233,13 @@ class _RetypeMixin:
 
     def _no_inplace(self, kwargs):
         if kwargs.get("inplace") is True:  # pragma: no cover
-            raise UnsupportedOperationError("inplace not supported. Use vanilla() if needed.")
+            msg = "inplace not supported. Use vanilla() if needed."
+            raise UnsupportedOperationError(msg)
 
 
 if hasattr(pd.DataFrame, "append"):
 
-    def _append(self, *args, **kwargs) -> __qualname__:
+    def _append(self, *args, **kwargs):
         df = super().append(*args, **kwargs)
         return self.__class__._change(df)
 

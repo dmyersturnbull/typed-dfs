@@ -8,8 +8,7 @@ It overrides a lot of methods to auto-change the type back to ``cls``.
 from __future__ import annotations
 
 from pathlib import Path
-
-from pandas._typing import StorageOptions
+from typing import TYPE_CHECKING
 
 from typeddfs._core_dfs import CoreDf
 from typeddfs._mixins._full_io_mixin import _FullIoMixin
@@ -18,10 +17,14 @@ from typeddfs.df_errors import (
     HashFileExistsError,
     NonStrColumnError,
 )
-from typeddfs.df_typing import DfTyping
 from typeddfs.file_formats import FileFormat
 from typeddfs.utils import Utils
 from typeddfs.utils.checksums import Checksums
+
+if TYPE_CHECKING:
+    from pandas._typing import StorageOptions
+
+    from typeddfs.df_typing import DfTyping
 
 
 class AbsDf(_FullIoMixin, CoreDf):
@@ -76,6 +79,7 @@ class AbsDf(_FullIoMixin, CoreDf):
             - .toml
             - .properties
             - .ini
+            - .yaml
             - .fxf (fixed-width)
             - .flexwf (fixed-but-unspecified-width with an optional delimiter)
             - .txt, .lines, or .list
@@ -102,7 +106,8 @@ class AbsDf(_FullIoMixin, CoreDf):
         """
         if any(str(path).startswith(x + "://") for x in ["http", "https", "ftp"]):
             # just save some pain -- better than a weird error in .resolve()
-            raise ValueError(f"Cannot read from URL {path}; use read_url instead")
+            msg = f"Cannot read from URL {path}; use read_url instead"
+            raise ValueError(msg)
         path = Path(path).resolve()
         t: DfTyping = cls.get_typing()
         if attrs is None:
@@ -146,6 +151,7 @@ class AbsDf(_FullIoMixin, CoreDf):
             - .xml
             - .toml
             - .ini
+            - .yaml
             - .properties
             - .pkl and .pickle
             - .txt, .lines, or .list; see :meth:`to_lines` and :meth:`read_lines`
@@ -181,7 +187,8 @@ class AbsDf(_FullIoMixin, CoreDf):
         """
         if any(str(path).startswith(x + "://") for x in ["http", "https", "ftp"]):
             # just save some pain -- better than a weird error in .resolve()
-            raise ValueError(f"Cannot write to URL {path}")
+            msg = f"Cannot write to URL {path}"
+            raise ValueError(msg)
         path = Path(path).resolve()
         t = self.__class__.get_typing()
         file_hash = file_hash is True or file_hash is None and t.io.file_hash
@@ -195,27 +202,34 @@ class AbsDf(_FullIoMixin, CoreDf):
         # check for overwrite errors now to preserve atomicity
         if not overwrite:
             if path.exists():
-                raise FileExistsError(f"File {path} already exists")
+                msg = f"File {path} already exists"
+                raise FileExistsError(msg)
             if file_hash and file_hash_path.exists():
-                raise HashFileExistsError(f"{file_hash_path} already exists")
+                msg = f"{file_hash_path} already exists"
+                raise HashFileExistsError(msg)
             if dir_hash_path.exists():
                 dir_sums = Checksums(alg=t.io.hash_algorithm).load_dirsum_exact(dir_hash_path)
                 if path in dir_sums:
-                    raise HashEntryExistsError(f"Path {path} listed in {dir_hash_path}")
+                    msg = f"Path {path} listed in {dir_hash_path}"
+                    raise HashEntryExistsError(msg)
             if file_hash and file_hash_path.exists():
-                raise HashFileExistsError(f"{file_hash_path} already exists")
+                msg = f"{file_hash_path} already exists"
+                raise HashFileExistsError(msg)
             if attrs and attrs_path.exists():
-                raise FileExistsError(f"{attrs_path} already exists")
+                msg = f"{attrs_path} already exists"
+                raise FileExistsError(msg)
         self._check(self)
         types = set(self.column_names()).union(self.index_names())
         if any(not isinstance(c, str) for c in types):
-            raise NonStrColumnError(f"Columns must be of str type to serialize, not {types}")
+            msg = f"Columns must be of str type to serialize, not {types}"
+            raise NonStrColumnError(msg)
         # now we're ready to write
         if mkdirs:
             path.parent.mkdir(exist_ok=True, parents=True)
         # to get a FileNotFoundError instead of a WritePermissionsError:
         if not mkdirs and not path.parent.exists():
-            raise FileNotFoundError(f"Directory {path.parent} not found")
+            msg = f"Directory {path.parent} not found"
+            raise FileNotFoundError(msg)
         # check for lack of write-ability to any of the files
         # we had to do this after creating the dirs unfortunately
         _all_files = [(attrs, attrs_path), (file_hash, file_hash_path), (dir_hash, dir_hash_path)]
@@ -239,7 +253,7 @@ class AbsDf(_FullIoMixin, CoreDf):
         # write dataset attributes
         # this also shouldn't fail
         if attrs:
-            attrs_path.write_text(attrs_data, encoding="utf8")
+            attrs_path.write_text(attrs_data, encoding="utf-8")
         return z
 
     @classmethod

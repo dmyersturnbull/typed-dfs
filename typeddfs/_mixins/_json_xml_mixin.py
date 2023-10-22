@@ -11,9 +11,9 @@ import pandas as pd
 
 class _JsonXmlMixin:
     @classmethod
-    def read_json(cls, *args, **kwargs) -> __qualname__:
+    def read_json(cls, path_or_buf, **kwargs) -> __qualname__:
         try:
-            df = pd.read_json(*args, **kwargs)
+            df = pd.read_json(path_or_buf, **kwargs)
         except pd.errors.EmptyDataError:
             # TODO: Figure out what EmptyDataError means
             # df = pd.DataFrame()
@@ -21,9 +21,9 @@ class _JsonXmlMixin:
         return cls._convert_typed(df)
 
     @classmethod
-    def read_xml(cls, *args, **kwargs) -> __qualname__:
+    def read_xml(cls, path_or_buf, **kwargs) -> __qualname__:
         try:
-            df = pd.read_xml(*args, **kwargs)
+            df = pd.read_xml(path_or_buf, **kwargs)
         except pd.errors.EmptyDataError:
             # TODO: Figure out what EmptyDataError means
             # df = pd.DataFrame()
@@ -48,9 +48,11 @@ class _JsonXmlMixin:
         #   containing column "__xml_is_empty_" with a single row with the same value
         # in the insanely unlikely situation that these exist, complain
         if "__xml_is_empty_" in self.column_names() or "__xml_is_empty_" in self.index_names():
-            raise ValueError("Do not include a column called '__xml_is_empty_'")
+            msg = "Do not include a column called '__xml_is_empty_'"
+            raise ValueError(msg)
         if "__xml_index_" in self.column_names() or "__xml_index_" in self.index_names():
-            raise ValueError("Do not include a column called '__xml_index_'")
+            msg = "Do not include a column called '__xml_index_'"
+            raise ValueError(msg)
         df = self.vanilla()
         if len(df) == 0 == len(self.index_names()) == len(self.column_names()) == 0:
             series = pd.Series({"__xml_is_empty_": "__xml_is_empty_"})

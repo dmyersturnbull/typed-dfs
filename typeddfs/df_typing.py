@@ -6,13 +6,9 @@ Information about how DataFrame subclasses should be handled.
 """
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy as _copy
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Generic, TypeVar
-
-import pandas as pd
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from typeddfs._core_dfs import CoreDf
 from typeddfs.file_formats import FileFormat
@@ -20,6 +16,12 @@ from typeddfs.utils import Utils
 
 # noinspection PyUnresolvedReferences
 from typeddfs.utils._utils import _FLEXWF_SEP, _TOML_AOT
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
+    from pathlib import Path
+
+    import pandas as pd
 
 T = TypeVar("T", bound=CoreDf, covariant=True)
 
@@ -60,7 +62,8 @@ class IoTyping(Generic[T]):
         x = _copy(self)
         for k, v in kwargs.items():
             if not hasattr(x, k):
-                raise AttributeError(f"No attribute {k}")
+                msg = f"No attribute {k}"
+                raise AttributeError(msg)
             setattr(x, k, v)
         return x
 
@@ -168,7 +171,7 @@ class IoTyping(Generic[T]):
     @property
     def text_encoding(self) -> str:
         """
-        Can be an exact encoding like utf-8, "platform", "utf8(bom)" or "utf16(bom)".
+        Can be an exact encoding like utf-8, "platform", "utf-8(bom)" or "utf-16(bom)".
         See the docs in ``TypedDfs.typed().encoding`` for details.
         """
         return self._text_encoding
@@ -261,7 +264,8 @@ class DfTyping:
         x = _copy(self)
         for k, v in kwargs.items():
             if not hasattr(x, k):
-                raise AttributeError(f"No attribute {k}")
+                msg = f"No attribute {k}"
+                raise AttributeError(msg)
             setattr(x, k, v)
         return x
 

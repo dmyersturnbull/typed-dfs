@@ -6,7 +6,10 @@ Handles optional packages required for formats.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 pyarrow = None
 fastparquet = None
@@ -26,6 +29,8 @@ def _import():
     try:
         import fastparquet
     except ImportError:  # pragma: no cover
+        fastparquet = None
+    except SyntaxError:  # pragma: no cover
         fastparquet = None
 
     try:
@@ -64,7 +69,7 @@ class _DfFormatSupport:
                 print("No HDF5")
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         _import()
         self._has_feather = pyarrow is not None
         self._has_parquet = pyarrow is not None or fastparquet is not None

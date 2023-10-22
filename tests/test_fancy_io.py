@@ -4,7 +4,6 @@
 import io
 import random
 from pathlib import Path
-from typing import Set, Type
 
 import numpy as np
 import pandas as pd
@@ -77,7 +76,7 @@ def get_req_ext(*, lines: bool, properties: bool) -> set[str]:
         ".pkl",
     }
     ne.add(".fwf")
-    xx = {".csv", ".tsv", ".tab", ".json", ".xml", ".flexwf", ".toml"}
+    xx = {".csv", ".tsv", ".tab", ".json", ".xml", ".flexwf", ".toml", ".yaml", ".yml"}
     if lines:
         xx.add(".txt")
         xx.add(".lines")
@@ -165,7 +164,11 @@ class TestReadWrite:
         self._test_great(Ind2Col2)
 
     def _test_great(
-        self, t: type[BaseDf], *, lines_fail: bool = False, allow_properties: bool = False
+        self,
+        t: type[BaseDf],
+        *,
+        lines_fail: bool = False,
+        allow_properties: bool = False,
     ):
         for ext in get_actual_ext(t):
             try:
@@ -208,9 +211,8 @@ class TestReadWrite:
 
     def test_bad_suffix(self):
         df = Untyped({"abc": [1, 2], "xyz": [1, 2]})
-        with tmpfile(".omg") as path:
-            with pytest.raises(FilenameSuffixError):
-                df.write_file(path)
+        with tmpfile(".omg") as path, pytest.raises(FilenameSuffixError):
+            df.write_file(path)
 
     def test_non_str_cols(self):
         with tmpfile(".csv") as path:
@@ -239,18 +241,21 @@ class TestReadWrite:
     # noinspection DuplicatedCode
     def test_read_write_txt(self):
         for c in get_req_ext(lines=True, properties=False):
-            df = Col1(["a", "puppy", "and", "a", "parrot"], columns=["abc"])
-            with tmpfile(c) as path:
-                df.write_file(path)
-                df2 = Col1.read_file(path)
-                assert df2.index_names() == []
-                assert df2.column_names() == ["abc"]
+            try:
+                df = Col1(["a", "puppy", "and", "a", "parrot"], columns=["abc"])
+                with tmpfile(c) as path:
+                    df.write_file(path)
+                    df2 = Col1.read_file(path)
+                    assert df2.index_names() == []
+                    assert df2.column_names() == ["abc"]
+            except Exception:
+                logger.error(f"Failed on {t} / {ext}")
+                raise
 
     def test_read_write_txt_fail(self):
         df = rand_df(Col2)
-        with tmpfile(".lines") as path:
-            with pytest.raises(NotSingleColumnError):
-                df.to_lines(path)
+        with tmpfile(".lines") as path, pytest.raises(NotSingleColumnError):
+            df.to_lines(path)
 
     def test_read_write_flexwf_float(self):
         df = Col1([0.3, 0.4, 0.5], columns=["abc"])
@@ -311,15 +316,15 @@ class TestReadWrite:
 
     def test_pass_io_options(self):
         t = TypedDfBuilder("a").reserve("x", "y").add_write_kwargs(FileFormat.csv, sep="&").build()
-        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        df = t.convert(pd.DataFrame([pd.Series({"x": "cat", "y": "dog"})]))
         with tmpfile(".csv") as path:
             df.write_file(path)
-            lines = path.read_text(encoding="utf8").splitlines()
+            lines = path.read_text(encoding="utf-8").splitlines()
             assert lines == ["x&y", "cat&dog"]
 
     def test_no_overwrite(self):
         t = TypedDfBuilder("a").reserve("x", "y").build()
-        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        df = t.convert(pd.DataFrame([pd.Series({"x": "cat", "y": "dog"})]))
         with tmpfile(".csv") as path:
             df.write_file(path, overwrite=False)
             with pytest.raises(FileExistsError):
@@ -327,12 +332,11 @@ class TestReadWrite:
 
     def test_mkdir(self):
         t = TypedDfBuilder("a").reserve("x", "y").build()
-        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        df = t.convert(pd.DataFrame([pd.Series({"x": "cat", "y": "dog"})]))
         with tmpdir() as path:
             df.write_file(path / "a.csv", mkdirs=True)
-        with tmpdir() as path:
-            with pytest.raises(FileNotFoundError):
-                df.write_file(path / "b.csv")
+        with tmpdir() as path, pytest.raises(FileNotFoundError):
+            df.write_file(path / "b.csv")
 
     def test_read_write_insecure(self):
         secure_type = TypedDfBuilder("a").secure().build()
@@ -364,7 +368,7 @@ class TestReadWrite:
 
     def test_file_hash(self):
         t = TypedDfBuilder("a").reserve("x", "y").build()
-        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="dog"))]))
+        df = t.convert(pd.DataFrame([pd.Series({"x": "cat", "y": "dog"})]))
         # unfortunately, the file that gets output is os-dependent
         # \n vs \r\n is an issue, so we can't check the exact hash
         with tmpfile(".csv") as path:
@@ -380,7 +384,7 @@ class TestReadWrite:
 
     def test_dir_hash(self):
         t = TypedDfBuilder("a").reserve("x", "y").build()
-        df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
+        df = t.convert(pd.DataFrame([pd.Series({"x": "cat", "y": "kitten"})]))
         with tmpfile(".csv") as path:
             hash_dir = Checksums().get_dirsum_of_file(path)
             hash_dir.unlink(missing_ok=True)
@@ -397,7 +401,7 @@ class TestReadWrite:
         meta = None
         try:
             t = TypedDfBuilder("a").reserve("x", "y").build()
-            df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
+            df = t.convert(pd.DataFrame([pd.Series({"x": "cat", "y": "kitten"})]))
             df.attrs["fruit"] = "apple"
             with tmpfile(".csv") as path:
                 df.write_file(path, attrs=True)
@@ -415,7 +419,7 @@ class TestReadWrite:
         meta = None
         try:
             t = TypedDfBuilder("a").reserve("x", "y").build()
-            df = t.convert(pd.DataFrame([pd.Series(dict(x="cat", y="kitten"))]))
+            df = t.convert(pd.DataFrame([pd.Series({"x": "cat", "y": "kitten"})]))
             df.attrs["matrix"] = np.zeros((2, 2))
             with tmpfile(".csv") as path:
                 df.write_file(path, attrs=True)

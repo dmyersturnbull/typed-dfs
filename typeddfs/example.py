@@ -17,7 +17,7 @@ def run() -> None:
     # write out a CSV file
     path = Path("typeddfs-example.csv")
     contents = "key,value,note\nabc,123"
-    path.write_text(contents, encoding="utf8")
+    path.write_text(contents, encoding="utf-8")
 
     # Build me a Key-Value-Note class!
     # noinspection PyPep8Naming

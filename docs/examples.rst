@@ -31,10 +31,10 @@
 .. code-block:: python
 
     import numpy as np
-    from typeddfs import TypedDfs
+    import typeddfs
 
     Symmetric64 = (
-        TypedDfs.matrix("Symmetric64", doc="A symmetric float64 matrix")
+        typeddfs.matrix("Symmetric64", doc="A symmetric float64 matrix")
         .dtype(np.float64)
         .verify(lambda df: df.values.sum().sum() == 1.0)
         .add_methods(product=lambda df: df.flatten().product())
@@ -61,11 +61,11 @@ For a CSV like this:
 
 .. code-block:: python
 
-    from typeddfs import TypedDfs
+    import typeddfs
 
     # Build me a Key-Value-Note class!
     KeyValue = (
-        TypedDfs.typed("KeyValue")  # With enforced reqs / typing
+        typeddfs.typed("KeyValue")  # With enforced reqs / typing
         .require("key", dtype=str, index=True)  # automagically add to index
         .require("value")  # required
         .reserve("note")  # permitted but not required
@@ -79,6 +79,7 @@ For a CSV like this:
     df.to_csv("remake.csv")
     df = KeyValue.read_csv("remake.csv")
     print(df.index_names(), df.column_names())  # ["key"], ["value", "note"]
+
 
     # And now, we can type a function to require a KeyValue,
     # and let it raise an `InvalidDfError` (here, a `MissingColumnError`):

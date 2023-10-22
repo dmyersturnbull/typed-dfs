@@ -13,7 +13,7 @@ class _PickleMixin:
     @classmethod
     def read_pickle(cls, filepath_or_buffer, *args, **kwargs) -> __qualname__:
         try:
-            df = pd.read_pickle(filepath_or_buffer, *args, **kwargs)
+            df = pd.read_pickle(filepath_or_buffer, *args, **kwargs)  # nosec
         except pd.errors.EmptyDataError:
             # TODO: Figure out what EmptyDataError means
             # df = pd.DataFrame()

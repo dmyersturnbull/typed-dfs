@@ -8,13 +8,16 @@ from __future__ import annotations
 
 import enum
 from collections import defaultdict
-from collections.abc import Mapping, MutableMapping
 from pathlib import Path
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from typeddfs.df_errors import FilenameSuffixError
 from typeddfs.utils._format_support import DfFormatSupport
-from typeddfs.utils._utils import PathLike
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, MutableMapping
+
+    from typeddfs.utils._utils import PathLike
 
 
 class BaseFormatCompression(NamedTuple):
@@ -29,10 +32,10 @@ class BaseCompression(NamedTuple):
 
 
 class _Enum(enum.Enum):
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     def __new__(cls):
@@ -189,7 +192,7 @@ class CompressionFormat(_Enum):
 
 
 class _SuffixMap:
-    def __init__(self):
+    def __init__(self) -> None:
         self._map = defaultdict(set)
 
     def text(self, name: str, suffix: str):
@@ -221,6 +224,8 @@ _format_map = (
     .text("properties", ".properties")
     .text("toml", ".toml")
     .text("ini", ".ini")
+    .text("yaml", ".yaml")
+    .text("yaml", ".yml")
     .text("lines", ".lines")
     .text("lines", ".txt")
     .text("lines", ".list")
@@ -274,6 +279,7 @@ class FileFormat(_Enum):
     xml = ()
     toml = ()
     ini = ()
+    yaml = ()
     properties = ()
     lines = ()
     fwf = ()
@@ -338,6 +344,7 @@ class FileFormat(_Enum):
             FileFormat.xml,
             FileFormat.ini,
             FileFormat.toml,
+            FileFormat.yaml,
             FileFormat.properties,
             FileFormat.lines,
             FileFormat.fwf,
@@ -359,7 +366,10 @@ class FileFormat(_Enum):
 
     @classmethod
     def strip(
-        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
+        cls,
+        path: PathLike,
+        *,
+        format_map: Mapping[str, FileFormat | str] | None = None,
     ) -> Path:
         """
         Strips a recognized, optionally compressed, suffix from ``path``.
@@ -377,7 +387,10 @@ class FileFormat(_Enum):
 
     @classmethod
     def split(
-        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
+        cls,
+        path: PathLike,
+        *,
+        format_map: Mapping[str, FileFormat | str] | None = None,
     ) -> BaseFormatCompression:
         """
         Splits a path into the base path, format, and compression.
@@ -391,16 +404,20 @@ class FileFormat(_Enum):
             FilenameSuffixError: If the suffix is not found
 
         Returns:
-            A 3-tuple of (base base excluding suffixes, file format, compression format)
+            A 3-tuple of (base excluding suffixes, file format, compression format)
         """
         p, fmt, comp = cls.split_or_none(path, format_map=format_map)
         if fmt is None:
-            raise FilenameSuffixError(f"Suffix for {path} not recognized")
+            msg = f"Suffix for {path} not recognized"
+            raise FilenameSuffixError(msg)
         return BaseFormatCompression(p, fmt, comp)
 
     @classmethod
     def split_or_none(
-        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
+        cls,
+        path: PathLike,
+        *,
+        format_map: Mapping[str, FileFormat | str] | None = None,
     ) -> BaseFormatCompression:
         """
         Splits a path into the base path, format, and compression.
@@ -418,7 +435,8 @@ class FileFormat(_Enum):
         format_map = {k: FileFormat.of(v) for k, v in format_map.items()}
         path, comp = CompressionFormat.split(path)
         if not isinstance(comp, CompressionFormat):
-            raise TypeError(f"{comp} is {type(comp)}")
+            msg = f"{comp} is {type(comp)}"
+            raise TypeError(msg)
         path = str(path)
         fmt = None
         for f0, f1 in format_map.items():
@@ -429,7 +447,10 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_path_or_none(
-        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
+        cls,
+        path: PathLike,
+        *,
+        format_map: Mapping[str, FileFormat | str] | None = None,
     ) -> FileFormat | None:
         """
         Same as :meth:`from_path`, but returns None if not found.
@@ -441,7 +462,10 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_path(
-        cls, path: PathLike, *, format_map: Mapping[str, FileFormat | str] | None = None
+        cls,
+        path: PathLike,
+        *,
+        format_map: Mapping[str, FileFormat | str] | None = None,
     ) -> FileFormat:
         """
         Guesses a FileFormat from a filename.
@@ -462,7 +486,10 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_suffix_or_none(
-        cls, suffix: str, *, format_map: Mapping[str, FileFormat | str] | None = None
+        cls,
+        suffix: str,
+        *,
+        format_map: Mapping[str, FileFormat | str] | None = None,
     ) -> FileFormat | None:
         """
         Same as :meth:`from_suffix`, but returns None if not found.
@@ -474,7 +501,10 @@ class FileFormat(_Enum):
 
     @classmethod
     def from_suffix(
-        cls, suffix: str, *, format_map: Mapping[str, FileFormat | str] | None = None
+        cls,
+        suffix: str,
+        *,
+        format_map: Mapping[str, FileFormat | str] | None = None,
     ) -> FileFormat:
         """
         Returns the FileFormat corresponding to a filename suffix.
@@ -522,7 +552,7 @@ class FileFormat(_Enum):
         Returns a mapping from all suffixes to their respective formats.
         See :meth:`suffixes`.
         """
-        return {k: v for k, v in _rev_valid_formats.items()}
+        return dict(_rev_valid_formats.items())
 
     def compressed_variants(self, suffix: str) -> set[str]:
         """
@@ -569,17 +599,15 @@ class FileFormat(_Enum):
     def is_recommended(self) -> bool:
         """
         Returns whether the format is good.
-        Includes CSV, TSV, Parquet, etc.
+        Includes CSV, TSV, Parquet, Feather, and JSON.
         Excludes all insecure formats along with fixed-width, INI, properties, TOML, and HDF5.
         """
-        return self not in {
-            FileFormat.fwf,
-            FileFormat.xls,
-            FileFormat.xlsb,
-            FileFormat.hdf,
-            FileFormat.ini,
-            FileFormat.toml,
-            FileFormat.properties,
+        return self in {
+            FileFormat.feather,
+            FileFormat.parquet,
+            FileFormat.csv,
+            FileFormat.tsv,
+            FileFormat.json,
         }
 
     @property
@@ -593,7 +621,7 @@ class FileFormat(_Enum):
         entity expansion attacks, good ones are not.
         """
         macros = {".xlsm", ".xltm", ".xls", ".xlm", ".xlam", ".xla"}
-        return self is not FileFormat.pickle and not any([s in macros for s in self.suffixes])
+        return self is not FileFormat.pickle and not any(s in macros for s in self.suffixes)
 
     @property
     def can_always_read(self) -> bool:  # pragma: no cover

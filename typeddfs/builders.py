@@ -7,13 +7,10 @@ Defines a builder pattern for ``TypedDf``.
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Callable, Mapping, Sequence
-from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import pandas as pd
 
-from typeddfs.base_dfs import BaseDf
 from typeddfs.df_errors import ClashError, DfTypeConstructionError
 from typeddfs.df_typing import DfTyping, IoTyping
 from typeddfs.file_formats import FileFormat
@@ -29,9 +26,15 @@ from typeddfs.utils._utils import (
 )
 from typeddfs.utils.checksums import Checksums
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
+    from pathlib import Path
+
+    from typeddfs.base_dfs import BaseDf
+
 
 class _GenericBuilder:
-    def __init__(self, name: str, doc: str | None = None):
+    def __init__(self, name: str, doc: str | None = None) -> None:
         """
         Constructs a new builder.
 
@@ -43,7 +46,8 @@ class _GenericBuilder:
             TypeError: If ``name`` or ``doc`` non-string
         """
         if not isinstance(name, str):
-            raise TypeError(f"Class name {name} is a {type(name)}, not str")
+            msg = f"Class name {name} is a {type(name)}, not str"
+            raise TypeError(msg)
         self._name = name
         self._doc = doc
         self._clazz = None
@@ -51,7 +55,7 @@ class _GenericBuilder:
         self._remapped_suffixes = {}
         self._remapped_read_kwargs = {}
         self._remapped_write_kwargs = {}
-        self._encoding = "utf8"
+        self._encoding = "utf-8"
         self._errors = "strict"
         self._read_kwargs = defaultdict(dict)
         self._write_kwargs = defaultdict(dict)
@@ -113,7 +117,9 @@ class _GenericBuilder:
         return self
 
     def add_methods(
-        self, *args: Callable[[BaseDf, ...], Any], **kwargs: Callable[[BaseDf, ...], Any]
+        self,
+        *args: Callable[[BaseDf, ...], Any],
+        **kwargs: Callable[[BaseDf, ...], Any],
     ) -> __qualname__:
         """
         Attaches methods to the class.
@@ -207,7 +213,11 @@ class _GenericBuilder:
         return self
 
     def hash(
-        self, *, alg: str = "sha256", file: bool = True, directory: bool = False
+        self,
+        *,
+        alg: str = "sha256",
+        file: bool = True,
+        directory: bool = False,
     ) -> __qualname__:
         """
         Write a hash file (e.g. .sha256) alongside files.
@@ -265,11 +275,15 @@ class _GenericBuilder:
         """
         fmt = FileFormat.from_path(suffix)
         if fmt is not FileFormat.json:
-            raise ValueError(f"File format must be JSON ({suffix}")
+            msg = f"File format must be JSON ({suffix}"
+            raise ValueError(msg)
         self._attr_suffix = suffix
-        self._attr_json_kwargs = dict(
-            preserve_inf=preserve_inf, sort=sort, indent=indent, fallbacks=[fallback]
-        )
+        self._attr_json_kwargs = {
+            "preserve_inf": preserve_inf,
+            "sort": sort,
+            "indent": indent,
+            "fallbacks": [fallback],
+        }
         return self
 
     def secure(self) -> __qualname__:
@@ -294,7 +308,7 @@ class _GenericBuilder:
         self._recommended = True
         return self
 
-    def encoding(self, encoding: str = "utf8") -> __qualname__:
+    def encoding(self, encoding: str = "utf-8") -> __qualname__:
         """
         Has pandas-defined text read/write functions use UTF-8.
         UTF-8 was the default when the builder was constructed.
@@ -302,8 +316,8 @@ class _GenericBuilder:
         Arguments:
             encoding: Use this encoding.
                       Values are case-insensitive and ignore hyphen.
-                      (i.e. ``utf-8(-bom)`` and ``utf8(bom)`` are the same.
-                      Special values are ``platform`` and ``utf8(bom)``.
+                      (i.e. ``utf-8(bom)`` and ``utf8(bom)`` are the same.
+                      Special values are ``platform`` and ``utf-8(bom)``.
                       "platform" is equivalent to ``sys.getdefaultencoding()``.
                       "utf8(bom)" changes the encoding depending on the platform at the time of writing.
                       (I.e. The read/write functions will work as expected when pickled.)
@@ -331,7 +345,8 @@ class _GenericBuilder:
         if not replace:
             fmt = FileFormat.from_path_or_none(suffix)
             if fmt is not None:
-                raise ValueError(f"Cannot override suffix {suffix} for format {fmt.name}")
+                msg = f"Cannot override suffix {suffix} for format {fmt.name}"
+                raise ValueError(msg)
         self._custom_formats[suffix] = (reader, writer)
         return self
 
@@ -376,7 +391,8 @@ class _GenericBuilder:
 
     def _build(self) -> type[BaseDf]:
         if self._secure and self._hash_alg in Utils.insecure_hash_functions():
-            raise DfTypeConstructionError(f"Hash algorithm {self._hash_alg} forbidden by .secure()")
+            msg = f"Hash algorithm {self._hash_alg} forbidden by .secure()"
+            raise DfTypeConstructionError(msg)
         self._check_final()
 
         _io_typing = IoTyping(
@@ -435,7 +451,7 @@ class MatrixDfBuilder(_GenericBuilder):
     A builder pattern for :class:`typeddfs.matrix_dfs.MatrixDf`.
     """
 
-    def __init__(self, name: str, doc: str | None = None):
+    def __init__(self, name: str, doc: str | None = None) -> None:
         super().__init__(name, doc)
         self._clazz = MatrixDf
         self._index_series_name = "row"
@@ -479,7 +495,8 @@ class MatrixDfBuilder(_GenericBuilder):
         """
         self._value_dtype = dt
         if not hasattr(dt, "__lt__"):
-            raise DfTypeConstructionError(f"Dtype {dt} is unordered")
+            msg = f"Dtype {dt} is unordered"
+            raise DfTypeConstructionError(msg)
         return self
 
     def _check_final(self) -> None:
@@ -491,7 +508,7 @@ class AffinityMatrixDfBuilder(MatrixDfBuilder):
     A builder pattern for :class:`typeddfs.matrix_dfs.AffinityMatrixDf`.
     """
 
-    def __init__(self, name: str, doc: str | None = None):
+    def __init__(self, name: str, doc: str | None = None) -> None:
         super().__init__(name, doc)
         self._clazz = AffinityMatrixDf
 
@@ -523,12 +540,14 @@ class TypedDfBuilder(_GenericBuilder):
         ``TypedDfBuilder.typed().require("name").build()``
     """
 
-    def __init__(self, name: str, doc: str | None = None):
+    def __init__(self, name: str, doc: str | None = None) -> None:
         super().__init__(name, doc)
         self._clazz = TypedDf
 
     def series_names(
-        self, index: None | bool | str = False, columns: None | bool | str = False
+        self,
+        index: None | bool | str = False,
+        columns: None | bool | str = False,
     ) -> __qualname__:
         """
         Sets ``pd.DataFrame.index.name`` and/or ``pd.DataFrame.columns.name``.
@@ -655,24 +674,29 @@ class TypedDfBuilder(_GenericBuilder):
         all_names = [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]
         problem_names = [name for name in all_names if name in self._drop]
         if len(problem_names) > 0:
+            msg = f"Required/reserved column/index names {problem_names} are auto-dropped"
             raise ClashError(
-                f"Required/reserved column/index names {problem_names} are auto-dropped",
+                msg,
                 keys=set(problem_names),
             )
 
     def _check(self, names: Sequence[str]) -> None:
-        if any([name in _AUTO_DROPPED_NAMES for name in names]):
+        if any(name in _AUTO_DROPPED_NAMES for name in names):
+            msg = f"Columns {','.join(_AUTO_DROPPED_NAMES)} are auto-dropped"
             raise ClashError(
-                f"Columns {','.join(_AUTO_DROPPED_NAMES)} are auto-dropped",
+                msg,
                 keys=_AUTO_DROPPED_NAMES,
             )
-        if any([name in _FORBIDDEN_NAMES for name in names]):
+        if any(name in _FORBIDDEN_NAMES for name in names):
+            msg = f"{','.join(_FORBIDDEN_NAMES)} are forbidden names"
             raise ClashError(
-                f"{','.join(_FORBIDDEN_NAMES)} are forbidden names", keys=_FORBIDDEN_NAMES
+                msg,
+                keys=_FORBIDDEN_NAMES,
             )
         for name in names:
             if name in [*self._req_cols, *self._req_meta, *self._res_cols, *self._res_meta]:
-                raise ClashError(f"Column {name} for {self._name} already exists", keys={name})
+                msg = f"Column {name} for {self._name} already exists"
+                raise ClashError(msg, keys={name})
 
 
 __all__ = ["TypedDfBuilder", "MatrixDfBuilder", "AffinityMatrixDfBuilder"]

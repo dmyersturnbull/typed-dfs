@@ -6,6 +6,7 @@ Mixin for flex-wf.
 """
 from __future__ import annotations
 
+import contextlib
 import csv
 
 import pandas as pd
@@ -27,7 +28,7 @@ class _FlexwfMixin:
         **Note that ``sep`` is a regex pattern if it contains more than 1 char.**
 
         These are designed to read and write (``to_flexwf``) as though they
-        were fixed-width. Specifically, all of the columns line up but are
+        were fixed-width. Specifically, all the columns line up but are
         separated by a possibly multi-character delimiter.
 
         The files ignore blank lines, strip whitespace,
@@ -57,14 +58,17 @@ class _FlexwfMixin:
             return cls.new_df()
         df.columns = [c.strip() for c in df.columns]
         for c in df.columns:
-            try:
+            with contextlib.suppress(AttributeError):
                 df[c] = df[c].str.strip()
-            except AttributeError:
-                pass
+
         return cls._convert_typed(df)
 
     def to_flexwf(
-        self, path_or_buff=None, sep: str = "|||", mode: str = "w", **kwargs
+        self,
+        path_or_buff=None,
+        sep: str = "|||",
+        mode: str = "w",
+        **kwargs,
     ) -> str | None:
         """
         Writes a fixed-width formatter, optionally with a delimiter, which can be multiple characters.

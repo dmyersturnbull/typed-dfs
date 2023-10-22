@@ -12,10 +12,10 @@ We'd like to declare what this should look like.
 
 .. code-block:: python
 
-    import typeddfs as tdf
+    import typeddfs
 
     Sightings = (
-        tdf.typed("Sightings")
+        typeddfs.typed("Sightings")
         .require("species", "person", "date")
         .reserve("notes")
         .strict()

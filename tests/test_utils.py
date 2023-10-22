@@ -5,16 +5,17 @@ import sys
 
 import pytest
 
-from typeddfs.utils import TableFormat, Utils
+from typeddfs.utils import Utils
 
 
 class TestUtils:
     def test_encoding(self):
         assert Utils.get_encoding("platform") == sys.getdefaultencoding()
-        assert "bom" not in Utils.get_encoding("utf8(bom)")
-        assert "bom" not in Utils.get_encoding("utf16(bom)")
-        assert Utils.get_encoding("UTF-8") == "utf8"
-        assert Utils.get_encoding("utf-16") == "utf16"
+        assert "bom" not in Utils.get_encoding("utf-8(bom)")
+        assert "bom" not in Utils.get_encoding("utf-16(bom)")
+        assert Utils.get_encoding("UTF-8") == "utf-8"
+        assert Utils.get_encoding("utf8") == "utf-8"
+        assert Utils.get_encoding("utf-16") == "utf-16"
 
     def test_basic(self):
         assert "sha1" in Utils.insecure_hash_functions()
@@ -27,7 +28,7 @@ class TestUtils:
         assert Utils.strip_control_chars("\u202C") == ""
 
     def test_dots_and_dicts(self):
-        dct = dict(abc=dict(xyz="123"), zzz=["456", "789"])
+        dct = {"abc": {"xyz": "123"}, "zzz": ["456", "789"]}
         dots = {"abc.xyz": "123", "zzz": ["456", "789"]}
         act_dots = Utils.dict_to_dots(dct)
         assert act_dots == dots

@@ -19,9 +19,8 @@ from collections.abc import (
     ValuesView,
 )
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, tzinfo
 from datetime import time as _time
-from datetime import tzinfo
 from decimal import Decimal
 from typing import AbstractSet, Any
 from uuid import UUID
@@ -56,13 +55,9 @@ class MiscTypesJsonDefault(Callable[[Any], Any]):
         """
         if obj is None:
             return obj  # we should never get here, but this seems safer
-        elif isinstance(obj, (str, int, float, datetime, date, _time, UUID)):
+        elif isinstance(obj, str | int | float | datetime | date | _time | UUID):
             return obj  # we should never get here, but let's be safe
-        elif (
-            isinstance(obj, Decimal)
-            or isinstance(obj, complex)
-            or isinstance(obj, np.complexfloating)
-        ):
+        elif isinstance(obj, Decimal | complex | np.complexfloating):
             return str(obj)
         elif isinstance(obj, enum.Enum):
             return obj.name
@@ -72,9 +67,9 @@ class MiscTypesJsonDefault(Callable[[Any], Any]):
             return base64.b64decode(bytes(obj))
         elif isinstance(obj, tzinfo):
             return obj.tzname(datetime.now(tz=obj))
-        elif isinstance(obj, (AbstractSet, Sequence, KeysView, ValuesView)):
+        elif isinstance(obj, AbstractSet | Sequence | KeysView | ValuesView):
             return list(obj)
-        elif isinstance(obj, (Mapping, ItemsView)):
+        elif isinstance(obj, Mapping | ItemsView):
             return dict(obj)
         elif isinstance(obj, tuple) and hasattr(obj, "_asdict"):
             # namedtuple
@@ -103,7 +98,7 @@ class JsonEncoder:
         if self.prep is not None:
             data = self.prep(data)
         x = orjson.dumps(data, default=self.default, option=self.str_options)
-        return x.decode(encoding="utf8") + "\n"
+        return x.decode(encoding="utf-8") + "\n"
 
 
 @dataclass(frozen=True, slots=True)
@@ -218,11 +213,11 @@ class JsonUtils:
             and not isinstance(data, str)
             and not isinstance(data, ByteString)
         ):
-            if all((isinstance(v, (float, np.floating)) and np.isinf(v)) for v in data):
+            if all((isinstance(v, float | np.floating) and np.isinf(v)) for v in data):
                 return [str(v) for v in data]
             else:
                 return [cls.preserve_inf(v) for v in data]
-        elif isinstance(data, (float, np.floating)) and np.isinf(data):
+        elif isinstance(data, float | np.floating) and np.isinf(data):
             return str(data)
         elif isinstance(data, np.ndarray):
             # noinspection PyTypeChecker

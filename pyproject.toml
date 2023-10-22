@@ -52,7 +52,6 @@ Download = "https://pypi.org/project/typeddfs/"
 
 [tool.poetry.dependencies]
 python                   = "^3.9"
-defusedxml               = {version=">=0.7", optional=true}
 natsort                  = ">=8.3"
 orjson                   = ">=3.7"
 pandas                   = ">=1.5.2"
@@ -60,24 +59,23 @@ regex                    = ">=2023"
 tabulate                 = ">=0.8"
 # we don't care about the exact versions, as long as tabulate and pandas accept them
 wcwidth                  = ">=0.2"
+defusedxml               = {version=">=0.7", optional=true}
 pyarrow                  = {version=">=11", optional=true}
 lxml                     = {version=">=4.9", optional=true}
-lz4                      = {version=">=4.1", optional=true}
 openpyxl                 = {version=">=3.1", optional=true}
 pyxlsb                   = {version=">=1", optional=true}
 html5lib                 = {version=">=1", optional=true}
 beautifulsoup4           = {version=">=4.11", optional=true}
-tomlkit                  = {version=">=0.11.6", optional=true}
-zstandard                = {version="0.21.0", optional=true}
+tomlkit                  = {version=">=0.11", optional=true}
+"ruamel.yaml"            = {version=">=0.17", optional=true}
+zstandard                = {version=">=0.21", optional=true}
 
 #===== Test dependencies =====#
 [tool.poetry.group.test.dependencies]
 bandit                        = ">=1.7"
-flake8                        = "^6"
+ruff                          = ">=0.1.1"
 coverage                      = {version = "^7", extras = ["toml"]}
-nbqa                          = "^1.7"
 pre-commit                    = "^3.3"
-pydocstyle                    = ">=6"
 pytest                        = "^7"
 pytest-cov                    = "^4"
 
@@ -95,22 +93,21 @@ toml = ["tomlkit"]
 xml = ["lxml"]
 excel = ["openpyxl", "defusedxml"]
 xlsb = ["pyxlsb"]
-lz4 = ["lz4"]
 zstd = ["zstandard"]
-#hdf5    = ["tables"]
+yaml = ["ruamel.yaml"]
 html = ["html5lib", "beautifulsoup4"]
-main = ["pyarrow", "lxml", "openpyxl", "defusedxml", "tomlkit", "lz4", "zstandard"]
+main = ["pyarrow", "lxml", "openpyxl", "defusedxml", "tomlkit", "zstandard", "ruamel.yaml"]
 all = [
-    "pyarrow",
-    "lxml",
-    "openpyxl",
-    "defusedxml",
-    "tomlkit",
-    "lz4",
-    "pyxlsb",
-    "html5lib",
-    "beautifulsoup4",
-    "zstandard",
+  "pyarrow",
+  "lxml",
+  "openpyxl",
+  "defusedxml",
+  "tomlkit",
+  "pyxlsb",
+  "html5lib",
+  "beautifulsoup4",
+  "ruamel.yaml",
+  "zstandard",
 ]
 
 
@@ -124,6 +121,97 @@ log_cli_level = "INFO"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
+
+###################
+# Ruff
+###################
+
+[tool.ruff]
+line-length = 100  # 120 is hatch's default via 'hatch init'
+include = [
+  "*.py",            # Source
+  "*.pyi",           # Compiled
+  "pyproject.toml",  # This (RUF checks)
+  "*.ipynb"          # Jupyter notebooks
+]
+select = [
+  "A",        # flake8-builtins
+  "ANN",      # flake8-annotations
+  "ASYNC",    # flake8-async
+  "B",        # flake8-bugbear
+  "BLE",      # flake8-blind-exception
+  "C",        # flake8-comprehensions
+  "COM",      # flake8-commas
+  "DTZ",      # flake8-datetimez
+  "EM",       # flake8-errmsg
+  "F",        # pyflakes
+  "FA",       # flake8-future-annotations
+  "E",        # flake8 errors (most fixed by black; rest are nitpicky)
+  "G",        # flake8-logging-concat
+  "I",        # isort
+  "INP",      # flake8-no-pep420
+  "ISC",      # flake8-implicit-str-concat
+  "N",        # flake8-naming
+  "NPY",      # numpy-specific rules
+  "PERF",     # perflint
+  "PGH",      # pygrep-hooks
+  "PIE",      # flake8-pie
+  "PL",       # pylint
+  "PTH",      # flake8-use-pathlib
+  "Q",        # flake8-quotes
+  "RUF",      # Ruff-specific tests
+  "S",        # bandit
+  "SIM",      # flake8-simplify
+  "SLOT",     # flake8-slots
+  "T10",      # debugger
+  "TCH",      # flake8-type-checking
+  "TID",      # flake8-tidy-imports (mostly bans relative imports)
+  "UP",       # pyupgrade
+  "W",        # warnings (most fixed by Black, but W605 is invalid escape char)
+  "YTT",      # flake8-2020 (unlikely problematic checks for Python version)
+  "RUF"       # Ruff-specific rules
+]
+exclude = [
+  "ARG",      # flake8-unused (unused parameters are almost always intentional, like when overriding)
+  "FBT",      # flake8-boolean-trap (debatable, and might not have a choice)
+  "ICN",      # flake8-import-conventionals (isort does this)
+]
+ignore = [
+  "INP001",   # missing __init__ -- false positives
+  "B027",     # Allow non-abstract empty methods in abstract base classes
+  "FBT003",   # Allow boolean positional values in function calls, like `dict.get(... True)`
+  "C901",     # Ignore complexity:
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+  "D107",     # Missing docstring in __init__ (put in class docstring)
+  "D212",     # Multi-line docstring start (contradictory)
+  "E203",     # Colons with space before (sometimes useful expand)
+  "E225",     # Missing whitespace around operator (sometimes useful to condense)
+  "E501",     # Line > 79 chars (we use black)
+]
+unfixable = [
+  "RUF100",   # Unused noqa (should fix manually)
+]
+flake8-bandit.check-typed-exception = true
+pydocstyle.convention = "google"
+# This probably isn't needed
+# :tyranno: ["${project.name}"]
+#isort.known-first-party = ["pocketutils"]
+flake8-tidy-imports.ban-relative-imports = "all"
+
+[tool.ruff.per-file-ignores]
+"tests/**/*" = [
+  "INP001",   # missing __init__
+  "PLR2004",  # magic values
+  "S101",     # assert
+  "TID252",   # relative imports
+  "S105",     # Ignore checks for possible passwords
+  "S106",
+  "S107",
+  "S108",     # Harcoded temp file
+]
 
 #########################################################################################
 # Style checking
@@ -140,4 +228,4 @@ show_missing = true
 
 [tool.black]
 line-length = 100
-target-version = ["py39", "py310", "py311"]
+target-version = ["py39", "py310", "py311", "py312"]

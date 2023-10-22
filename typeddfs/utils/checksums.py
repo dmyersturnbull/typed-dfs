@@ -23,7 +23,7 @@ from typeddfs.utils._utils import _DEFAULT_HASH_ALG, PathLike
 from typeddfs.utils.checksum_models import ChecksumFile, ChecksumMapping
 
 
-@dataclass(frozen=True, repr=True, order=True)
+@dataclass(frozen=True, slots=True, order=True)
 class Checksums:
     alg: str = _DEFAULT_HASH_ALG
 
@@ -63,24 +63,31 @@ class Checksums:
                 fh = ChecksumFile.new(hash_file_path, file_path=path, hash_value="")
             y = fh.hash_value
             if y != "" and overwrite is False:  # check first -- save time
-                raise HashFileExistsError(f"Hash file of {path} already exists", key=str(path))
+                msg = f"Hash file of {path} already exists"
+                raise HashFileExistsError(msg, key=str(path))
         hash_dir_path = self.get_dirsum_of_file(path)
         if to_dir:
             dh = self.load_dirsum_exact(hash_dir_path)
             x = dh.get(path)
             if x is not None and overwrite is False:
+                msg = f"Path {path} listed in {hash_dir_path}"
                 raise MultipleHashFilenamesError(
-                    f"Path {path} listed in {hash_dir_path}", key=str(path)
+                    msg,
+                    key=str(path),
                 )
         digest = self.calc_hash(path)
         if overwrite is None:
             if x is not None and x != digest:
+                msg = f"Path {path} listed in {hash_dir_path}"
                 raise MultipleHashFilenamesError(
-                    f"Path {path} listed in {hash_dir_path}", key=str(path)
+                    msg,
+                    key=str(path),
                 )
             if y is not None and y != digest:
+                msg = f"Path {path} listed in {hash_dir_path}"
                 raise MultipleHashFilenamesError(
-                    f"Path {path} listed in {hash_dir_path}", key=str(path)
+                    msg,
+                    key=str(path),
                 )
         if to_file:
             fh = fh.update(digest, overwrite=overwrite)
@@ -108,9 +115,11 @@ class Checksums:
         hash_dir_path = self.get_dirsum_of_file(path)
         # check first to save time:
         if file_hash and not hash_file_path.exists():
-            raise HashFileMissingError(f"File hash of {path} not found", key=str(path))
+            msg = f"File hash of {path} not found"
+            raise HashFileMissingError(msg, key=str(path))
         if dir_hash and not hash_dir_path.exists():
-            raise HashFilenameMissingError(f"Hash of {path} not in {hash_dir_path}", key=str(path))
+            msg = f"Hash of {path} not in {hash_dir_path}"
+            raise HashFilenameMissingError(msg, key=str(path))
         # now calculate the actual hash for comparison
         if file_hash or dir_hash:
             computed = self.calc_hash(path)
@@ -143,8 +152,9 @@ class Checksums:
         path = Path(path)
         actual = self.calc_hash(path)
         if actual != expected:
+            msg = f"Hash for {path}: calculated {actual} != expected {expected}"
             raise HashDidNotValidateError(
-                f"Hash for {path}: calculated {actual} != expected {expected}",
+                msg,
                 actual=actual,
                 expected=expected,
             )
@@ -241,7 +251,8 @@ class Checksums:
         try:
             getattr(hashlib, alg)
         except AttributeError:
-            raise HashAlgorithmMissingError(f"No hashlib algorithm {alg}", key=alg) from None
+            msg = f"No hashlib algorithm {alg}"
+            raise HashAlgorithmMissingError(msg, key=alg) from None
         return alg
 
     @classmethod
@@ -257,7 +268,8 @@ class Checksums:
         try:
             getattr(hashlib, alg)
         except AttributeError:
-            raise HashAlgorithmMissingError(f"No hashlib algorithm {alg}", key=alg) from None
+            msg = f"No hashlib algorithm {alg}"
+            raise HashAlgorithmMissingError(msg, key=alg) from None
         return alg
 
 

@@ -8,13 +8,13 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
 from pathlib import Path
-from typing import Optional, Type, TypeVar
+from typing import TypeVar
 
 import tomlkit
 
 # This assumes that we have the full project root above, containing pyproject.toml
 _root = Path(__file__).parent.parent.absolute()
-_toml = tomlkit.loads((_root / "pyproject.toml").read_text(encoding="utf8"))
+_toml = tomlkit.loads((_root / "pyproject.toml").read_text(encoding="utf-8"))
 
 T = TypeVar("T")
 
@@ -48,9 +48,9 @@ author = ", ".join(find("tool.poetry.authors", as_type=list))
 # Copyright string (for documentation)
 # It's not clear whether we're supposed to, but we'll add the license
 # noinspection PyShadowingBuiltins
-copyright = find("tool.tyrannosaurus.sources.copyright").strip("'")
-_license = find("tool.tyrannosaurus.sources.doc_license")
-_license_url = find("tool.tyrannosaurus.sources.doc_license_url")
+copyright = "Contributors to typed-dfs, 2016-2023"
+_license = "Apache License, Version 2.0"
+_license_url = "https://www.apache.org/licenses/LICENSE-2.0"
 
 # Load extensions
 # These should be in docs/requirements.txt

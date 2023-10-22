@@ -1,13 +1,13 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
+
 # Check out https://pre-commit.com/ for documentation
 minimum_pre_commit_version: 3.3.3
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-      - id: check-executables-have-shebangs
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-toml
@@ -15,36 +15,31 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: check-symlinks
       - id: check-yaml
+        exclude: ^recipes/.*
+        args: [--unsafe]
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
-        exclude: "^tests/(?:resources|data)/"
       - id: fix-encoding-pragma
         args: [--remove]
-      - id: mixed-line-ending
-        args: ["--fix=lf"]
       - id: trailing-whitespace
 
   # --- Commit msg checks ---
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.5.2
-    hooks:
+  - hooks:
       - id: commitizen
         stages: ["commit-msg"]
+    repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.6.0
 
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.7.0
+  # --- Linters ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.1
     hooks:
-      - id: pyupgrade
-        args: [--py310-plus]
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        args: [--profile, black]
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi, jupyter]
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.7.0
     hooks:
       - id: black
 
@@ -58,6 +53,7 @@ repos:
     hooks:
       - id: prettier
         stages: [commit]
+        # :tyranno: [--print-width, "${tool.ruff.line-length}"]
         args: [--print-width, "100"]
         exclude: ^recipes/.*
 

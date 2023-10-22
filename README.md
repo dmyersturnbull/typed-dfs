@@ -15,7 +15,9 @@
 Pandas DataFrame subclasses that self-organize and serialize robustly.
 
 ```python
-Film = TypedDfs.typed("Film").require("name", "studio", "year").build()
+import typeddfs
+
+Film = typeddfs.typed("Film").require("name", "studio", "year").build()
 df = Film.read_csv("file.csv")
 assert df.columns.tolist() == ["name", "studio", "year"]
 type(df)  # Film
@@ -153,14 +155,15 @@ to help you get required packages and with compatible versions.
 
 Here are the extras:
 
-- `feather`: [Feather](https://arrow.apache.org/docs/python/feather.html) (uses: pyarrow)
-- `parquet`: [Parquet (e.g. .snappy)](https://github.com/apache/parquet-format) (uses: pyarrow)
+- `feather`: [Feather](https://arrow.apache.org/docs/python/feather.html) (uses: `pyarrow`)
+- `parquet`: [Parquet (e.g. .snappy)](https://github.com/apache/parquet-format) (uses: `pyarrow`)
 - `xml` (uses: lxml)
-- `excel`: Excel and LibreOffice .xlsx/.ods/.xls, etc. (uses: openpyxl, defusedxml)
+- `excel`: Excel and LibreOffice .xlsx/.ods/.xls, etc. (uses: `openpyxl`, `defusedxml`)
 - `toml`: [TOML](https://toml.io/en/) (uses: tomlkit)
-- `html` (uses: html5lib, beautifulsoup4)
-- `xlsb`: rare binary Excel file (uses: pyxlsb)
-- [HDF5](https://www.hdfgroup.org/solutions/hdf5/) _{no extra provided}_ (_use:_ `tables`)
+- `yaml` to read/write YAML (uses: `ruamel.yaml`)
+- `html` (uses: `html5lib`, `beautifulsoup4`)
+- `xlsb`: rare binary Excel file (uses: `pyxlsb`)
+- [HDF5](https://www.hdfgroup.org/solutions/hdf5/) _{no extra provided}_ (_use:_ `tables` or `pandas[hdf5]`)
 
 For example, for Feather and TOML support use: `typeddfs[feather,toml]`
 As a shorthand for all formats, use `typeddfs[all]`.
@@ -170,42 +173,47 @@ As a shorthand for all formats, use `typeddfs[all]`.
 <details>
 <summary><em>See: Full table</em></summary>
 
-| format      | packages                     | extra     | sanity | speed | file sizes |
-| ----------- | ---------------------------- | --------- | ------ | ----- | ---------- |
-| Feather     | `pyarrow`                    | `feather` | +++    | ++++  | +++        |
-| Parquet     | `pyarrow` or `fastparquet` † | `parquet` | ++     | +++   | ++++       |
-| csv/tsv     | none                         | none      | ++     | −−    | −−         |
-| flexwf ‡    | none                         | none      | ++     | −−    | −−         |
-| .fwf        | none                         | none      | +      | −−    | −−         |
-| json        | none                         | none      | −−     | −−−   | −−−        |
-| xml         | `lxml`                       | `xml`     | −      | −−−   | −−−        |
-| .properties | none                         | none      | −−     | −−    | −−         |
-| toml        | `tomlkit`                    | `toml`    | −−     | −−    | −−         |
-| INI         | none                         | none      | −−−    | −−    | −−         |
-| .lines      | none                         | none      | ++     | −−    | −−         |
-| .npy        | none                         | none      | −      | +     | +++        |
-| .npz        | none                         | none      | −      | +     | +++        |
-| .html       | `html5lib,beautifulsoup4`    | `html`    | −−     | −−−   | −−−        |
-| pickle      | none                         | none      | −−     | −−−   | −−−        |
-| XLSX        | `openpyxl,defusedxml`        | `excel`   | +      | −−    | +          |
-| ODS         | `openpyxl,defusedxml`        | `excel`   | +      | −−    | +          |
-| XLS         | `openpyxl,defusedxml`        | `excel`   | −−     | −−    | +          |
-| XLSB        | `pyxlsb`                     | `xlsb`    | −−     | −−    | ++         |
-| HDF5        | `tables`                     | none      | −−     | −     | ++         |
-| LZ4         | `lz4`                        | `lz4`     | +++    | +++++ | ++++       |
-| ZSTD        | `zstandard`                  | none      | ++     | ++++  | +++        |
-
-**⚠ Note:** The `hdf5` extra is currently disabled.
+| format      | changes | packages                  | extra        | sanity | speed | bitrate |
+| ----------- | ------- | ------------------------- | ------------ | ------ | ----- | ------- |
+| Feather     | fixed   | `pyarrow`                 | `feather`    | +++    | +++   | +++     |
+| Parquet     | fixed   | `pyarrow`                 | `parquet` \* | ++ †   | +++   | +++     |
+| csv/tsv     | fixed   |                           |              | -      | −     | text    |
+| flexwf ‡    | new     |                           |              | -      | −     | text    |
+| .fwf        | +read   |                           |              | -      | −     | text    |
+| json        | fixed   |                           |              | -      | −−    | text    |
+| xml         | fixed   | `lxml`                    | `xml`        | −      | −−    | text    |
+| .properties | new     |                           |              | -      | −     | text    |
+| toml        | new     | `tomlkit`                 | `toml`       | -      | −     | text    |
+| yaml        | new     | `ruamel.yaml`             | `yaml`       | -      | -     | text    |
+| INI         | new     |                           |              | --     | −     | text    |
+| .lines      | new     |                           |              | -      | −     | text    |
+| .npy        |         |                           |              | −      | +     | +++     |
+| .npz        |         |                           |              | −      | +     | +++     |
+| .html       |         | `html5lib,beautifulsoup4` | `html`       | −−     | −−    | text    |
+| pickle      |         |                           |              | -      | −−    | -       |
+| XLSX        | fixed   | `openpyxl,defusedxml`     | `excel`      | +      | −     | -       |
+| ODS         | fixed   | `openpyxl,defusedxml`     | `excel`      | +      | −     | -       |
+| XLS         | fixed   | `openpyxl,defusedxml`     | `excel`      | −−     | −     | -       |
+| XLSB        |         | `pyxlsb`                  | `xlsb`       | −−     | −     | +       |
+| HDF5        |         | `tables`                  | none         | -      | −     | +       |
+| GZIP        |         |                           |              | N/A    | -     | ++      |
+| ZIP §       |         |                           |              | N/A    | -     | ++      |
+| BZIP2       |         |                           |              | N/A    | --    | +++     |
+| XZ          |         |                           |              | N/A    | --    | +++     |
+| ZSTD        |         | `zstandard`               |              | N/A    | +++   | +++     |
 
 </details>
 
 <details>
 <summary><em>See: serialization notes</em></summary>
 
-- † `fastparquet` can be used instead. It is slower but much smaller.
-- Parquet only supports str, float64, float32, int64, int32, and bool.
+- `*` Parquet only supports str, float64, float32, int64, int32, and bool.
   Other numeric types are automatically converted during write.
+- † `fastparquet` can be used instead. It is slower but much smaller.
 - ‡ `.flexwf` is fixed-width with optional delimiters.
+- For HDF5 support, use `pandas[hdf5]`.
+  Wheels for [pytables](https://pypi.org/project/tables/) are often unavailable, blocking dependency resolution.
+- § ZIP is currently not supported via `write_file` and `read_file`.
 - JSON has inconsistent handling of `None`. ([orjson](https://github.com/ijl/orjson) is more consistent).
 - XML requires Pandas 1.3+.
 - Not all JSON, XML, TOML, and HDF5 files can be read.
@@ -221,8 +229,6 @@ As a shorthand for all formats, use `typeddfs[all]`.
 - XLSM, XLTX, XLTM, XLS, and XLSB files can contain macros, which Microsoft Excel will ingest.
 - XLS is a deprecated format.
 - XLSB is not fully supported in Pandas.
-- HDF may not work on all platforms yet due to a
-  [tables issue](https://github.com/PyTables/PyTables/issues/854).
 
 Feather offers massively better performance over CSV, gzipped CSV, and HDF5
 in read speed, write speed, memory overhead, and compression ratios.

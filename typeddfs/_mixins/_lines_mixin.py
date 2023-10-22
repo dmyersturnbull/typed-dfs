@@ -19,6 +19,7 @@ class _LinesMixin:
     def to_lines(
         self,
         path_or_buff=None,
+        *,
         mode: str = "w",
         **kwargs,
     ) -> str | None:
@@ -43,17 +44,19 @@ class _LinesMixin:
         kwargs.setdefault("header", True)
         df = self.vanilla_reset()
         if len(df.columns) != 1:
-            raise NotSingleColumnError(f"Cannot write {len(df.columns)} columns ({df}) to lines")
+            msg = f"Cannot write {len(df.columns)} columns ({df}) to lines"
+            raise NotSingleColumnError(msg)
         return df.to_csv(
-            path_or_buff, mode=mode, index=False, sep=_FAKE_SEP, quoting=csv.QUOTE_NONE, **kwargs
+            path_or_buff,
+            mode=mode,
+            index=False,
+            sep=_FAKE_SEP,
+            quoting=csv.QUOTE_NONE,
+            **kwargs,
         )
 
     @classmethod
-    def read_lines(
-        cls,
-        path_or_buff,
-        **kwargs,
-    ) -> __qualname__:
+    def read_lines(cls, path_or_buff, **kwargs) -> __qualname__:
         r"""
         Reads a file that contains 1 row and 1 column per line.
         Skips lines that are blank after trimming whitespace.
@@ -86,7 +89,8 @@ class _LinesMixin:
             # df = pd.DataFrame()
             return cls.new_df()
         if len(df.columns) > 1:
-            raise NotSingleColumnError(f"Read multiple columns on {path_or_buff}")
+            msg = f"Read multiple columns on {path_or_buff}"
+            raise NotSingleColumnError(msg)
         return cls._convert_typed(df)
 
     @classmethod

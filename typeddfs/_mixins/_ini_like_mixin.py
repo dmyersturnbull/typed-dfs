@@ -7,20 +7,57 @@ Mixin for INI, .properties, and TOML.
 from __future__ import annotations
 
 import os
-from collections.abc import Sequence
+from io import BytesIO
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
 from typeddfs.df_errors import UnsupportedOperationError
 from typeddfs.utils import IoUtils, ParseUtils, Utils
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from tomlkit.toml_document import TOMLDocument
+
 
 class _IniLikeMixin:
+    @classmethod
+    def read_properties(
+        cls,
+        path_or_buff,
+        *,
+        strip_quotes: bool = False,
+        **kwargs,
+    ) -> __qualname__:
+        r"""
+        Reads a .properties file.
+        Backslashes, colons, spaces, and equal signs are escaped in keys and values.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+            It currently does not support continued lines (ending with an odd number of backslashes).
+
+        Args:
+            path_or_buff: Path or buffer
+            strip_quotes: Remove quotation marks ("") surrounding values
+            kwargs: Passed to ``read_csv``; avoid setting
+        """
+        return cls._read_properties_like(
+            ParseUtils.property_key_unescape,
+            ParseUtils.property_value_unescape,
+            {"!", "#"},
+            strip_quotes,
+            path_or_buff,
+            **kwargs,
+        )
+
     def to_properties(
         self,
         path_or_buff=None,
-        mode: str = "w",
         *,
+        mode: str = "w",
         comment: None | str | Sequence[str] = None,
         **kwargs,
     ) -> str | None:
@@ -55,38 +92,67 @@ class _IniLikeMixin:
         )
 
     @classmethod
-    def read_properties(
-        cls,
-        path_or_buff,
-        strip_quotes: bool = False,
-        **kwargs,
-    ) -> __qualname__:
+    def read_yaml(cls, path_or_buff, **kwargs) -> __qualname__:
         r"""
-        Reads a .properties file.
-        Backslashes, colons, spaces, and equal signs are escaped in keys and values.
+        Reads a YAML file.
 
         .. caution::
 
             This is provided as a preview. It may have issues and may change.
-            It currently does not support continued lines (ending with an odd number of backslashes).
 
         Args:
             path_or_buff: Path or buffer
-            strip_quotes: Remove quotation marks ("") surrounding values
-            kwargs: Passed to ``read_csv``; avoid setting
+            kwargs: Passed to ``Utils.read``
         """
-        return cls._read_properties_like(
-            ParseUtils.property_key_unescape,
-            ParseUtils.property_value_unescape,
-            {"!", "#"},
-            strip_quotes,
-            path_or_buff,
-            **kwargs,
-        )
+        from ruamel.yaml import YAML
+
+        with YAML(typ="safe") as yaml:
+            txt = IoUtils.read(path_or_buff, **kwargs)
+            data = yaml.load(txt)
+        if len(data) == 0:
+            return cls.new_df()
+        df = pd.DataFrame([pd.Series(d) for d in data])
+        return cls._convert_typed(df)
+
+    def to_yaml(
+        self,
+        path_or_buff=None,
+        *,
+        mode: str = "w",
+        typ: str = "rt",
+        **kwargs,
+    ) -> __qualname__:
+        r"""
+        Writes a TOML file.
+
+        .. caution::
+
+            This is provided as a preview. It may have issues and may change.
+
+        Args:
+            path_or_buff: Path or buffer
+            mode: 'w' (write) or 'a' (append)
+            typ: Passed as `typ` to `YAML()`
+            kwargs: Passed to `YAML()`
+        """
+        from ruamel.yaml import YAML
+
+        df = self.vanilla_reset()
+        data = [df.iloc[i].to_dict() for i in range(len(df))]
+        yaml = YAML(typ=typ, **kwargs)
+        with BytesIO() as output:
+            yaml.dump(data, output)
+            txt = output.getvalue().decode(encoding="utf-8")  # TODO: unsafe until we force utf-8
+        return IoUtils.write(path_or_buff, txt, mode=mode, **kwargs)
 
     @classmethod
     def read_toml(
-        cls, path_or_buff, aot: str | None = "row", aot_only: bool = True, **kwargs
+        cls,
+        path_or_buff,
+        *,
+        aot: str | None = "row",
+        aot_only: bool = True,
+        **kwargs,
     ) -> __qualname__:
         r"""
         Reads a TOML file.
@@ -109,7 +175,8 @@ class _IniLikeMixin:
         if len(data.keys()) == 0:
             return cls.new_df()
         if aot_only and len(data.keys()) > 1 or aot is None:
-            raise ValueError(f"Multiple outermost TOML keys: {data.keys()}")
+            msg = f"Multiple outermost TOML keys: {data.keys()}"
+            raise ValueError(msg)
         if aot is None:
             aot = next(iter(data.keys()))
         data = data[aot]
@@ -119,6 +186,7 @@ class _IniLikeMixin:
     def to_toml(
         self,
         path_or_buff=None,
+        *,
         aot: str = "row",
         comment: None | str | Sequence[str] = None,
         mode: str = "w",
@@ -139,7 +207,6 @@ class _IniLikeMixin:
             kwargs: Passed to :meth:`typeddfs.utils.Utils.write`
         """
         import tomlkit
-        from tomlkit.toml_document import TOMLDocument
 
         comment = [] if comment is None else ([comment] if isinstance(comment, str) else comment)
         df = self.vanilla_reset()
@@ -154,7 +221,12 @@ class _IniLikeMixin:
 
     @classmethod
     def read_ini(
-        cls, path_or_buff, hash_sign: bool = False, strip_quotes: bool = False, **kwargs
+        cls,
+        path_or_buff,
+        *,
+        hash_sign: bool = False,
+        strip_quotes: bool = False,
+        **kwargs,
     ) -> __qualname__:
         r"""
         Reads an INI file.
@@ -181,6 +253,7 @@ class _IniLikeMixin:
     def to_ini(
         self,
         path_or_buff=None,
+        *,
         comment: None | str | Sequence[str] = None,
         mode: str = "w",
         **kwargs,
@@ -245,7 +318,8 @@ class _IniLikeMixin:
                 if unescape_keys is not None:
                     key = unescape_keys(key)
                 if value.endswith("\\"):
-                    raise ValueError("Ends with \\; continued lines are not yet supported")
+                    msg = "Ends with \\; continued lines are not yet supported"
+                    raise ValueError(msg)
                 if unescape_values is not None:
                     value = unescape_values(value)
                 if strip_quotes:
@@ -255,7 +329,8 @@ class _IniLikeMixin:
                 keys.append(key)
                 values.append(value)
             except ValueError:
-                raise ValueError(f"Malformed line {i}: '{line}'")
+                msg = f"Malformed line {i}: '{line}'"
+                raise ValueError(msg)
         df = pd.DataFrame({key_col: keys, val_col: values})
         return cls.convert(df)
 
@@ -302,16 +377,18 @@ class _IniLikeMixin:
         df = self.vanilla_reset()
         cols = df.columns
         if len(cols) != 2:
+            msg = f"Cannot write key/value: {len(cols)} columns != 2: {cols}"
             raise UnsupportedOperationError(
-                f"Cannot write key/value: {len(cols)} columns != 2: {cols}"
+                msg,
             )
 
     @classmethod
     def _assert_can_write_properties_class(cls) -> None:
         req_names = cls.get_typing().required_names
         if len(req_names) not in [0, 2]:
+            msg = f"Cannot write key/value: {len(req_names)} names: {req_names}"
             raise UnsupportedOperationError(
-                f"Cannot write key/value: {len(req_names)} names: {req_names}"
+                msg,
             )
 
     @classmethod

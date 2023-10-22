@@ -10,6 +10,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path, PurePath
+from typing import TYPE_CHECKING, Any
 
 from pandas.io.common import get_handle
 
@@ -20,6 +21,9 @@ from typeddfs.df_errors import (
 )
 from typeddfs.file_formats import CompressionFormat, FileFormat
 from typeddfs.utils._utils import PathLike
+
+if TYPE_CHECKING:
+    from pandas._typing import BaseBuffer, FilePath
 
 
 class IoUtils:
@@ -44,15 +48,18 @@ class IoUtils:
         paths = [Path(p) for p in paths]
         for path in paths:
             if path.exists() and not path.is_file():
-                raise ReadPermissionsError(f"Path {path} is not a file", key=str(path))
+                msg = f"Path {path} is not a file"
+                raise ReadPermissionsError(msg, key=str(path))
             if (not missing_ok or path.exists()) and not os.access(path, os.R_OK):
-                raise ReadPermissionsError(f"Cannot read from {path}", key=str(path))
+                msg = f"Cannot read from {path}"
+                raise ReadPermissionsError(msg, key=str(path))
             if attempt:
                 try:
                     with open(path):
                         pass
                 except OSError:
-                    raise WritePermissionsError(f"Failed to open {path} for read", key=str(path))
+                    msg = f"Failed to open {path} for read"
+                    raise WritePermissionsError(msg, key=str(path))
 
     @classmethod
     def verify_can_write_files(
@@ -75,15 +82,18 @@ class IoUtils:
         paths = [Path(p) for p in paths]
         for path in paths:
             if path.exists() and not path.is_file():
-                raise WritePermissionsError(f"Path {path} is not a file", key=str(path))
+                msg = f"Path {path} is not a file"
+                raise WritePermissionsError(msg, key=str(path))
             if (not missing_ok or path.exists()) and not os.access(path, os.W_OK):
-                raise WritePermissionsError(f"Cannot write to {path}", key=str(path))
+                msg = f"Cannot write to {path}"
+                raise WritePermissionsError(msg, key=str(path))
             if attempt:
                 try:
                     with open(path, "a"):  # or w
                         pass
                 except OSError:
-                    raise WritePermissionsError(f"Failed to open {path} for write", key=str(path))
+                    msg = f"Failed to open {path} for write"
+                    raise WritePermissionsError(msg, key=str(path))
 
     @classmethod
     def verify_can_write_dirs(cls, *paths: str | Path, missing_ok: bool = False) -> None:
@@ -100,30 +110,43 @@ class IoUtils:
         paths = [Path(p) for p in paths]
         for path in paths:
             if path.exists() and not path.is_dir():
-                raise WritePermissionsError(f"Path {path} is not a dir", key=str(path))
+                msg = f"Path {path} is not a dir"
+                raise WritePermissionsError(msg, key=str(path))
             if missing_ok and not path.exists():
                 continue
             if not os.access(path, os.W_OK):
-                raise WritePermissionsError(f"{path} lacks write permission", key=str(path))
+                msg = f"{path} lacks write permission"
+                raise WritePermissionsError(msg, key=str(path))
             if not os.access(path, os.X_OK):
-                raise WritePermissionsError(f"{path} lacks access permission", key=str(path))
+                msg = f"{path} lacks access permission"
+                raise WritePermissionsError(msg, key=str(path))
 
     @classmethod
     def write(
-        cls, path_or_buff, content, *, mode: str = "w", atomic: bool = False, **kwargs
+        cls,
+        path_or_buff: FilePath | BaseBuffer,
+        content,
+        *,
+        mode: str = "w",
+        atomic: bool = False,
+        compression_kwargs: dict[str, Any] | None = None,
+        **kwargs,
     ) -> str | None:
         """
         Writes using Pandas's ``get_handle``.
         By default (unless ``compression=`` is set), infers the compression type from the filename suffix
         (e.g. ``.csv.gz``).
         """
+        if compression_kwargs is None:
+            compression_kwargs = {}
+        if atomic and "a" in mode:
+            msg = "Can't append in atomic write"
+            raise UnsupportedOperationError(msg)
         if path_or_buff is None:
             return content
         compression = cls.path_or_buff_compression(path_or_buff, kwargs)
         kwargs = {**kwargs, "compression": compression.pandas_value}
         if atomic and isinstance(path_or_buff, PathLike):
-            if "a" in mode:
-                raise UnsupportedOperationError("Can't append in atomic write")
             path = Path(path_or_buff)
             tmp = cls.tmp_path(path)
             with get_handle(tmp, mode, **kwargs) as f:
@@ -148,7 +171,7 @@ class IoUtils:
     def path_or_buff_compression(cls, path_or_buff, kwargs) -> CompressionFormat:
         if "compression" in kwargs:
             return CompressionFormat.of(kwargs["compression"])
-        elif isinstance(path_or_buff, (PurePath, str)):
+        elif isinstance(path_or_buff, PurePath | str):
             return CompressionFormat.from_path(path_or_buff)
         return CompressionFormat.none
 
@@ -178,15 +201,21 @@ class IoUtils:
           - ``"utf16(bom)"``: use ``"utf-16-sig"`` on Windows; ``"utf-16"`` otherwise
           - ``"utf32(bom)"``: use ``"utf-32-sig"`` on Windows; ``"utf-32"`` otherwise
         """
-        encoding = encoding.lower().replace("-", "")
-        if encoding == "platform":
-            encoding = sys.getdefaultencoding()
-        if encoding == "utf8(bom)":
-            encoding = "utf-8-sig" if os.name == "nt" else "utf-8"
-        if encoding == "utf16(bom)":
-            encoding = "utf-16-sig" if os.name == "nt" else "utf-16"
-        if encoding == "utf32(bom)":
-            encoding = "utf-32-sig" if os.name == "nt" else "utf-32"
+        e = encoding.lower().replace("-", "")
+        if e == "platform":
+            return sys.getdefaultencoding()
+        if e == "utf8(bom)":
+            return "utf-8-sig" if os.name == "nt" else "utf-8"
+        if e == "utf16(bom)":
+            return "utf-16-sig" if os.name == "nt" else "utf-16"
+        if e == "utf32(bom)":
+            return "utf-32-sig" if os.name == "nt" else "utf-32"
+        if e == "utf8" or e == "utf-8":
+            return "utf-8"
+        if e == "utf16" or e == "utf-16":
+            return "utf-16"
+        if e == "utf32" or e == "utf-32":
+            return "utf-32"
         return encoding
 
     @classmethod
@@ -209,7 +238,8 @@ class IoUtils:
             "surrogatepass",
         ):
             return errors
-        raise ValueError(f"Invalid value {errors} for errors")
+        msg = f"Invalid value {errors} for errors"
+        raise ValueError(msg)
 
 
 __all__ = ["IoUtils"]
