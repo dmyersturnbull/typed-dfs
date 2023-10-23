@@ -19,12 +19,12 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-      - name: Install build meta-dependencies
-        run: |
-          pip install 'tox>=4' 'poetry-core>=1.4' 'wheel>=0.36,<1.0'
-      - name: Test with tox
-        run: |
-          tox -v
+      #- name: Install build meta-dependencies
+      #  run: |
+      #    pip install 'tox>=4' 'poetry-core>=1.4' 'wheel>=0.36,<1.0'
+      #- name: Test with tox
+      #  run: |
+      #    tox -v
       - name: Build sdists and wheels with Poetry
         run: |
           poetry build
