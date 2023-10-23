@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
 
 import pytest
@@ -12,7 +12,7 @@ from typeddfs.utils.checksums import ChecksumMapping, Checksums
 class TestChecksums:
     def test_mapping(self):
         path = Path("my_file.txt")
-        x = ChecksumMapping(Path(".") / f".{Path('').name}", {path: "aabb"})
+        x = ChecksumMapping(Path() / f".{Path().name}", {path: "aabb"})
         assert x == x
         assert x[path] == "aabb"
         assert x.line(path) == "aabb *my_file.txt"
@@ -24,7 +24,8 @@ class TestChecksums:
     def test_update(self):
         home = Path(__file__).parent / "resources"
         original = ChecksumMapping(
-            home / ".resources", {home / Path("cat"): "0x5", home / Path("ok"): "0x63"}
+            home / ".resources",
+            {home / Path("cat"): "0x5", home / Path("ok"): "0x63"},
         )
         update = {home / "cat": None, home / "other": "wads"}
         assert original.update(update).entries == {
@@ -85,7 +86,8 @@ class TestChecksums:
     def test_sub(self):
         home = Path(__file__).parent / "resources"
         original = ChecksumMapping.new(
-            home / ".resources", {home / "x": "0x1", home / "y": "0x2", home / "z": "0x3"}
+            home / ".resources",
+            {home / "x": "0x1", home / "y": "0x2", home / "z": "0x3"},
         )
         assert (original - {home / "z": "0x3"}).entries == {home / "x": "0x1", home / "y": "0x2"}
         assert (original - {home / "z"}).entries == {home / "x": "0x1", home / "y": "0x2"}

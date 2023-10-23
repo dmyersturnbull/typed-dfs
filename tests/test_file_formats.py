@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
 
 import pytest
@@ -74,7 +74,7 @@ class TestFileFormats:
     def test_strip_compression(self):
         assert CompressionFormat.strip_suffix("hello.nothing.gz") == Path("hello.nothing")
         assert CompressionFormat.strip_suffix("gz.gz.gz") == Path("gz.gz")
-        assert CompressionFormat.strip_suffix(".xz") == Path("")
+        assert CompressionFormat.strip_suffix(".xz") == Path()
         assert CompressionFormat.strip_suffix("hello") == Path("hello")
 
 

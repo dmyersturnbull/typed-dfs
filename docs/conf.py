@@ -37,9 +37,8 @@ def find(key: str, default: T | None = None, as_type: type[T] = str) -> T | None
     return as_type(at)
 
 
-# Basic information, used by Sphinx
-# Leave language as None unless you have multiple translations
-language = None
+# Basic information used by Sphinx
+language = "en-US"
 project = find("tool.poetry.name")
 version = find("tool.poetry.version")
 release = version
@@ -61,7 +60,7 @@ extensions = [
     "autoapi.extension",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
-    "sphinx_rtd_theme",
+    "furo",
 ]
 master_doc = "index"
 napoleon_include_special_with_doc = True

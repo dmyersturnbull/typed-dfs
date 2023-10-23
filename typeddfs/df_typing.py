@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Information about how DataFrame subclasses should be handled.
 """
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
-T = TypeVar("T", bound=CoreDf, covariant=True)
+T_co = TypeVar("T_co", bound=CoreDf, covariant=True)
 
 
 def _opt_list(x):
@@ -39,7 +39,7 @@ def _opt_dict(x):
 
 
 @dataclass(frozen=True, slots=True)
-class IoTyping(Generic[T]):
+class IoTyping(Generic[T_co]):
     _hash_alg: str | None = "sha256"
     _save_hash_file: bool = False
     _save_hash_dir: bool = False
@@ -245,8 +245,8 @@ class DfTyping:
     """
 
     _io_typing: IoTyping = FINAL_IO_TYPING
-    _post_processing: Callable[[T], T | None] | None = None
-    _verifications: Sequence[Callable[[T], None | bool | str]] | None = None
+    _post_processing: Callable[[T_co], T_co | None] | None = None
+    _verifications: Sequence[Callable[[T_co], None | bool | str]] | None = None
     _column_series_name: bool | None | str = None
     _index_series_name: bool | None | str = None
     _more_columns_allowed: bool = True
@@ -424,7 +424,7 @@ class DfTyping:
         return _opt_set(self._columns_to_drop)
 
     @property
-    def post_processing(self) -> Callable[[T], T | None] | None:
+    def post_processing(self) -> Callable[[T_co], T_co | None] | None:
         """
         A function to be called at the final stage of ``convert``.
         It is called immediately before ``verifications`` are checked.
@@ -438,7 +438,7 @@ class DfTyping:
         return self._post_processing
 
     @property
-    def verifications(self) -> Sequence[Callable[[T], None | bool | str]]:
+    def verifications(self) -> Sequence[Callable[[T_co], None | bool | str]]:
         """
         Additional requirements for the DataFrame to be conformant.
 

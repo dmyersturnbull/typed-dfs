@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Defines the superclasses of the types ``TypedDf`` and ``UntypedDf``.
 """
@@ -67,7 +67,8 @@ class BaseDf(AbsDf, metaclass=abc.ABCMeta):
                 if keys is not None:
                     keys = list(keys)
                     if len(keys) != len(dfs):
-                        raise ValueError(f"Got {len(dfs)} DataFrames but {len(keys)} keys")
+                        msg = f"Got {len(dfs)} DataFrames but {len(keys)} keys"
+                        raise ValueError(msg)
         if dfs is not None:
             if len(dfs) == 0:
                 return cls.new_df()

@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Mixin for INI, .properties, and TOML.
 """
@@ -304,8 +304,10 @@ class _IniLikeMixin:
         keys = []
         values = []
         section = ""
-        for i, line in enumerate(txt.splitlines()):
-            try:
+        i = -1
+        line = ""
+        try:
+            for i, line in enumerate(txt.splitlines()):
                 line = line.strip()
                 if any(line.startswith(c) for c in comment_chars) or len(line.strip()) == 0:
                     continue
@@ -328,9 +330,9 @@ class _IniLikeMixin:
                     key = section + "." + key
                 keys.append(key)
                 values.append(value)
-            except ValueError:
-                msg = f"Malformed line {i}: '{line}'"
-                raise ValueError(msg)
+        except ValueError as e:
+            msg = f"Malformed line {i}: '{line}'"
+            raise ValueError(msg) from e
         df = pd.DataFrame({key_col: keys, val_col: values})
         return cls.convert(df)
 

@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Tools that could possibly be used outside typed-dfs.
 """
@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, tzinfo
 from datetime import time as _time
 from decimal import Decimal
-from typing import AbstractSet, Any
+from typing import Any
 from uuid import UUID
 
 import numpy as np
@@ -43,7 +43,7 @@ class MiscTypesJsonDefault(Callable[[Any], Any]):
         - ``complex`` or ``np.complexfloating`` → str (e.g. "(3+1j)")
         - ``typing.Mapping`` → dict
         - ``typing.ItemsView`` → dict
-        - ``typing.{AbstractSet,Sequence,...}`` → list
+        - ``typing.{Set,Sequence,...}`` → list
         - ``enum.Enum`` → str (name)
         - ``typing.ByteString`` →  str (base-64)
         - ``datetime.tzinfo`` →  str (timezone name)
@@ -67,7 +67,7 @@ class MiscTypesJsonDefault(Callable[[Any], Any]):
             return base64.b64decode(bytes(obj))
         elif isinstance(obj, tzinfo):
             return obj.tzname(datetime.now(tz=obj))
-        elif isinstance(obj, AbstractSet | Sequence | KeysView | ValuesView):
+        elif isinstance(obj, set | Sequence | KeysView | ValuesView):
             return list(obj)
         elif isinstance(obj, Mapping | ItemsView):
             return dict(obj)

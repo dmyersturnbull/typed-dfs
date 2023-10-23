@@ -1,13 +1,14 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Internal utilities for typeddfs.
 """
-from pathlib import PurePath
-from typing import Union
+from __future__ import annotations
 
-PathLike = Union[str, PurePath]
+from pathlib import PurePath
+
+PathLike = str | PurePath
 
 
 class _Sentinel:

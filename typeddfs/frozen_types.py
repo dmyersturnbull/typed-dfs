@@ -15,15 +15,15 @@ from collections.abc import (
     Sequence,
     ValuesView,
 )
-from typing import AbstractSet, TypeVar
+from typing import TypeVar
 
-T = TypeVar("T", covariant=True)
-K = TypeVar("K", contravariant=True)
-V = TypeVar("V", covariant=True)
+T_co = TypeVar("T_co", covariant=True)
+K_contra = TypeVar("K_contra", contravariant=True)
+V_co = TypeVar("V_co", covariant=True)
 
 
 @functools.total_ordering
-class FrozeList(Sequence[T], Hashable):
+class FrozeList(Sequence[T_co], Hashable):
     """
     An immutable list.
     Hashable and ordered.
@@ -31,7 +31,7 @@ class FrozeList(Sequence[T], Hashable):
 
     EMPTY: FrozeList = NotImplemented  # delayed
 
-    def __init__(self, lst: Sequence[T]):
+    def __init__(self, lst: Sequence[T_co]) -> None:
         self.__lst = lst if isinstance(lst, list) else list(lst)
         try:
             self.__hash = hash(tuple(lst))
@@ -46,7 +46,7 @@ class FrozeList(Sequence[T], Hashable):
     def length(self) -> int:  # pragma: no cover
         return len(self.__lst)
 
-    def __iter__(self) -> Iterator[T]:  # pragma: no cover
+    def __iter__(self) -> Iterator[T_co]:  # pragma: no cover
         return iter(self.__lst)
 
     def __getitem__(self, item: int):  # pragma: no cover
@@ -55,10 +55,10 @@ class FrozeList(Sequence[T], Hashable):
     def __hash__(self) -> int:
         return self.__hash
 
-    def __eq__(self, other: FrozeList[T] | Sequence[T]) -> bool:
+    def __eq__(self, other: FrozeList[T_co] | Sequence[T_co]) -> bool:
         return self.__lst == self.__make_other(other)
 
-    def __lt__(self, other: FrozeList[T] | Sequence[T]):
+    def __lt__(self, other: FrozeList[T_co] | Sequence[T_co]):
         return self.__lst < self.__make_other(other)
 
     def __len__(self) -> int:
@@ -70,15 +70,15 @@ class FrozeList(Sequence[T], Hashable):
     def __repr__(self) -> str:
         return repr(self.__lst)
 
-    def to_list(self) -> list[T]:
+    def to_list(self) -> list[T_co]:
         return list(self.__lst)
 
-    def get(self, item: T, default: T | None = None) -> T | None:
+    def get(self, item: T_co, default: T_co | None = None) -> T_co | None:
         if item in self.__lst:
             return item
         return default
 
-    def req(self, item: T, default: T | None = None) -> T:
+    def req(self, item: T_co, default: T_co | None = None) -> T_co:
         """
         Returns the requested list item, falling back to a default.
         Short for "require".
@@ -89,20 +89,22 @@ class FrozeList(Sequence[T], Hashable):
         if item in self.__lst:
             return item
         if default is None:
-            raise KeyError(f"Item {item} not found")
+            msg = f"Item {item} not found"
+            raise KeyError(msg)
         return default
 
-    def __make_other(self, other: FrozeList[T] | Sequence[T]) -> list[T]:
+    def __make_other(self, other: FrozeList[T_co] | Sequence[T_co]) -> list[T_co]:
         if isinstance(other, FrozeList):
             other = other.__lst
         if isinstance(other, list):
             return other
         elif isinstance(other, Sequence):
             return list(other)
-        raise TypeError(f"Cannot compare to {type(other)}")
+        msg = f"Cannot compare to {type(other)}"
+        raise TypeError(msg)
 
 
-class FrozeSet(AbstractSet[T], Hashable):
+class FrozeSet(frozenset[T_co], Hashable):
     """
     An immutable set.
     Hashable and ordered.
@@ -112,7 +114,7 @@ class FrozeSet(AbstractSet[T], Hashable):
 
     EMPTY: FrozeSet = NotImplemented  # delayed
 
-    def __init__(self, lst: AbstractSet[T]):
+    def __init__(self, lst: frozenset[T_co]) -> None:
         self.__lst = lst if isinstance(lst, set) else set(lst)
         try:
             self.__hash = hash(tuple(lst))
@@ -121,12 +123,12 @@ class FrozeSet(AbstractSet[T], Hashable):
             # but at least we'll have a hash and thereby not violate the constraint
             self.__hash = 0
 
-    def get(self, item: T, default: T | None = None) -> T | None:
+    def get(self, item: T_co, default: T_co | None = None) -> T_co | None:
         if item in self.__lst:
             return item
         return default
 
-    def req(self, item: T, default: T | None = None) -> T:
+    def req(self, item: T_co, default: T_co | None = None) -> T_co:
         """
         Returns ``item`` if it is in this set.
         Short for "require".
@@ -138,27 +140,29 @@ class FrozeSet(AbstractSet[T], Hashable):
         if item in self.__lst:
             return item
         if default is None:
-            raise KeyError(f"Item {item} not found")
+            msg = f"Item {item} not found"
+            raise KeyError(msg)
         return default
 
-    def __getitem__(self, item: T) -> T:
+    def __getitem__(self, item: T_co) -> T_co:
         if item in self.__lst:
             return item
-        raise KeyError(f"Item {item} not found")
+        msg = f"Item {item} not found"
+        raise KeyError(msg)
 
-    def __contains__(self, x: T) -> bool:  # pragma: no cover
+    def __contains__(self, x: T_co) -> bool:  # pragma: no cover
         return x in self.__lst
 
-    def __iter__(self) -> Iterator[T]:  # pragma: no cover
+    def __iter__(self) -> Iterator[T_co]:  # pragma: no cover
         return iter(self.__lst)
 
     def __hash__(self) -> int:
         return self.__hash
 
-    def __eq__(self, other: FrozeSet[T]) -> bool:
+    def __eq__(self, other: FrozeSet[T_co]) -> bool:
         return self.__lst == self.__make_other(other)
 
-    def __lt__(self, other: FrozeSet[T] | AbstractSet[T]):
+    def __lt__(self, other: FrozeSet[T_co] | frozenset[T_co]):
         """
         Compares ``self`` and ``other`` for partial ordering.
         Sorts ``self`` and ``other``, then compares the two sorted sets.
@@ -166,8 +170,8 @@ class FrozeSet(AbstractSet[T], Hashable):
         Approximately::
             return list(sorted(self)) < list(sorted(other))
         """
-        other = list(sorted(self.__make_other(other)))
-        me = list(sorted(self.__lst))
+        other = sorted(self.__make_other(other))
+        me = sorted(self.__lst)
         return me < other
 
     @property
@@ -187,23 +191,24 @@ class FrozeSet(AbstractSet[T], Hashable):
     def __repr__(self) -> str:
         return repr(self.__lst)
 
-    def to_set(self) -> AbstractSet[T]:
+    def to_set(self) -> frozenset[T_co]:
         return set(self.__lst)
 
-    def to_frozenset(self) -> AbstractSet[T]:
+    def to_frozenset(self) -> frozenset[T_co]:
         return frozenset(self.__lst)
 
-    def __make_other(self, other: FrozeSet[T] | AbstractSet[T]) -> set[T]:
+    def __make_other(self, other: FrozeSet[T_co] | frozenset[T_co]) -> set[T_co]:
         if isinstance(other, FrozeSet):
             other = other.__lst
         if isinstance(other, set):
             return other
-        elif isinstance(other, AbstractSet):
+        elif isinstance(other, frozenset):
             return set(other)
-        raise TypeError(f"Cannot compare to {type(other)}")
+        msg = f"Cannot compare to {type(other)}"
+        raise TypeError(msg)
 
 
-class FrozeDict(Mapping[K, V], Hashable):
+class FrozeDict(Mapping[K_contra, V_co], Hashable):
     """
     An immutable dictionary/mapping.
     Hashable and ordered.
@@ -211,14 +216,14 @@ class FrozeDict(Mapping[K, V], Hashable):
 
     EMPTY: FrozeDict = NotImplemented  # delayed
 
-    def __init__(self, dct: Mapping[K, V]):
+    def __init__(self, dct: Mapping[K_contra, V_co]) -> None:
         self.__dct = dct if isinstance(dct, dict) else dict(dct)
         self.__hash = hash(tuple(dct.items()))
 
-    def get(self, key: K, default: V | None = None) -> V | None:  # pragma: no cover
+    def get(self, key: K_contra, default: V_co | None = None) -> V_co | None:  # pragma: no cover
         return self.__dct.get(key, default)
 
-    def req(self, key: K, default: V | None = None) -> V:
+    def req(self, key: K_contra, default: V_co | None = None) -> V_co:
         """
         Returns the value corresponding to ``key``.
         Short for "require".
@@ -231,37 +236,38 @@ class FrozeDict(Mapping[K, V], Hashable):
             return self.__dct[key]
         return self.__dct.get(key, default)
 
-    def items(self) -> AbstractSet[tuple[K, V]]:  # pragma: no cover
+    def items(self) -> frozenset[tuple[K_contra, V_co]]:  # pragma: no cover
         return self.__dct.items()
 
-    def keys(self) -> AbstractSet[K]:  # pragma: no cover
+    def keys(self) -> frozenset[K_contra]:  # pragma: no cover
         return self.__dct.keys()
 
-    def values(self) -> ValuesView[V]:  # pragma: no cover
+    def values(self) -> ValuesView[V_co]:  # pragma: no cover
         return self.__dct.values()
 
     def __iter__(self):  # pragma: no cover
         return iter(self.__dct)
 
-    def __contains__(self, item: K) -> bool:  # pragma: no cover
+    def __contains__(self, item: K_contra) -> bool:  # pragma: no cover
         return item in self.__dct
 
-    def __getitem__(self, item: K) -> T:  # pragma: no cover
+    def __getitem__(self, item: K_contra) -> T_co:  # pragma: no cover
         return self.__dct[item]
 
     def __hash__(self) -> int:
         return self.__hash
 
-    def __eq__(self, other: FrozeDict[K, V]) -> bool:
+    def __eq__(self, other: FrozeDict[K_contra, V_co]) -> bool:
         if isinstance(self, FrozeDict):
             return self.__dct == other.__dct
         elif isinstance(self, dict):
             return self == other.__dct
         elif isinstance(self, Mapping):
             return self == dict(other.__dct)
-        raise TypeError(f"Cannot compare to {type(other)}")
+        msg = f"Cannot compare to {type(other)}"
+        raise TypeError(msg)
 
-    def __lt__(self, other: Mapping[K, V]):
+    def __lt__(self, other: Mapping[K_contra, V_co]):
         """
         Compares this dict to another, with partial ordering.
 
@@ -275,8 +281,8 @@ class FrozeDict(Mapping[K, V], Hashable):
         """
         other = self.__make_other(other)
         me = self.__dct
-        o_keys = list(sorted(other.keys()))
-        s_keys = list(sorted(me.keys()))
+        o_keys = sorted(other.keys())
+        s_keys = sorted(me.keys())
         if o_keys < s_keys:
             return False
         if o_keys > s_keys:
@@ -301,17 +307,21 @@ class FrozeDict(Mapping[K, V], Hashable):
     def __repr__(self) -> str:
         return repr(self.__dct)
 
-    def to_dict(self) -> MutableMapping[K, V]:  # pragma: no cover
+    def to_dict(self) -> MutableMapping[K_contra, V_co]:  # pragma: no cover
         return dict(self.__dct)
 
-    def __make_other(self, other: FrozeDict[K, V] | Mapping[K, V]) -> dict[K, V]:
+    def __make_other(
+        self,
+        other: FrozeDict[K_contra, V_co] | Mapping[K_contra, V_co],
+    ) -> dict[K_contra, V_co]:
         if isinstance(other, FrozeDict):
             other = other.__dct
         if isinstance(other, dict):
             return other
         elif isinstance(other, Mapping):
             return dict(other)
-        raise TypeError(f"Cannot compare to {type(other)}")
+        msg = f"Cannot compare to {type(other)}"
+        raise TypeError(msg)
 
 
 # for performance, only make these once:

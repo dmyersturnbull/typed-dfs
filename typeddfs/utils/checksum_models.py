@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Models for shasum-like files.
 """
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import TYPE_CHECKING, AbstractSet
+from typing import TYPE_CHECKING
 
 import regex
 
@@ -36,13 +36,13 @@ class _ChecksumMapping:
     _dct: Mapping[Path, str]
 
     def __post_init__(self):
-        for p in self._dct:
-            # will error if it's not
-            try:
+        try:
+            for p in self._dct:
+                # will error if it's not
                 p.relative_to(self.directory)
-            except ValueError as e:
-                msg = f"{e}: Full contents are {self._dct}"
-                raise PathNotRelativeError(msg)
+        except ValueError as e:
+            msg = f"{e}: Full contents are {self._dct}"
+            raise PathNotRelativeError(msg) from e
 
     def lines(self) -> Sequence[str]:
         """
@@ -356,13 +356,13 @@ class ChecksumMapping(_ChecksumMapping):
     def entries(self) -> Mapping[Path, str]:
         return dict(self._dct)
 
-    def keys(self) -> AbstractSet[Path]:
+    def keys(self) -> set[Path]:
         return self._dct.keys()
 
     def values(self) -> ValuesView[str]:
         return self._dct.values()
 
-    def items(self) -> AbstractSet[tuple[Path, str]]:
+    def items(self) -> set[tuple[Path, str]]:
         return self._dct.items()
 
     def get(self, key: Path, default: str | None = None) -> str | None:

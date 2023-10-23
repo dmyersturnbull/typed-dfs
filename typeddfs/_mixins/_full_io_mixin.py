@@ -1,18 +1,14 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Combines various IO mixins.
 """
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pandas as pd
-from pandas._typing import StorageOptions
 from tabulate import TableFormat
 
 from typeddfs._mixins._csv_like_mixin import _CsvLikeMixin
@@ -33,8 +29,16 @@ from typeddfs.df_errors import (
 )
 from typeddfs.file_formats import CompressionFormat, FileFormat
 from typeddfs.utils import Utils
-from typeddfs.utils._utils import PathLike
 from typeddfs.utils.io_utils import IoUtils
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from pathlib import Path
+
+    import pandas as pd
+    from pandas._typing import StorageOptions
+
+    from typeddfs.utils._utils import PathLike
 
 logger = logging.getLogger("typeddfs")
 
@@ -87,7 +91,8 @@ class _FullIoMixin(
         fmt = cls._get_fmt(path)
         # noinspection HttpUrlsUsage
         if str(path).startswith("http://"):
-            raise UnsupportedOperationError("Cannot read from http with .secure() enabled")
+            msg = "Cannot read from http with .secure() enabled"
+            raise UnsupportedOperationError(msg)
         cls._check_io_ok(path, fmt)
         kwargs = cls._get_read_kwargs(fmt, path, storage_options=storage_options)
         fn = cls._get_io(clazz, path, fmt, kwargs, "read_")
@@ -115,7 +120,10 @@ class _FullIoMixin(
 
     @classmethod
     def _get_read_kwargs(
-        cls, fmt: FileFormat | None, path: Path, storage_options: StorageOptions | None
+        cls,
+        fmt: FileFormat | None,
+        path: Path,
+        storage_options: StorageOptions | None,
     ) -> Mapping[str, Any]:
         t = cls.get_typing().io
         real_suffix = CompressionFormat.strip_suffix(path).suffix
@@ -138,7 +146,10 @@ class _FullIoMixin(
 
     @classmethod
     def _get_write_kwargs(
-        cls, fmt: FileFormat | None, path: Path, storage_options: StorageOptions | None
+        cls,
+        fmt: FileFormat | None,
+        path: Path,
+        storage_options: StorageOptions | None,
     ) -> Mapping[str, Any]:
         t = cls.get_typing().io
         real_suffix = CompressionFormat.strip_suffix(path).suffix
@@ -169,12 +180,16 @@ class _FullIoMixin(
         t = cls.get_typing().io
         if fmt is not None:
             if t.secure and not fmt.is_secure:
+                msg = f"Insecure format {fmt} forbidden by typing"
                 raise FormatInsecureError(
-                    f"Insecure format {fmt} forbidden by typing", key=fmt.name
+                    msg,
+                    key=fmt.name,
                 )
             if t.recommended and not fmt.is_recommended:
+                msg = f"Discouraged format {fmt} forbidden by typing"
                 raise FormatDiscouragedError(
-                    f"Discouraged format {fmt} forbidden by typing", key=fmt.name
+                    msg,
+                    key=fmt.name,
                 )
 
     @classmethod
@@ -185,7 +200,8 @@ class _FullIoMixin(
         try:
             return custom[real_suffix]
         except KeyError:
-            raise FilenameSuffixError(f"No format found for suffix (path: {path})") from None
+            msg = f"No format found for suffix (path: {path})"
+            raise FilenameSuffixError(msg) from None
 
 
 __all__ = ["_FullIoMixin"]

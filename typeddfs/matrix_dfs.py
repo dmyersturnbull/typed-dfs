@@ -1,20 +1,19 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 DataFrames that are essentially n-by-m matrices.
 """
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
 from copy import deepcopy
 from functools import partial
 from inspect import cleandoc
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from numpy.random import RandomState
 
 from typeddfs.base_dfs import BaseDf
 from typeddfs.df_errors import (
@@ -24,6 +23,11 @@ from typeddfs.df_errors import (
 )
 from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping
 from typeddfs.typed_dfs import TypedDf
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from numpy.random import RandomState
 
 
 class LongFormMatrixDf(TypedDf):
@@ -40,7 +44,8 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
     @classmethod
     def convert(cls, df: pd.DataFrame) -> __qualname__:
         if not isinstance(df, pd.DataFrame):
-            raise TypeError(f"Can't convert {type(df)} to {cls.__name__}")
+            msg = f"Can't convert {type(df)} to {cls.__name__}"
+            raise TypeError(msg)
         # first always reset the index so we can manage what's in the index vs columns
         # index_names() will return [] if no named indices are found
         df.__class__ = cls
@@ -66,9 +71,11 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         t = cls.get_typing()
         # TODO: Why doesn't .dtype work?
         if [str(c) for c in df.index.names] != list(df.index.names):
-            raise InvalidDfError("Some index names are non-str")
+            msg = "Some index names are non-str"
+            raise InvalidDfError(msg)
         if [str(c) for c in df.columns] != df.columns.tolist():
-            raise InvalidDfError("Some columns are non-str")
+            msg = "Some columns are non-str"
+            raise InvalidDfError(msg)
         for req in t.verifications:
             value = req(df)
             if value is not None and value is not True:
@@ -96,7 +103,7 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
         df = []
         for r, row in enumerate(self.rows):
             for c, col in enumerate(self.cols):
-                df.append(pd.Series(dict(row=row, column=col, value=self.iat[r, c])))
+                df.append(pd.Series({"row": row, "column": col, "value": self.iat[r, c]}))
         return LongFormMatrixDf.convert(pd.DataFrame(df))
 
     def triangle(self, upper: bool = False, strict: bool = False) -> __qualname__:
@@ -151,9 +158,9 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
     def dim_str(self) -> str:
         """
         Returns a simple string of n_rows by n_columns.
-        E.g.: ``15 × 15``.
+        E.g.: ``15 x 15``.
         """
-        return f"{len(self.rows)} × {len(self.columns)}"
+        return f"{len(self.rows)} x {len(self.columns)}"
 
     @property
     def dims(self) -> tuple[int, int]:
@@ -183,16 +190,16 @@ class _MatrixDf(BaseDf, metaclass=abc.ABCMeta):
             f"""
             <strong>{cls.name}: {self.dim} {mark}</strong>
             {pd.DataFrame._repr_html_(self)}
-        """
+        """,
         )
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)} @ {hex(id(self))})"
+            f"{self.__class__.__name__}({len(self.rows)} x {len(self.columns)} @ {hex(id(self))})"
         )
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)})"
+        return f"{self.__class__.__name__}({len(self.rows)} x {len(self.columns)})"
 
 
 class MatrixDf(_MatrixDf):
@@ -278,7 +285,8 @@ class AffinityMatrixDf(_MatrixDf):
         cols = df.columns.tolist()
         t = cls.get_typing()
         if df.rows != df.cols:
-            raise RowColumnMismatchError(f"Rows {rows} but columns {cols}", rows=rows, columns=cols)
+            msg = f"Rows {rows} but columns {cols}"
+            raise RowColumnMismatchError(msg, rows=rows, columns=cols)
         for req in t.verifications:
             value = req(df)
             if value is not None:
@@ -286,11 +294,11 @@ class AffinityMatrixDf(_MatrixDf):
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)} @ {hex(id(self))})"
+            f"{self.__class__.__name__}({len(self.rows)} x {len(self.columns)} @ {hex(id(self))})"
         )
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({len(self.rows)} × {len(self.columns)})"
+        return f"{self.__class__.__name__}({len(self.rows)} x {len(self.columns)})"
 
     def symmetrize(self) -> __qualname__:
         """

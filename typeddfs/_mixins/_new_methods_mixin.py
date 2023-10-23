@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Mixin with misc new DataFrame methods.
 """
@@ -55,10 +55,12 @@ class _NewMethodsMixin:
         if exclude_na:
             x = {k for k in x if not pd.isna(k)}
         if len(x) > 1:
-            raise ValueNotUniqueError(f"Multiple values for {column}", key=column, values=set(x))
+            msg = f"Multiple values for {column}"
+            raise ValueNotUniqueError(msg, key=column, values=set(x))
         if len(x) == 0:
             raise NoValueError(
-                f"No values for {column}" + " (excluding null)" if exclude_na else "", key=column
+                f"No values for {column}" + " (excluding null)" if exclude_na else "",
+                key=column,
             )
         return next(iter(x))
 
@@ -69,12 +71,16 @@ class _NewMethodsMixin:
         Args:
             cols: A list of columns, or a single column or column index
         """
-        if isinstance(cols, str) or isinstance(cols, int):
+        if isinstance(cols, int | str):
             cols = [cols]
         return self.__class__._change(self[cols + [c for c in self.columns if c not in cols]])
 
     def sort_natural(
-        self, column: str, *, alg: None | int | set[str] = None, reverse: bool = False
+        self,
+        column: str,
+        *,
+        alg: None | int | set[str] = None,
+        reverse: bool = False,
     ) -> __qualname__:
         """
         Calls ``natsorted`` on a single column.
@@ -93,13 +99,13 @@ class _NewMethodsMixin:
             _, alg = Utils.guess_natsort_alg(self[column].dtype)
         else:
             _, alg = Utils.exact_natsort_alg(alg)
-        zzz = natsorted([s for s in df[column]], alg=alg, reverse=reverse)
+        zzz = natsorted(list(df[column]), alg=alg, reverse=reverse)
         df["__sort"] = df[column].map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
         df = df.sort_values("__sort").drop("__sort", axis=1)
         return self.__class__._change(df)
 
-    def sort_natural_index(self, *, alg: int = None, reverse: bool = False) -> __qualname__:
+    def sort_natural_index(self, *, alg: int | None = None, reverse: bool = False) -> __qualname__:
         """
         Calls natsorted on this index. Works for multi-index too.
 
@@ -117,7 +123,7 @@ class _NewMethodsMixin:
             _, alg = Utils.guess_natsort_alg(self.index.dtype)
         else:
             _, alg = Utils.exact_natsort_alg(alg)
-        zzz = natsorted([s for s in df.index], alg=alg)
+        zzz = natsorted(list(df.index), alg=alg)
         df["__sort"] = df.index.map(lambda s: zzz.index(s))
         df.__class__ = self.__class__
         df = df.sort_values("__sort").drop_cols(["__sort"])
@@ -150,7 +156,9 @@ class _NewMethodsMixin:
         return self.__class__._change(df)
 
     def st(
-        self, *array_conditions: Sequence[bool], **dict_conditions: Mapping[str, Any]
+        self,
+        *array_conditions: Sequence[bool],
+        **dict_conditions: Mapping[str, Any],
     ) -> __qualname__:
         """
         Short for "such that" -- an alternative to slicing with ``.loc``.

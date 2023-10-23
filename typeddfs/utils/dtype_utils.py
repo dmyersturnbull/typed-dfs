@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Data type tools for typed-dfs.
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any
 
-from pandas import BooleanDtype, Interval, Period, StringDtype, DatetimeTZDtype
+from pandas import BooleanDtype, DatetimeTZDtype, Interval, Period, StringDtype
 
 # noinspection PyProtectedMember
 from pandas.api.types import (

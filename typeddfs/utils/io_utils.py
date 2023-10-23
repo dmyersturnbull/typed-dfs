@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Tools for IO.
 """
@@ -55,11 +55,11 @@ class IoUtils:
                 raise ReadPermissionsError(msg, key=str(path))
             if attempt:
                 try:
-                    with open(path):
+                    with path.open():
                         pass
-                except OSError:
+                except OSError as e:
                     msg = f"Failed to open {path} for read"
-                    raise WritePermissionsError(msg, key=str(path))
+                    raise WritePermissionsError(msg, key=str(path)) from e
 
     @classmethod
     def verify_can_write_files(
@@ -89,11 +89,11 @@ class IoUtils:
                 raise WritePermissionsError(msg, key=str(path))
             if attempt:
                 try:
-                    with open(path, "a"):  # or w
+                    with path.open("a"):  # or w
                         pass
-                except OSError:
+                except OSError as e:
                     msg = f"Failed to open {path} for write"
-                    raise WritePermissionsError(msg, key=str(path))
+                    raise WritePermissionsError(msg, key=str(path)) from e
 
     @classmethod
     def verify_can_write_dirs(cls, *paths: str | Path, missing_ok: bool = False) -> None:
@@ -210,11 +210,11 @@ class IoUtils:
             return "utf-16-sig" if os.name == "nt" else "utf-16"
         if e == "utf32(bom)":
             return "utf-32-sig" if os.name == "nt" else "utf-32"
-        if e == "utf8" or e == "utf-8":
+        if e in {"utf8", "utf-8"}:
             return "utf-8"
-        if e == "utf16" or e == "utf-16":
+        if e in {"utf16", "utf-16"}:
             return "utf-16"
-        if e == "utf32" or e == "utf-32":
+        if e in {"utf32", "utf-32"}:
             return "utf-32"
         return encoding
 

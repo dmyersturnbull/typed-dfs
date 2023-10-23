@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 import inspect
 
 import numpy as np
@@ -53,9 +53,9 @@ class TestJsonUtils:
                         5: float("inf"),
                         6: float("-inf"),
                         7: 1,
-                    }
-                }
-            ]
+                    },
+                },
+            ],
         }
         x = JsonUtils.encoder().as_str(data)
         assert (
@@ -83,7 +83,7 @@ class TestJsonUtils:
                 }
               ]
             }
-            """
+            """,
             )
             + "\n"
         )

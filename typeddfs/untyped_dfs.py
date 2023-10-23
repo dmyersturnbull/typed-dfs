@@ -1,19 +1,21 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Defines DataFrames with convenience methods but that do not enforce invariants.
 """
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
 
 from typeddfs.base_dfs import BaseDf
 from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping, IoTyping
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 _empty_io_typing: IoTyping[BaseDf] = IoTyping()
 

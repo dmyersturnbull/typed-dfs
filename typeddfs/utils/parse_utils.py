@@ -1,15 +1,17 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Misc tools for typed-dfs.
 """
 from __future__ import annotations
 
-from collections.abc import Generator, Mapping, MutableMapping, Sequence
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import regex
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Mapping, MutableMapping, Sequence
 
 T = TypeVar("T")
 _control_chars = regex.compile(r"\p{C}", flags=regex.V1)

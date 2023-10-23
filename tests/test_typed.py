@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 import pandas as pd
 import pytest
 
@@ -10,9 +10,8 @@ from typeddfs.untyped_dfs import UntypedDf
 from . import Ind1Col1NonStrict as Ind1Col1
 from . import Ind1NonStrict as Ind1
 from . import Ind2Col2NonStrict as Ind2Col2
-from . import Ind2Col2Reserved1
+from . import Ind2Col2Reserved1, Trivial, sample_data, sample_data_str
 from . import Ind2NonStrict as Ind2
-from . import Trivial, sample_data, sample_data_str
 
 
 class TestTyped:

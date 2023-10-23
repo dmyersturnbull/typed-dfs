@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Mixin for Excel/ODF IO.
 """
@@ -12,7 +12,7 @@ from typing import Union
 
 import pandas as pd
 
-_SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
+_SheetNamesOrIndices = Union[Sequence[int | str], int, str]
 
 
 class _ExcelMixin:
@@ -33,7 +33,7 @@ class _ExcelMixin:
     def to_excel(self, excel_writer, *args, **kwargs) -> str | None:
         kwargs = dict(kwargs)
         df = self.vanilla_reset()
-        if isinstance(excel_writer, (str, PurePath)) and Path(excel_writer).suffix in [
+        if isinstance(excel_writer, str | PurePath) and Path(excel_writer).suffix in [
             ".xls",
             ".ods",
             ".odt",

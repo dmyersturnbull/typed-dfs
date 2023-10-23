@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Mixin that overrides Pandas functions to retype.
 """
@@ -240,9 +240,18 @@ class _RetypeMixin:
 if hasattr(pd.DataFrame, "append"):
 
     def _append(self, *args, **kwargs):
-        df = super().append(*args, **kwargs)
+        df = super(self, pd.DataFrame).append(*args, **kwargs)
         return self.__class__._change(df)
 
     _RetypeMixin.append = _append
+
+if hasattr(pd.DataFrame, "map"):
+
+    def _map(self, *args, **kwargs):
+        df = super(self, pd.DataFrame).map(*args, **kwargs)
+        return self.__class__._change(df)
+
+    _RetypeMixin.map = _map
+
 
 __all__ = ["_RetypeMixin"]

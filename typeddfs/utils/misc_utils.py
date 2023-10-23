@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Misc tools for typed-dfs.
 """
@@ -6,7 +9,7 @@ from __future__ import annotations
 import collections
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
-from typing import AbstractSet, Any
+from typing import Any
 
 import numpy as np
 
@@ -88,7 +91,7 @@ class MiscUtils:
 
         Returns:
             Either ``v`` itself,
-            a :class:`typeddfs.utils.FrozeSet` (subclass of :class:`typing.AbstractSet`),
+            a :class:`typeddfs.utils.FrozeSet` (subclass of :class:`typing.Set`),
             a :class:`typeddfs.utils.FrozeList` (subclass of :class:`typing.Sequence`),
             or a :class:`typeddfs.utils.FrozeDict` (subclass of :class:`typing.Mapping`).
             int, float, str, np.generic, and tuple are always returned as-is.
@@ -99,15 +102,17 @@ class MiscUtils:
                             one of the above types is not hashable.
             TypeError: If ``v`` is an ``Iterator`` or `collections.deque``
         """
-        if isinstance(v, (int, float, str, np.generic, tuple, frozenset)):
+        if isinstance(v, int | float | str | np.generic | tuple | frozenset):
             return v  # short-circuit
         if isinstance(v, Iterator):  # let's not ruin their iterator by traversing
-            raise TypeError("Type is an iterator")
+            msg = "Type is an iterator"
+            raise TypeError(msg)
         if isinstance(v, collections.deque):  # the only other major built-in type we won't accept
-            raise TypeError("Type is a deque")
+            msg = "Type is a deque"
+            raise TypeError(msg)
         if isinstance(v, Sequence):
             return FrozeList(v)
-        if isinstance(v, AbstractSet):
+        if isinstance(v, set):
             return FrozeSet(v)
         if isinstance(v, Mapping):
             return FrozeDict(v)
@@ -123,7 +128,11 @@ class MiscUtils:
 
     @classmethod
     def choose_table_format(
-        cls, *, path: PathLike, fmt: None | TableFormat | str = None, default: str = "plain"
+        cls,
+        *,
+        path: PathLike,
+        fmt: None | TableFormat | str = None,
+        default: str = "plain",
     ) -> str | TableFormat:
         """
         Makes a best-effort guess of a good tabulate format from a path name.
@@ -133,18 +142,18 @@ class MiscUtils:
         if fmt is None and path is None:
             return default
         elif fmt is None:
-            choices = dict(
-                html="html",
-                htm="html",
-                tex="tex",
-                latex="latex",
-                rst="rst",
-                md="github",
-                markdown="github",
-                tab="tab",
-                tsv="tsv",
-                wiki="wiki",
-            )
+            choices = {
+                "html": "html",
+                "htm": "html",
+                "tex": "tex",
+                "latex": "latex",
+                "rst": "rst",
+                "md": "github",
+                "markdown": "github",
+                "tab": "tab",
+                "tsv": "tsv",
+                "wiki": "wiki",
+            }
             return choices.get(CompressionFormat.strip_suffix(path).suffix.lstrip("."), default)
         return fmt
 
@@ -156,16 +165,16 @@ class MiscUtils:
         Returns:
             A tabulate ``TableFormat``, which can be passed as a style
         """
-        defaults = dict(
-            lineabove=None,
-            linebelowheader=None,
-            linebetweenrows=None,
-            linebelow=None,
-            headerrow=DataRow("", sep, ""),
-            datarow=DataRow("", sep, ""),
-            padding=0,
-            with_header_hide=None,
-        )
+        defaults = {
+            "lineabove": None,
+            "linebelowheader": None,
+            "linebetweenrows": None,
+            "linebelow": None,
+            "headerrow": DataRow("", sep, ""),
+            "datarow": DataRow("", sep, ""),
+            "padding": 0,
+            "with_header_hide": None,
+        }
         kwargs = {**defaults, **kwargs}
         return TableFormat(**kwargs)
 

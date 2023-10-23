@@ -1,12 +1,12 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Exceptions used by typeddfs.
 """
 from collections.abc import Sequence
 from pathlib import PurePath
-from typing import AbstractSet
+from typing import Union
 
 
 class UnsupportedOperationError(Exception):
@@ -24,7 +24,12 @@ class FilenameSuffixError(UnsupportedOperationError):
         filename: The bad filename
     """
 
-    def __init__(self, *args, key: str | None = None, filename: str | None = None):
+    def __init__(
+        self,
+        *args,
+        key: Union[str, None] = None,
+        filename: Union[str, None] = None,
+    ) -> None:
         super().__init__(*args)
         self.key = key
         self.filename = filename
@@ -38,7 +43,7 @@ class FormatInsecureError(UnsupportedOperationError):
         key: The problematic format name
     """
 
-    def __init__(self, *args, key: str | None = None):
+    def __init__(self, *args, key: Union[str, None] = None) -> None:
         super().__init__(*args)
         self.key = key
 
@@ -51,7 +56,7 @@ class FormatDiscouragedError(UnsupportedOperationError):
         key: The problematic format name
     """
 
-    def __init__(self, *args, key: str | None = None):
+    def __init__(self, *args, key: Union[str, None] = None) -> None:
         super().__init__(*args)
         self.key = key
 
@@ -82,7 +87,7 @@ class ClashError(DfTypeConstructionError):
         keys: The clashing name(s)
     """
 
-    def __init__(self, *args, keys: AbstractSet[str] | None = None):
+    def __init__(self, *args, keys: Union[set[str], None] = None) -> None:
         super().__init__(*args)
         self.keys = keys
 
@@ -101,7 +106,7 @@ class VerificationFailedError(InvalidDfError):
         key: The key name of the verification that failed
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -114,7 +119,7 @@ class MissingColumnError(InvalidDfError):
         key: The name of the missing column
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -129,8 +134,11 @@ class RowColumnMismatchError(InvalidDfError):
     """
 
     def __init__(
-        self, *args, rows: Sequence[str] | None = None, columns: Sequence[str] | None = None
-    ):  # pragma: no cover
+        self,
+        *args,
+        rows: Union[Sequence[str], None] = None,
+        columns: Union[Sequence[str], None] = None,
+    ) -> None:  # pragma: no cover
         super().__init__(*args)
         self.rows = rows
         self.columns = columns
@@ -144,7 +152,7 @@ class UnexpectedColumnError(InvalidDfError):
         key: The name of the unexpected column
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -157,7 +165,7 @@ class UnexpectedIndexNameError(InvalidDfError):
         key: The name of the unexpected index level
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -172,8 +180,11 @@ class ValueNotUniqueError(ValueError):
     """
 
     def __init__(
-        self, *args, key: str | None = None, values: AbstractSet[str] | None = None
-    ):  # pragma: no cover
+        self,
+        *args,
+        key: Union[str, None] = None,
+        values: Union[set[str], None] = None,
+    ) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
         self.values = values
@@ -187,7 +198,7 @@ class NoValueError(ValueError):
         key: The key used for lookup
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -202,8 +213,11 @@ class LengthMismatchError(ValueError):
     """
 
     def __init__(
-        self, *args, key: str | None = None, lengths: AbstractSet[int]
-    ):  # pragma: no cover
+        self,
+        *args,
+        key: Union[str, None] = None,
+        lengths: set[int],
+    ) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
         self.lengths = lengths
@@ -214,7 +228,7 @@ class ReadPermissionsError(Exception):
     Couldn't read from a file.
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -224,7 +238,7 @@ class WritePermissionsError(Exception):
     Couldn't write to a file.
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -255,10 +269,10 @@ class HashExistsError(HashWriteError):
     def __init__(
         self,
         *args,
-        key: str | None = None,
-        original: str | None = None,
-        new: str | None = None,
-    ):  # pragma: no cover
+        key: Union[str, None] = None,
+        original: Union[str, None] = None,
+        new: Union[str, None] = None,
+    ) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
         self.original = original
@@ -285,7 +299,7 @@ class HashAlgorithmMissingError(HashWriteError):
         key: The missing hash algorithm
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -306,8 +320,11 @@ class HashDidNotValidateError(HashVerificationError):
     """
 
     def __init__(
-        self, *args, actual: str | None = None, expected: str | None = None
-    ):  # pragma: no cover
+        self,
+        *args,
+        actual: Union[str, None] = None,
+        expected: Union[str, None] = None,
+    ) -> None:  # pragma: no cover
         super().__init__(*args)
         self.actual = actual
         self.expected = expected
@@ -321,7 +338,7 @@ class HashFileInvalidError(HashVerificationError):
         key: The path to the hash file
     """
 
-    def __init__(self, *args, key: None | PurePath | str = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[PurePath, str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         if isinstance(key, PurePath):
             key = str(key)
@@ -336,7 +353,7 @@ class HashFileMissingError(HashVerificationError):
         key: The path or filename of the file corresponding to the expected hash file(s)
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -349,7 +366,7 @@ class HashFilenameMissingError(HashVerificationError):
         key: The filename
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -362,7 +379,7 @@ class MultipleHashFilenamesError(HashVerificationError):
         key: The filename with duplicate entries
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -375,7 +392,7 @@ class HashFileExistsError(HashVerificationError):
         key: The existing hash file path or filename
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -388,7 +405,7 @@ class HashEntryExistsError(HashVerificationError):
         key: The existing hash dir path
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key
 
@@ -401,6 +418,6 @@ class PathNotRelativeError(ValueError):
         key: The filename
     """
 
-    def __init__(self, *args, key: str | None = None):  # pragma: no cover
+    def __init__(self, *args, key: Union[str, None] = None) -> None:  # pragma: no cover
         super().__init__(*args)
         self.key = key

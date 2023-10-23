@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Tools for sorting.
 """
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Collection, Mapping, Sequence
-from typing import AbstractSet, Any, NamedTuple, TypeVar
+from typing import Any, NamedTuple, TypeVar
 
 from natsort import natsorted, ns
 from natsort.ns_enum import ns as ns_enum
@@ -28,7 +28,7 @@ T = TypeVar("T")
 
 
 class NatsortFlagsAndValue(NamedTuple):
-    flags: AbstractSet[str]
+    flags: set[str]
     value: int
 
 

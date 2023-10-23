@@ -127,6 +127,7 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 ###################
 
 [tool.ruff]
+target-version = "py39"
 line-length = 100  # 120 is hatch's default via 'hatch init'
 include = [
   "*.py",            # Source
@@ -228,4 +229,4 @@ show_missing = true
 
 [tool.black]
 line-length = 100
-target-version = ["py39", "py310", "py311", "py312"]
+target-version = ["py39", "py310", "py311"]

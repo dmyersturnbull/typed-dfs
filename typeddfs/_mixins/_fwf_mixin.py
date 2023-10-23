@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Mixin for fixed-width format.
 """
@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import csv
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Union
 
 import pandas as pd
 
 from typeddfs.utils import Utils
 
-_SheetNamesOrIndices = Union[Sequence[Union[int, str]], int, str]
+_SheetNamesOrIndices = Union[Sequence[int | str], int, str]
 
 
 class _FwfMixin:
@@ -59,14 +59,15 @@ class _FwfMixin:
             na_rep: Missing data representation
             float_format: Format string for floating point numbers
             date_format: Format string for datetime objects
-            decimal: Character recognized as decimal separator. E.g. use ‘,’ for European data.
+            decimal: Character recognized as decimal separator. E.g. use `,` for European data.
             kwargs: Passed to :meth:`typeddfs.utils.Utils.write`
 
         Returns:
             The string data if ``path_or_buff`` is a buffer; None if it is a file
         """
         if colspecs is not None and widths is not None:
-            raise ValueError("Both widths and colspecs passed")
+            msg = "Both widths and colspecs passed"
+            raise ValueError(msg)
         if widths is not None:
             colspecs = []
             at = 0
@@ -80,12 +81,14 @@ class _FwfMixin:
         else:
             df = self.vanilla_reset()
             if len(df.columns) != len(colspecs):
-                raise ValueError(f"{colspecs} column intervals for {len(df.columns)} columns")
+                msg = f"{colspecs} column intervals for {len(df.columns)} columns"
+                raise ValueError(msg)
             for col, (start, end) in zip(df.columns, colspecs):
                 width = end - start
                 mx = df[col].map(str).map(len).max()
                 if mx > width:
-                    raise ValueError(f"Column {col} has max length {mx} > {end-start}")
+                    msg = f"Column {col} has max length {mx} > {end - start}"
+                    raise ValueError(msg)
             _number_format = {
                 "na_rep": na_rep,
                 "float_format": float_format,
@@ -94,12 +97,12 @@ class _FwfMixin:
                 "decimal": decimal,
             }
             res = df._mgr.to_native_types(**_number_format)
-            data: Sequence[Sequence[Any]] = [res.iget_values(i) for i in range(len(res.items))]
+            [res.iget_values(i) for i in range(len(res.items))]
             content = None  # TODO
         if path_or_buff is None:
             return content
-        _encoding = dict(encoding=kwargs.get("encoding")) if "encoding" in kwargs else {}
-        _compression = dict(encoding=kwargs.get("compression")) if "compression" in kwargs else {}
+        _encoding = {"encoding": kwargs.get("encoding")} if "encoding" in kwargs else {}
+        _compression = {"encoding": kwargs.get("compression")} if "compression" in kwargs else {}
         Utils.write(path_or_buff, content, mode=mode, **_encoding, **_compression)
 
 

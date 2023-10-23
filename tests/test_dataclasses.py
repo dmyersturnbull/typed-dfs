@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -50,7 +50,7 @@ class TestDataclasses:
                 pd.Series(dict(animal="gazelle", age=8)),
                 pd.Series(dict(animal="pineapple", age=114)),
                 pd.Series(dict(animal="anteater", age=11)),
-            ]
+            ],
         )
         dc = t.create_dataclass()
         instances = df.to_dataclass_instances()
@@ -61,7 +61,7 @@ class TestDataclasses:
             dc("pineapple", 114),
             dc("anteater", 11),
         ]
-        assert list(sorted(instances)) == [
+        assert sorted(instances) == [
             dc("anteater", 11),
             dc("gazelle", 8),
             dc("goldfish", 1),

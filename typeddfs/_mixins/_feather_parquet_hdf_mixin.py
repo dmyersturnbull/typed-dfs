@@ -1,18 +1,20 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Mixin for Feather, Parquet, and HDF5.
 """
 from __future__ import annotations
 
-import os
+import contextlib
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
-from typeddfs.utils._utils import PathLike
+if TYPE_CHECKING:
+    from typeddfs.utils._utils import PathLike
 
 
 class _FeatherParquetHdfMixin:
@@ -35,25 +37,24 @@ class _FeatherParquetHdfMixin:
         # if an error occurs you end up with a 0-byte file
         # this is fixed with exactly the same logic as for to_hdf -- see that method
         try:
-            old_size = os.path.getsize(path_or_buf)
-        except BaseException:
+            old_size = Path.stat(path_or_buf).st_size
+        except Exception:
             old_size = None
         df = self.vanilla_reset()
         if len(df) == len(df.columns) == 0:
-            df = pd.DataFrame([pd.Series(dict(__feather_ignore_="__feather_ignore_"))])
+            df = pd.DataFrame([pd.Series({"__feather_ignore_": "__feather_ignore_"})])
         df.columns = df.columns.astype(str)
         try:
             return df.to_feather(path_or_buf, *args, **kwargs)
-        except BaseException:
+        except Exception:
             try:
-                size = os.path.getsize(path_or_buf)
-            except BaseException:
+                size = Path.stat(path_or_buf).st_size
+            except Exception:
                 size = None
             if size is not None and size == 0 and (old_size is None or old_size > 0):
-                try:
+                with contextlib.suppress(Exception):
                     Path(path_or_buf).unlink()
-                except BaseException:
-                    pass
+
             raise
 
     @classmethod
@@ -73,29 +74,28 @@ class _FeatherParquetHdfMixin:
         # if an error occurs you end up with a 0-byte file
         # this is fixed with exactly the same logic as for to_hdf -- see that method
         try:
-            old_size = os.path.getsize(path_or_buf)
-        except BaseException:
+            old_size = Path.stat(path_or_buf).st_size
+        except Exception:
             old_size = None
         reset = self.vanilla_reset()
         for c in reset.columns:
             if reset[c].dtype in [np.ubyte, np.ushort]:
                 reset[c] = reset[c].astype(np.intc)
             elif reset[c].dtype == np.uintc:
-                reset[c] = reset[c].astype(np.long)
+                reset[c] = reset[c].astype(int)
             elif reset[c].dtype == np.half:
                 reset[c] = reset[c].astype(np.float32)
         try:
             return reset.to_parquet(path_or_buf, *args, **kwargs)
-        except BaseException:
+        except Exception:
             try:
-                size = os.path.getsize(path_or_buf)
-            except BaseException:
+                size = Path.stat(path_or_buf).st_size
+            except Exception:
                 size = None
             if size is not None and size == 0 and (old_size is None or old_size > 0):
-                try:
+                with contextlib.suppress(Exception):
                     Path(path_or_buf).unlink()
-                except BaseException:
-                    pass
+
             raise
 
     @classmethod
@@ -126,23 +126,21 @@ class _FeatherParquetHdfMixin:
         if key is None:
             key = self.__class__.get_typing().io.hdf_key
         try:
-            old_size = os.path.getsize(path)
-        except BaseException:
+            old_size = Path.stat(path).st_size
+        except Exception:
             old_size = None
         df = self.vanilla()
         try:
             df.to_hdf(str(path), key, **kwargs)
-        except BaseException:
+        except Exception:
             # noinspection PyBroadException
             try:
-                size = os.path.getsize(path)
-            except BaseException:
+                size = Path.stat(path).st_size
+            except Exception:
                 size = None
             if size is not None and size == 0 and (old_size is None or old_size > 0):
-                try:
+                with contextlib.suppress(Exception):
                     Path(path).unlink()
-                except BaseException:
-                    pass
             raise
 
 

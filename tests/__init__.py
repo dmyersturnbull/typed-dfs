@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 import contextlib
 import logging
 import random
@@ -19,7 +19,7 @@ logger_name = Path(__file__).parent.parent.name.upper() + ".TEST"
 logger = logging.getLogger(logger_name)
 
 
-def get_resource(*nodes: str | Path) -> Path:
+def get_resource(*nodes: Union[str, Path]) -> Path:
     path = Path(Path(__file__).parent, "resources", *nodes)
     if not path.is_file():
         raise FileNotFoundError(str(path))
@@ -47,7 +47,7 @@ def tmpfile(ext: str) -> Path:
         # noinspection PyBroadException
         try:
             path.unlink()
-        except BaseException:
+        except Exception:
             logger.error(f"Could not close {path}")
 
 
@@ -63,7 +63,7 @@ def sample_symmetric_df():
         [
             pd.Series({"a": "x", "b": "y", "my_index": "a"}),
             pd.Series({"a": "x", "b": "y", "my_index": "b"}),
-        ]
+        ],
     ).set_index("my_index")
 
 
@@ -101,7 +101,9 @@ class Col1(TypedDf):
     @classmethod
     def get_typing(cls) -> DfTyping:
         return DfTyping(
-            _required_columns=["abc"], _more_index_names_allowed=False, _more_columns_allowed=False
+            _required_columns=["abc"],
+            _more_index_names_allowed=False,
+            _more_columns_allowed=False,
         )
 
 

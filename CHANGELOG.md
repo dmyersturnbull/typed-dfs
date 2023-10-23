@@ -7,9 +7,9 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 
 ### Added
 
-- Support for Pandas 2
-- [zstd](https://facebook.github.io/zstd/) support
-- YAML support
+- Full support for Pandas 2
+- [zstd](https://facebook.github.io/zstd/) compression
+- YAML format
 
 ### Removed
 
@@ -20,17 +20,21 @@ Adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and
 - `MiscUtils.table_format`
 - Positional args to `to_` and `read_` methods
 - `cli_help`
+- `example`
 
 ### Changed
 
+- Use `import typeddfs` instead of `from typeddfs import TypedDfs`
 - Excel write methods no longer use `encoding`
 - Custom exceptions no longer have multiple superclasses
+- `FrozeSet` now subclasses `frozenset` instead of `AbstractSet`
 
 ### Fixed
 
 - Use poetry-core and new Poetry options
 - Enable virtualenv>20.0.33
 - Dropped `pd.DataFrame.append` for Pandas>=2 (it was removed)
+- Added `pd.DataFrame.map` for Pandas>=2.1
 - Replaced deprecated Pandas functions
 
 **Full Changelog**: https://github.com/dmyersturnbull/typed-dfs/compare/v0.16.5...v0.17.0

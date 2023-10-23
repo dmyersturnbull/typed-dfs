@@ -1,10 +1,12 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Mixin for formats like HTML and RST.
 """
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -13,7 +15,9 @@ from tabulate import TableFormat, tabulate
 
 from typeddfs.df_errors import NoValueError, ValueNotUniqueError
 from typeddfs.utils import Utils
-from typeddfs.utils._utils import PathLike
+
+if TYPE_CHECKING:
+    from typeddfs.utils._utils import PathLike
 
 
 class _FormattedMixin:
@@ -22,7 +26,10 @@ class _FormattedMixin:
         return df.to_html(*args, **kwargs)
 
     def to_rst(
-        self, path_or_none: PathLike | None = None, style: str = "simple", mode: str = "w"
+        self,
+        path_or_none: PathLike | None = None,
+        style: str = "simple",
+        mode: str = "w",
     ) -> str | None:
         """
         Writes a reStructuredText table.
@@ -51,10 +58,12 @@ class _FormattedMixin:
             dfs = pd.read_html(path, *args, **kwargs)
         except ValueError as e:
             if str(e) == "No tables found":
-                raise NoValueError(f"No tables in {path}") from None
+                msg = f"No tables in {path}"
+                raise NoValueError(msg) from None
             raise
         if len(dfs) > 1:
-            raise ValueNotUniqueError(f"{len(dfs)} tables in {path}")
+            msg = f"{len(dfs)} tables in {path}"
+            raise ValueNotUniqueError(msg)
         df = dfs[0]
         if "Unnamed: 0" in df:
             df = df.drop("Unnamed: 0", axis=1)

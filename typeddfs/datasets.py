@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Near-replica of example from the readme.
 """
@@ -14,12 +14,12 @@ from typeddfs.builders import TypedDfBuilder
 from typeddfs.file_formats import FileFormat
 from typeddfs.typed_dfs import PlainTypedDf
 
-T = TypeVar("T", covariant=True, bound=AbsDf)
-S = TypeVar("S", covariant=True, bound=AbsDf)
-X = TypeVar("X", covariant=True, bound=AbsDf)
+T_co = TypeVar("T_co", covariant=True, bound=AbsDf)
+S_co = TypeVar("S_co", covariant=True, bound=AbsDf)
+X_co = TypeVar("X_co", covariant=True, bound=AbsDf)
 
 
-class LazyDf(Generic[T]):
+class LazyDf(Generic[T_co]):
     """
     A :class:`typeddfs.abs_dfs.AbsDf` that is lazily loaded from a source.
     Create normally via :meth:`from_source`.
@@ -31,23 +31,26 @@ class LazyDf(Generic[T]):
             lazy = LazyDataFrame.from_source("https://google.com/dataframe.csv")
     """
 
-    def __init__(self, name: str, source: str, clazz: type[T], _df: T | None):
+    def __init__(self, name: str, source: str, clazz: type[T_co], _df: T_co | None) -> None:
         self._name = name
         self._source = source
-        self._clazz: type[T] = clazz
-        self._df: T | None = _df
+        self._clazz: type[T_co] = clazz
+        self._df: T_co | None = _df
 
     @classmethod
     def from_source(
-        cls, source: str, clazz: type[S] = PlainTypedDf, name: str | None = None
-    ) -> LazyDf[S]:
+        cls,
+        source: str,
+        clazz: type[S_co] = PlainTypedDf,
+        name: str | None = None,
+    ) -> LazyDf[S_co]:
         p, _, _ = FileFormat.split(source)
         if name is None:
             name = Path(p).name
         return LazyDf(name, source, clazz, None)
 
     @classmethod
-    def from_df(cls, df: X, name: str | None = None) -> LazyDf[X]:
+    def from_df(cls, df: X_co, name: str | None = None) -> LazyDf[X_co]:
         if name is None:
             name = df.__class__.__name__
         return LazyDf(name, "", df.__class__, df)
@@ -57,11 +60,11 @@ class LazyDf(Generic[T]):
         return self._name
 
     @property
-    def clazz(self) -> type[T]:
+    def clazz(self) -> type[T_co]:
         return self._clazz
 
     @property
-    def df(self) -> T:
+    def df(self) -> T_co:
         if self._df is None and self._source.startswith("https://"):
             self._df = self._clazz.read_url(self._source)
         elif self._df is None:

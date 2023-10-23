@@ -1,13 +1,13 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 """
 Defines DataFrames with convenience methods and that enforce invariants.
 """
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -22,6 +22,9 @@ from typeddfs.df_errors import (
 )
 from typeddfs.df_typing import FINAL_DF_TYPING, DfTyping
 from typeddfs.untyped_dfs import UntypedDf
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class Df(UntypedDf):
@@ -88,7 +91,8 @@ class TypedDf(_DataclassMixin, BaseDf, metaclass=abc.ABCMeta):
             TypeError: If ``df`` is not a DataFrame
         """
         if not isinstance(df, pd.DataFrame):
-            raise TypeError(f"Can't convert {type(df)} to {cls.__name__}")
+            msg = f"Can't convert {type(df)} to {cls.__name__}"
+            raise TypeError(msg)
         # first always reset the index so we can manage what's in the index vs columns
         # index_names() will return [] if no named indices are found
         # noinspection PyTypeChecker
@@ -160,10 +164,7 @@ class TypedDf(_DataclassMixin, BaseDf, metaclass=abc.ABCMeta):
             InvalidDfError: If a function in ``verifications`` fails (returns False or a string).
         """
         t = cls.get_typing()
-        if reserved:
-            req = t.known_names
-        else:
-            req = [*t.required_index_names, *t.required_columns]
+        req = t.known_names if reserved else [*t.required_index_names, *t.required_columns]
         df = pd.DataFrame({r: [] for r in req})
         return cls.convert(df)
 
@@ -213,14 +214,16 @@ class TypedDf(_DataclassMixin, BaseDf, metaclass=abc.ABCMeta):
         t = cls.get_typing()
         for c in set(t.required_index_names):
             if c not in set(df.index.names):
+                msg = f"Missing index name {c} (indices are: {set(df.index.names)}; cols are: {set(df.columns.names)}))"
                 raise MissingColumnError(
-                    f"Missing index name {c} (indices are: {set(df.index.names)}; cols are: {set(df.columns.names)}))",
+                    msg,
                     key=c,
                 )
         for c in set(t.required_columns):
             if c not in set(df.columns):
+                msg = f"Missing column {c} (cols are: {set(df.columns.names)}; indices are: {set(df.index.names)})"
                 raise MissingColumnError(
-                    f"Missing column {c} (cols are: {set(df.columns.names)}; indices are: {set(df.index.names)})",
+                    msg,
                     key=c,
                 )
 
@@ -231,11 +234,13 @@ class TypedDf(_DataclassMixin, BaseDf, metaclass=abc.ABCMeta):
         if not t.more_columns_allowed:
             for c in df.column_names():
                 if c not in t.required_columns and c not in t.reserved_columns:
-                    raise UnexpectedColumnError(f"Unexpected column {c}", key=c)
+                    msg = f"Unexpected column {c}"
+                    raise UnexpectedColumnError(msg, key=c)
         if not t.more_indices_allowed:
             for c in df.index_names():
                 if c not in t.required_index_names and c not in t.reserved_index_names:
-                    raise UnexpectedIndexNameError(f"Unexpected index name {c}", key=c)
+                    msg = f"Unexpected index name {c}"
+                    raise UnexpectedIndexNameError(msg, key=c)
 
 
 class PlainTypedDf(TypedDf):

@@ -1,6 +1,6 @@
-# SPDX-License-Identifier Apache-2.0
-# Source: https://github.com/dmyersturnbull/typed-dfs
-#
+# SPDX-FileCopyrightText: Copyright 2020-2023, Contributors to typed-dfs
+# SPDX-PackageHomePage: https://github.com/dmyersturnbull/typed-dfs
+# SPDX-License-Identifier: Apache-2.0
 import abc
 
 import pandas as pd
@@ -15,7 +15,7 @@ class CoreDf(_RetypeMixin, _NewMethodsMixin, PrettyDf, metaclass=abc.ABCMeta):
     An abstract Pandas DataFrame subclass with additional methods.
     """
 
-    def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False):
+    def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False) -> None:
         super().__init__(data=data, index=index, columns=columns, dtype=dtype, copy=copy)
         # noinspection PyTypeChecker
         self.__class__._change(self)
