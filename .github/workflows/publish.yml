@@ -21,7 +21,7 @@ jobs:
           python-version: "3.11"
       - name: Install build meta-dependencies
         run: |
-          pip install 'tox>=4.11' 'poetry-core>=1.7' 'wheel>=0.40,<1.0'
+          pip install 'poetry>=1.6' 'wheel>=0.40,<1.0'
       #- name: Test with tox
       #  run: |
       #    tox -v
