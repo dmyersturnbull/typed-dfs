@@ -82,7 +82,7 @@ pytest-cov                    = "^4"
 #===== Doc dependencies =====#
 [tool.poetry.group.docs.dependencies]
 sphinx                    = "^7"
-sphinx-autoapi            = "^2"
+sphinx-autoapi            = ">=2,<4"
 sphinx-copybutton         = ">=0.5"
 furo                      = ">=2023"
 
